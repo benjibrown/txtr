@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "texitor"
+version = "0.1.0"
+description = "A Vim-style LaTeX TUI editor."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "textual>=0.80",
+]
+
+[project.scripts]
+txtr = "texitor.__main__:main"
+
+[project.optional-dependencies]
+dev = ["textual-dev"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["texitor*"]
