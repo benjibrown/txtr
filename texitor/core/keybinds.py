@@ -5,6 +5,7 @@ from pathlib import Path
 from texitor.core.modes import Mode
 
 # default keybinds, overridden by user config if present
+# writing all these took way too long but should be a good starting point. mostly just nabbed from vim/nvim because who uses nano 
 _DEFAULTS: dict[Mode, dict[str, str]] = {
     Mode.NORMAL: {
         # nav
@@ -48,48 +49,8 @@ _DEFAULTS: dict[Mode, dict[str, str]] = {
         ">":       "indent",
         "<":       "dedent",
     },
-    Mode.INSERT: {
-        "escape":    "enter_normal",
-        "ctrl+[":    "enter_normal",
-        "backspace": "backspace",
-        "enter":     "newline",
-        "tab":       "smart_tab",
-        "shift+tab": "clear_tab_stops",
-        "ctrl+w":    "delete_word_before",
-        "ctrl+u":    "delete_to_line_start",
-        "ctrl+space":"accept_autocomplete",
-        "up":        "cursor_up",
-        "down":      "cursor_down",
-        "left":      "cursor_left",
-        "right":     "cursor_right",
-    },
-    Mode.VISUAL: {
-        "escape": "enter_normal",
-        "y":      "yank_selection",
-        "d":      "delete_selection",
-        ">":      "indent",
-        "<":      "dedent",
-        "up":     "cursor_up",
-        "down":   "cursor_down",
-        "left":   "cursor_left",
-        "right":  "cursor_right",
-    },
-    Mode.VISUAL_LINE: {
-        "escape": "enter_normal",
-        "y":      "yank_selection",
-        "d":      "delete_selection",
-        ">":      "indent",
-        "<":      "dedent",
-        "up":     "cursor_up",
-        "down":   "cursor_down",
-        "left":   "cursor_left",
-        "right":  "cursor_right",
-    },
-    Mode.COMMAND: {
-        "escape": "enter_normal",
-        "enter":  "execute_command",
-    },
 }
+# TODO - add the rest later
 
 
 # registry for keybinds, with defaults and user overrides
@@ -106,11 +67,11 @@ class KeybindRegistry:
             data = tomllib.load(fh)
 
         section_to_mode = {
-            "normal":      Mode.NORMAL,
-            "insert":      Mode.INSERT,
-            "visual":      Mode.VISUAL,
-            "visual_line": Mode.VISUAL_LINE,
-            "command":     Mode.COMMAND,
+            "normal":       Mode.NORMAL, # yes i really pressed tab twice so it lines up 
+            "insert":       Mode.INSERT,
+            "visual":       Mode.VISUAL,
+            "visual_line":  Mode.VISUAL_LINE,
+            "command":      Mode.COMMAND,
         }
         for section, mode in section_to_mode.items():
             overrides = data.get(section, {})
