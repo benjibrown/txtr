@@ -121,13 +121,16 @@ class Buffer:
 
     # opening and saving files, this is pretty straightforward. we read the whole file into memory, which is fine for small files but might be an issue for larger ones. can optimise later
     def load(self, path: str):
-        with open(path, encoding="utf-8") as fh:
-            content = fh.read()
-        self.lines      = content.splitlines() or [""]
+        try:
+            with open(path, encoding="utf-8") as fh:
+                content = fh.read()
+        except FileNotFoundError:
+            content = ""
+        self.lines  = content.splitlines() or [""]
         self.cursor_row = 0
         self.cursor_col = 0
-        self.modified   = False
-        self.path       = path
+        self.modified = False
+        self.path = path
         self._undo.clear()
         self._redo.clear()
 
@@ -137,7 +140,7 @@ class Buffer:
             raise ValueError("No path given and buffer has no associated file.")
         with open(target, "w", encoding="utf-8") as fh:
             fh.write("\n".join(self.lines))
-        self.path     = target
+        self.path = target
         self.modified = False
 
     # helper funcs (only one rn so technically helper func)
