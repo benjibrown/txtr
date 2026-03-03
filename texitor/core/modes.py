@@ -15,7 +15,7 @@ class Mode(Enum):
 
 
 # Valid transitions: {from_mode: {to_mode, ...}}
-_TRANSITIONS: dict[Mode, set[Mode]] = {
+_TRANSITIONS = {
     Mode.NORMAL: {Mode.INSERT, Mode.VISUAL, Mode.VISUAL_LINE, Mode.COMMAND},
     Mode.INSERT: {Mode.NORMAL},
     Mode.VISUAL: {Mode.NORMAL, Mode.COMMAND},
@@ -32,7 +32,7 @@ class ModeStateMachine:
     def mode(self):
         return self._mode
 
-    def transition(self, target: Mode):
+    def transition(self, target):
         allowed = _TRANSITIONS.get(self._mode, set())
         if target not in allowed:
             raise ValueError(f"Invalid transition: {self._mode} → {target}")
