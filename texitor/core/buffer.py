@@ -8,9 +8,9 @@ class Buffer:
         self.lines: list[str] = [""]
         self.cursor_row: int = 0
         self.cursor_col: int = 0
-        self.modified:   bool = False
-        self.path: str | None = None
-
+        self.modified: bool = False
+        self.path: str
+        # will define later, this'll do for now...
         self._undo: list[tuple[list[str], int, int]] = []
         self._redo: list[tuple[list[str], int, int]] = []
 
@@ -58,7 +58,7 @@ class Buffer:
         col = max(0, min(col, len(self.lines[row])))
         self.cursor_row, self.cursor_col = row, col
 
-    def clamp_col(self) -> None:
+    def clamp_col(self):
         self.cursor_col = min(self.cursor_col, len(self.current_line))
 
     def first_nonblank(self):
@@ -70,25 +70,25 @@ class Buffer:
     # text insertion
     def insert(self, text: str):
         # inserts [text] at cursor pos.
-        line   = self.lines[self.cursor_row]
+        line = self.lines[self.cursor_row]
         before = line[: self.cursor_col]
-        after  = line[self.cursor_col :]
-        full   = before + text + after
-        new    = full.split("\n")
+        after = line[self.cursor_col :]
+        full = before + text + after
+        new = full.split("\n")
         self.lines[self.cursor_row : self.cursor_row + 1] = new
         self.cursor_row += len(new) - 1
-        self.cursor_col  = len(new[-1]) - len(after)
-        self.modified    = True
+        self.cursor_col = len(new[-1]) - len(after)
+        self.modified = True
 
     def newline(self):
-        line   = self.current_line
+        line = self.current_line
         indent = self._leading_whitespace(line)
-        rest   = line[self.cursor_col :]
+        rest = line[self.cursor_col :]
         self.lines[self.cursor_row] = line[: self.cursor_col]
         self.lines.insert(self.cursor_row + 1, indent + rest)
         self.cursor_row += 1
-        self.cursor_col  = len(indent)
-        self.modified    = True
+        self.cursor_col = len(indent)
+        self.modified = True
 
     # all this is text deletion stuff
     def backspace(self):
@@ -116,7 +116,7 @@ class Buffer:
             self.lines = [""]
         self.cursor_row = min(self.cursor_row, self.line_count - 1)
         self.cursor_col = min(self.cursor_col, len(self.current_line))
-        self.modified   = True
+        self.modified = True
         return removed
 
     # opening and saving files, this is pretty straightforward. we read the whole file into memory, which is fine for small files but might be an issue for larger ones. can optimise later
@@ -126,7 +126,7 @@ class Buffer:
                 content = fh.read()
         except FileNotFoundError:
             content = ""
-        self.lines  = content.splitlines() or [""]
+        self.lines = content.splitlines() or [""]
         self.cursor_row = 0
         self.cursor_col = 0
         self.modified = False
@@ -134,7 +134,7 @@ class Buffer:
         self._undo.clear()
         self._redo.clear()
 
-    def save(self, path: str | None = None):
+    def save(self, path: str | None = None): # if path is none then save to current path, if no current path then where tf are you? how are you actually running the editor lmao
         target = path or self.path
         if target is None:
             raise ValueError("No path given and buffer has no associated file.")
@@ -145,7 +145,7 @@ class Buffer:
 
     # helper funcs (only one rn so technically helper func)
     @staticmethod
-    def _leading_whitespace(line: str) -> str:
+    def _leading_whitespace(line: str):
         return line[: len(line) - len(line.lstrip())]
 
 
