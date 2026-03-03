@@ -5,14 +5,14 @@ from __future__ import annotations
 # buffer is clueless about the frontend btw
 class Buffer:
     def __init__(self):
-        self.lines: list[str] = [""]
-        self.cursor_row: int = 0
-        self.cursor_col: int = 0
-        self.modified: bool = False
-        self.path: str
+        self.lines = [""]
+        self.cursor_row = 0
+        self.cursor_col = 0
+        self.modified = False
+        self.path = None
         # will define later, this'll do for now...
-        self._undo: list[tuple[list[str], int, int]] = []
-        self._redo: list[tuple[list[str], int, int]] = []
+        self._undo = []
+        self._redo = []
 
     # undo/redo funcs, a very basic feature
 
@@ -48,12 +48,12 @@ class Buffer:
         return len(self.lines)
 
     # manage cursor movement - clamping cursor to valid pos etc 
-    def move(self, *, drow: int = 0, dcol: int = 0, clamp: bool = True):
+    def move(self, *, drow=0, dcol=0, clamp=True):
         self.cursor_row = max(0, min(self.cursor_row + drow, self.line_count - 1))
         max_col = len(self.lines[self.cursor_row])
         self.cursor_col = max(0, min(self.cursor_col + dcol, max_col))
 
-    def move_to(self, row: int, col: int):
+    def move_to(self, row, col):
         row = max(0, min(row, self.line_count - 1))
         col = max(0, min(col, len(self.lines[row])))
         self.cursor_row, self.cursor_col = row, col
@@ -68,7 +68,7 @@ class Buffer:
 
     
     # text insertion
-    def insert(self, text: str):
+    def insert(self, text):
         # inserts [text] at cursor pos.
         line = self.lines[self.cursor_row]
         before = line[: self.cursor_col]
@@ -120,7 +120,10 @@ class Buffer:
         return removed
 
     # opening and saving files, this is pretty straightforward. we read the whole file into memory, which is fine for small files but might be an issue for larger ones. can optimise later
-    def load(self, path: str):
+
+
+
+    def load(self, path):
         try:
             with open(path, encoding="utf-8") as fh:
                 content = fh.read()
@@ -134,7 +137,7 @@ class Buffer:
         self._undo.clear()
         self._redo.clear()
 
-    def save(self, path: str | None = None): # if path is none then save to current path, if no current path then where tf are you? how are you actually running the editor lmao
+    def save(self, path=None): # if path is none then save to current path, if no current path then where tf are you? how are you actually running the editor lmao
         target = path or self.path
         if target is None:
             raise ValueError("No path given and buffer has no associated file.")
@@ -143,9 +146,12 @@ class Buffer:
         self.path = target
         self.modified = False
 
+
+
+
     # helper funcs (only one rn so technically helper func)
     @staticmethod
-    def _leading_whitespace(line: str):
+    def _leading_whitespace(line):
         return line[: len(line) - len(line.lstrip())]
 
 
