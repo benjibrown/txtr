@@ -1,12 +1,6 @@
-"""Modal editing state machine.
+# modes state manager 
+# visual, visual line, command, normal, insert 
 
-Five modes, matching Vim/Neovim conventions:
-  NORMAL       — default, navigation and commands
-  INSERT       — text input
-  VISUAL       — character-wise selection
-  VISUAL_LINE  — line-wise selection
-  COMMAND      — : command line
-"""
 
 from __future__ import annotations
 from enum import Enum, auto
