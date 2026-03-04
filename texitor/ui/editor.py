@@ -83,3 +83,17 @@ class EditorWidget(Widget):
         line = buf.lines[line_idx]
         is_current = line_idx == buf.cursor_row
         cur_bg = _CURSORLINE if (is_current and msm.is_normal()) else None
+        
+        # gutter
+        ln_str = str(line_idx + 1).rjust(ln_w)
+        if is_current:
+            text.append(ln_str, style=Style(color=_LINENUM_CUR, bold=True, bgcolor=cur_bg))
+        else:
+            text.append(ln_str, style=Style(color=_LINENUM_OFF))
+        text.append(" │ ", style=Style(color=_GUTTER_SEP, bgcolor=cur_bg))
+
+        # content - no syntax highlighting for now
+        content = Text(no_wrap=True)
+        content.append(line, style=Style(color=_TEXT, bgcolor=cur_bg))
+        
+
