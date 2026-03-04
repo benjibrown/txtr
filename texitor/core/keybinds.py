@@ -6,7 +6,7 @@ from texitor.core.modes import Mode
 
 # default keybinds, overridden by user config if present
 # writing all these took way too long but should be a good starting point. mostly just nabbed from vim/nvim because who uses nano 
-_DEFAULTS: dict[Mode, dict[str, str]] = {
+_DEFAULTS = {
     Mode.NORMAL: {
         # nav
         "h":       "cursor_left",
@@ -49,6 +49,47 @@ _DEFAULTS: dict[Mode, dict[str, str]] = {
         ">":       "indent",
         "<":       "dedent",
     },
+    Mode.INSERT: {
+        "escape":    "enter_normal",
+        "ctrl+[":    "enter_normal",
+        "backspace": "backspace",
+        "enter":     "newline",
+        "tab":       "smart_tab",
+        "shift+tab": "clear_tab_stops",
+        "ctrl+w":    "delete_word_before",
+        "ctrl+u":    "delete_to_line_start",
+        "ctrl+space":"accept_autocomplete",
+        "up":        "cursor_up",
+        "down":      "cursor_down",
+        "left":      "cursor_left",
+        "right":     "cursor_right",
+    },
+    Mode.VISUAL: {
+        "escape": "enter_normal",
+        "y":      "yank_selection",
+        "d":      "delete_selection",
+        ">":      "indent",
+        "<":      "dedent",
+        "up":     "cursor_up",
+        "down":   "cursor_down",
+        "left":   "cursor_left",
+        "right":  "cursor_right",
+    },
+    Mode.VISUAL_LINE: {
+        "escape": "enter_normal",
+        "y":      "yank_selection",
+        "d":      "delete_selection",
+        ">":      "indent",
+        "<":      "dedent",
+        "up":     "cursor_up",
+        "down":   "cursor_down",
+        "left":   "cursor_left",
+        "right":  "cursor_right",
+    },
+    Mode.COMMAND: {
+        "escape": "enter_normal",
+        "enter":  "execute_command",
+    },
 }
 # TODO - add the rest later
 
@@ -57,11 +98,11 @@ _DEFAULTS: dict[Mode, dict[str, str]] = {
 class KeybindRegistry:
     def __init__(self):
         # prevent mutation
-        self._map: dict[Mode, dict[str, str]] = {
+        self._map = {
             mode: dict(binds) for mode, binds in _DEFAULTS.items()
         }
 
-    def load_toml(self, path: Path):
+    def load_toml(self, path):
         # keyboards.toml as per
         with open(path, "rb") as fh:
             data = tomllib.load(fh)
@@ -77,8 +118,8 @@ class KeybindRegistry:
             overrides = data.get(section, {})
             self._map.setdefault(mode, {}).update(overrides)
 
-    def get(self, mode: Mode, key: str):
+    def get(self, mode, key):
         return self._map.get(mode, {}).get(key)
 
-    def all_for_mode(self, mode: Mode):
+    def all_for_mode(self, mode):
         return dict(self._map.get(mode, {}))
