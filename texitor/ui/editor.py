@@ -12,6 +12,7 @@ from textual.widget import Widget
 from texitor.core.buffer import Buffer
 from texitor.core.modes import Mode, ModeStateMachine
 
+
 if TYPE_CHECKING:
     from texitor.ui.app import TxtrApp
 
@@ -20,21 +21,22 @@ _CONSOLE = Console(
 )
 
 # color palette (catpuccin rn), will add this to config later so its easy to change
-_BG           = "#1e1e2e"
-_CURSORLINE   = "#252537"
-_LINENUM_CUR  = "#cba6f7"   # mauve
-_LINENUM_OFF  = "#585b70"   # overlay1
-_GUTTER_SEP   = "#45475a"   # surface1
-_TEXT         = "#cdd6f4"   # text
-_TILDE        = "#45475a"
+
+_BG = "#1e1e2e"
+_CURSORLINE = "#252537"
+_LINENUM_CUR = "#cba6f7"   # mauve
+_LINENUM_OFF = "#585b70"   # overlay1
+_GUTTER_SEP = "#45475a"   # surface1
+_TEXT = "#cdd6f4"   # text
+_TILDE = "#45475a"
 _CURSOR_BLOCK = {
-    Mode.NORMAL:      ("#1e1e2e", "#89b4fa"),   # fg, bg — blue
-    Mode.VISUAL:      ("#1e1e2e", "#cba6f7"),   # mauve
+    Mode.NORMAL: ("#1e1e2e", "#89b4fa"),   # fg, bg — blue
+    Mode.VISUAL: ("#1e1e2e", "#cba6f7"),   # mauve
     Mode.VISUAL_LINE: ("#1e1e2e", "#cba6f7"),
 }
 _CURSOR_INSERT_FG = "#a6e3a1"   # cursor in insert mode
-_SEL_BG           = "#45475a"   # surface1 - shows active line
-
+_SEL_BG = "#45475a"   # surface1 - shows active line
+ 
 
 class EditorWidget(Widget):
 
@@ -121,5 +123,33 @@ class EditorWidget(Widget):
                     content.stylize(Style(bgcolor=_SEL_BG), 0, max(len(line), 1))
                 elif line_idx == r1:
                     content.stylize(Style(bgcolor=_SEL_BG), 0, c1 + 1)
+
+        if is_current and not msm.is_command():
+            col = buf.cursor_col
+            if msm.is_insert():
+                s = Style(underline=True, bold=True,
+                          color=_CURSOR_INSERT_FG, bgcolor=cur_bg)
+                if col < len(content.plain):
+                    content.stylize(s, col, col + 1)
+                else:
+                    content.append(" ", style=s)
+            else:
+                fg, bg = _CURSOR_BLOCK.get(msm.mode, ("#1e1e2e", "#fab387"))
+                s = Style(color=fg, bgcolor=bg, bold=True)
+                if col < len(content.plain):
+                    content.stylize(s, col, col + 1)
+                else:
+                    content.append(" ", style=s)
+
+        text.append_text(content)
+
+        if cur_bg:
+            gutter_len  = ln_w + 3
+            content_len = len(line)
+            used = gutter_len + content_len
+            if used < width:
+                text.append(" " * (width - used), style=Style(bgcolor=cur_bg))
+
+        return Strip(list(text.render(_CONSOLE))).adjust_cell_length(width)
 
 
