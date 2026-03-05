@@ -1,0 +1,30 @@
+# default catppuccin theme 
+[colors-catppuccin]
+_BG = "#1e1e2e"
+_CURSORLINE = "#252537"
+_LINENUM_CUR = "#cba6f7"   # mauve
+_LINENUM_OFF = "#585b70"   # overlay1
+_GUTTER_SEP = "#45475a"   # surface1
+_TEXT = "#cdd6f4"   # text
+_TILDE = "#45475a"
+_NORMAL_MODE = ("#1e1e2e", "#89b4fa")
+_VISUAL_MODE = ("#1e1e2e", "#cba6f7") 
+_VISUAL_LINE = ("#1e1e2e", "#cba6f7")
+_CURSOR_INSERT_FG = "#a6e3a1"   # cursor in insert mode
+_SEL_BG = "#45475a"   # surface1 - shows active line
+
+[colors-gruvbox]
+_BG = "#282828"
+_CURSORLINE = "#665c54"
+_LINENUM_CUR = "#ebdbb2"   # light0
+_LINENUM_OFF = "#665c54"   # dark4
+_GUTTER_SEP = "#665c54"   # dark4
+_TEXT = "#ebdbb2"   # light0
+_TILDE = "#665c54"   # dark4
+_NORMAL_MODE = ("#282828", "#ebdbb2")
+_VISUAL_MODE = ("#282828", "#ebdbb2")
+_VISUAL_LINE = ("#282828", "#ebdbb2")
+_CURSOR_INSERT_FG = "#b8bb26"   # light green
+_SEL_BG = "#665c54"   # dark4 - shows active line
+
+
