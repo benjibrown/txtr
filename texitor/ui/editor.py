@@ -96,4 +96,30 @@ class EditorWidget(Widget):
         content = Text(no_wrap=True)
         content.append(line, style=Style(color=_TEXT, bgcolor=cur_bg))
         
+        # highlight visual selection if in visual mode
+        anchor = self._app.visual_anchor
+        if msm.is_visual() and anchor is not None:
+            a_row, a_col = anchor
+            c_row, c_col = buf.cursor_row, buf.cursor_col
+
+            if msm.mode is Mode.VISUAL_LINE:
+                r0, r1 = sorted((a_row, c_row))
+                if r0 <= line_idx <= r1:
+                    content.stylize(Style(bgcolor=_SEL_BG), 0, max(len(line), 1))
+            else:
+                # character-wise: normalise so (r0,c0) ≤ (r1,c1)
+                if (a_row, a_col) <= (c_row, c_col):
+                    r0, c0, r1, c1 = a_row, a_col, c_row, c_col
+                else:
+                    r0, c0, r1, c1 = c_row, c_col, a_row, a_col
+
+                if r0 == r1 == line_idx:
+                    content.stylize(Style(bgcolor=_SEL_BG), c0, c1 + 1)
+                elif line_idx == r0:
+                    content.stylize(Style(bgcolor=_SEL_BG), c0, max(len(line), 1))
+                elif r0 < line_idx < r1:
+                    content.stylize(Style(bgcolor=_SEL_BG), 0, max(len(line), 1))
+                elif line_idx == r1:
+                    content.stylize(Style(bgcolor=_SEL_BG), 0, c1 + 1)
+
 
