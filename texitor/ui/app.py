@@ -8,7 +8,6 @@ from textual.events import Key
 from texitor.core.buffer import Buffer
 from texitor.core.keybinds import KeybindRegistry
 from texitor.core.modes import Mode, ModeStateMachine
-# placeholder imports
 from texitor.ui.editor import EditorWidget
 from texitor.ui.statusbar import StatusBar
 
@@ -19,7 +18,36 @@ class TxtrApp(App):
 
     TITLE = "txtr" # aka texitor but who wants to type allat
     ENABLE_COMMAND_PALETTE = False
-    CSS = "Screen { }"
+    CSS = """
+    Screen { }
+
+    ToastRack {
+        align: right top;
+        margin: 1 2;
+    }
+
+    Toast {
+        background: #313244;
+        color: #cdd6f4;
+        border-left: tall #89b4fa;
+        padding: 0 1;
+    }
+
+    Toast.-warning {
+        border-left: tall #f9e2af;
+        color: #f9e2af;
+    }
+
+    Toast.-error {
+        border-left: tall #f38ba8;
+        color: #f38ba8;
+    }
+
+    Toast.-information {
+        border-left: tall #89b4fa;
+        color: #cdd6f4;
+    }
+    """
 
     def __init__(self, filename=None):
         super().__init__()
@@ -27,8 +55,9 @@ class TxtrApp(App):
         self.msm = ModeStateMachine()
         self.keybinds = KeybindRegistry()
         self._yank = []
-        self.visual_anchor = None 
-        self._pending_key = ""   # accumulates multi-key sequences e.g. "g", "d"
+        self.visual_anchor = None
+        self.cmd_input = ""          # current command line input
+        self._pending_key = ""
         self._awaiting_replace = False  # true after r — next key replaces char
 
         if filename:
@@ -37,7 +66,7 @@ class TxtrApp(App):
     # layout of app (editor + bar)
     def compose(self):
         yield EditorWidget(self.buffer, self.msm, self)
-        yield StatusBar(self.buffer, self.msm)
+        yield StatusBar(self.buffer, self.msm, self)
 
     # key handling
     def on_key(self, event: Key):
@@ -64,10 +93,14 @@ class TxtrApp(App):
             return
 
         # key handling for cmds with multiple keys ie gg or my favourite - dd
+        # event.key gives textual's name (e.g. "colon" for :, "dollar_sign" for $)
+        # event.character gives the actual char — we try both so keybinds.py can use either
         mode = self.msm.mode
+        char = event.character or ""
         candidate = (self._pending_key + " " + key).strip()
+        char_candidate = (self._pending_key + " " + char).strip() if char else ""
 
-        action = self.keybinds.get(mode, candidate)
+        action = self.keybinds.get(mode, candidate) or (self.keybinds.get(mode, char_candidate) if char_candidate else None)
         if action:
             self._pending_key = ""
             handler = getattr(self, f"_action_{action}", None)
@@ -77,13 +110,13 @@ class TxtrApp(App):
             return
 
         # wait for more keys if needed
-        if self._is_prefix(mode, candidate):
+        if self._is_prefix(mode, candidate) or (char_candidate and self._is_prefix(mode, char_candidate)):
             self._pending_key = candidate
             return
 
         # if not then just try the single key
         self._pending_key = ""
-        action = self.keybinds.get(mode, key)
+        action = self.keybinds.get(mode, key) or (self.keybinds.get(mode, char) if char else None)
         if action:
             handler = getattr(self, f"_action_{action}", None)
             if handler:
@@ -96,6 +129,15 @@ class TxtrApp(App):
             self.buffer.checkpoint()
             self.buffer.insert(event.character)
             self._refresh_all()
+
+        # command mode - type into cmd_input, backspace to delete
+        elif self.msm.is_command():
+            if key == "backspace":
+                self.cmd_input = self.cmd_input[:-1]
+                self.query_one(StatusBar).refresh()
+            elif event.character and event.character.isprintable():
+                self.cmd_input += event.character
+                self.query_one(StatusBar).refresh()
 
     def _is_prefix(self, mode, prefix):
         return any(
@@ -113,6 +155,8 @@ class TxtrApp(App):
     def _action_enter_normal(self):
         self.msm.transition(Mode.NORMAL)
         self.visual_anchor = None
+        self._pending_key = ""
+        self.cmd_input = ""
         # move to last char 
         buf  = self.buffer
         line = buf.current_line
@@ -148,6 +192,8 @@ class TxtrApp(App):
 
     def _action_enter_command(self):
         self.msm.transition(Mode.COMMAND)
+        self._pending_key = ""
+        self.cmd_input = ""
 
     # i thought about not defining methods for these but maintainbility is peak
     def _action_cursor_left(self): self.buffer.move(dcol=-1)
@@ -293,13 +339,50 @@ class TxtrApp(App):
         buf.cursor_col = 0
         buf.modified = True
 
-    # placeholders, stuff i want to add but have no clue how so i will defo be watching some tutorials
-    def _action_smart_tab(self) : pass
+    def _action_execute_command(self):
+        cmd = self.cmd_input.strip()
+        self._action_enter_normal()   # resets mode + clears cmd_input
+
+        if cmd == "w":
+            self._cmd_write()
+        elif cmd == "q":
+            self._cmd_quit()
+        elif cmd in ("wq", "x"):
+            self._cmd_write()
+            self.exit()
+        elif cmd == "q!":
+            self.exit()
+        elif cmd.startswith("e "):
+            path = cmd[2:].strip()
+            if path:
+                self.buffer.load(path)
+                self._refresh_all()
+        elif cmd.startswith("w "):
+            path = cmd[2:].strip()
+            if path:
+                self.buffer.save(path)
+        else:
+            self.notify(f"unknown command: {cmd}", severity="warning")
+
+    def _cmd_write(self):
+        if not self.buffer.path:
+            self.notify("no file name — use :w <filename>", severity="warning")
+            return
+        self.buffer.save()
+        self.notify(f"saved {self.buffer.path}")
+
+    def _cmd_quit(self):
+        if self.buffer.modified:
+            self.notify("unsaved changes — use :q! to force quit", severity="warning")
+            return
+        self.exit()
+    
+    # placeholders for later
+    def _action_smart_tab(self): pass
     def _action_clear_tab_stops(self): pass
     def _action_accept_autocomplete(self): pass
-    def _action_execute_command(self): pass
-    
-    # replace char mode 
+
+    # replace char mode
     def _action_replace_char(self):
         self._awaiting_replace = True
 
