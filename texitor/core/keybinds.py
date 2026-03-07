@@ -54,7 +54,7 @@ _DEFAULTS = {
         "ctrl+[":    "enter_normal",
         "backspace": "backspace",
         "enter":     "newline",
-        "tab":       "smart_tab",
+        "tab":       "insert_tab",
         "shift+tab": "clear_tab_stops",
         "ctrl+w":    "delete_word_before",
         "ctrl+u":    "delete_to_line_start",

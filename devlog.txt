@@ -1,0 +1,8 @@
+this is a test of the syntax highlighting, this is kidna half latex half .txt lol
+
+$this is a math environment$
+$\sin{4}$
+this is sin inside of the math env - i will fix so that the highlighting is better inside env
+\[
+    this is inline math
+\]

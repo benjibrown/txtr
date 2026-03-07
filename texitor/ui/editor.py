@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
+import re
 
 from rich.console import Console
 from rich.style import Style
@@ -21,7 +22,6 @@ _CONSOLE = Console(
 )
 
 # color palette (catpuccin rn), will add this to config later so its easy to change
-
 _BG = "#1e1e2e"
 _CURSORLINE = "#252537"
 _LINENUM_CUR = "#cba6f7"   # mauve
@@ -36,6 +36,47 @@ _CURSOR_BLOCK = {
 }
 _CURSOR_INSERT_FG = "#a6e3a1"   # cursor in insert mode
 _SEL_BG = "#45475a"   # surface1 - shows active line
+
+# syntax highlight colors
+_HL_CMD     = "#89b4fa"   # blue   - \commands
+_HL_ENV     = "#a6e3a1"   # green  - env names in \begin{}/\end{}
+_HL_MATH    = "#fab387"   # peach  - $math$
+_HL_COMMENT = "#585b70"   # muted  - % comments
+_HL_BRACE   = "#cba6f7"   # mauve  - { } [ ]
+
+
+def _highlight(line, bg):
+    # tokenise and colour a single line of latex
+    t = Text(no_wrap=True)
+    t.append(line, style=Style(color=_TEXT, bgcolor=bg))
+
+    def col(color, start, end):
+        t.stylize(Style(color=color, bgcolor=bg), start, min(end, len(line)))
+
+    # braces/brackets first (lowest priority — get overridden below where needed)
+    for m in re.finditer(r'[{}\[\]]', line):
+        col(_HL_BRACE, m.start(), m.end())
+
+    # \commands
+    for m in re.finditer(r'\\[a-zA-Z]+\*?', line):
+        col(_HL_CMD, m.start(), m.end())
+
+    # env name inside \begin{name} / \end{name} — override the plain text between braces
+    for m in re.finditer(r'\\(?:begin|end)\{([^}]*)\}', line):
+        name = m.group(1)
+        brace_pos = line.index('{', m.start())
+        col(_HL_ENV, brace_pos + 1, brace_pos + 1 + len(name))
+
+    # math $...$ and $$...$$
+    for m in re.finditer(r'\$\$.*?\$\$|\$[^$\n]*?\$', line):
+        col(_HL_MATH, m.start(), m.end())
+
+    # comments — % to end of line (skip escaped \%)
+    cm = re.search(r'(?<!\\)%', line)
+    if cm:
+        col(_HL_COMMENT, cm.start(), len(line))
+
+    return t
  
 
 class EditorWidget(Widget):
@@ -94,9 +135,8 @@ class EditorWidget(Widget):
             text.append(ln_str, style=Style(color=_LINENUM_OFF))
         text.append(" │ ", style=Style(color=_GUTTER_SEP, bgcolor=cur_bg))
 
-        # content - no syntax highlighting for now
-        content = Text(no_wrap=True)
-        content.append(line, style=Style(color=_TEXT, bgcolor=cur_bg))
+        # syntax highlighted content — visual selection + cursor get layered on top
+        content = _highlight(line, cur_bg)
         
         # highlight visual selection if in visual mode
         anchor = self._app.visual_anchor

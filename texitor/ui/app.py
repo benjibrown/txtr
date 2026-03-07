@@ -377,6 +377,10 @@ class TxtrApp(App):
             return
         self.exit()
     
+    def _action_insert_tab(self):
+        self.buffer.checkpoint()
+        self.buffer.insert("    ")
+
     # placeholders for later
     def _action_smart_tab(self): pass
     def _action_clear_tab_stops(self): pass
