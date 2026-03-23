@@ -84,4 +84,3 @@ class SnippetManager:
         buf.modified = True
         return tabStops
 
-hel
