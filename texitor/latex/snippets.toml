@@ -1,0 +1,176 @@
+# default snippets for txtr
+# will eventually make this autogenerate into .config/txtr/... when installed but for now this is fine
+#
+# sections:
+#   [triggers.*]     - smart inline triggers (auto_expand = true means fires as you type)
+#   [environments.*] - \begin{} templates, triggered by shortcode + tab
+#   [commands.*]     - \command templates with tab stops, triggered by shortcode + tab
+
+
+# name = human readable name for the snippet, used in the menu and for searching TODO - menu + desc?? maybe not 
+# trigger = the text that triggers the snippet, either as you type (if auto_expand = true) or when you press tab after it 
+# body = the text that gets inserted, with | as tab stops (can have multiple), this is where cursor jumps to each tab press 
+
+
+
+# smart inline triggers - these auto expand as you type (non-alphabetic so safe)
+
+# auto expand snippets should be used for commonly used latrex constructs that have a unique trigger and are unlikely to be typed in normal text - backspace will undo the expansion if it was a false positive
+[triggers.frac]
+name = "Fraction"
+trigger = "//"
+body = "\\frac{|}{|}"
+auto_expand = true
+
+[triggers.sup]
+name = "Superscript"
+trigger = "^^"
+body = "^{|}"
+auto_expand = true
+
+[triggers.sub]
+name = "Subscript"
+trigger = "__"
+body = "_{|}"
+auto_expand = true
+
+
+# greek letters — @letter, auto expand as you type
+
+[triggers.alpha]
+name = "Alpha"
+trigger = "@a"
+body = "\\alpha"
+auto_expand = true
+
+[triggers.beta]
+name = "Beta"
+trigger = "@b"
+body = "\\beta"
+auto_expand = true
+
+[triggers.gamma]
+name = "Gamma"
+trigger = "@g"
+body = "\\gamma"
+auto_expand = true
+
+[triggers.delta]
+name = "Delta"
+trigger = "@d"
+body = "\\delta"
+auto_expand = true
+
+[triggers.epsilon]
+name = "Epsilon"
+trigger = "@e"
+body = "\\epsilon"
+auto_expand = true
+
+[triggers.theta]
+name = "Theta"
+trigger = "@t"
+body = "\\theta"
+auto_expand = true
+
+[triggers.lambda]
+name = "Lambda"
+trigger = "@l"
+body = "\\lambda"
+auto_expand = true
+
+[triggers.mu]
+name = "Mu"
+trigger = "@m"
+body = "\\mu"
+auto_expand = true
+
+[triggers.pi]
+name = "Pi"
+trigger = "@p"
+body = "\\pi"
+auto_expand = true
+
+[triggers.sigma]
+name = "Sigma"
+trigger = "@s"
+body = "\\sigma"
+auto_expand = true
+
+[triggers.omega]
+name = "Omega"
+trigger = "@w"
+body = "\\omega"
+auto_expand = true
+
+[triggers.phi]
+name = "Phi"
+trigger = "@f"
+body = "\\phi"
+auto_expand = true
+
+
+# environment snippets — shortcode + tab to expand (won't fire while typing)
+
+[environments.equation]
+name = "Equation"
+trigger = "eq"
+body = "\\begin{equation}\n    |\n\\end{equation}"
+
+[environments.align]
+name = "Align"
+trigger = "ali"
+body = "\\begin{align}\n    | &= | \\\\\\\\\n\\end{align}" # this looks cancner but its just creating newlines and escaping the & and \ characters
+
+[environments.itemize]
+name = "Itemize"
+trigger = "itm"
+body = "\\begin{itemize}\n    \\item |\n\\end{itemize}"
+
+[environments.enumerate]
+name = "Enumerate"
+trigger = "enu"
+body = "\\begin{enumerate}\n    \\item |\n\\end{enumerate}"
+
+[environments.figure]
+name = "Figure"
+trigger = "fig"
+body = "\\begin{figure}[h]\n    \\centering\n    \\includegraphics[width=|\\textwidth]{|}\n    \\caption{|}\n    \\label{fig:|}\n\\end{figure}"
+
+
+# command snippets — shortcode + tab to expand
+# mostly not that much faster but useful still as it avoids {} and \ 
+[commands.sqrt]
+name = "Square Root"
+trigger = "sq"
+body = "\\sqrt{|}"
+
+[commands.text]
+name = "Text in math"
+trigger = "tt"
+body = "\\text{|}"
+
+[commands.vec]
+name = "Vector"
+trigger = "vec"
+body = "\\vec{|}"
+
+[commands.hat]
+name = "Hat"
+trigger = "hat" 
+body = "\\hat{|}"
+
+[commands.bar]
+name = "Bar"
+trigger = "bar"
+body = "\\bar{|}"
+
+[commands.overline]
+name = "Overline"
+trigger = "ovl"
+body = "\\overline{|}"
+
+[commands.tilde]
+name = "Tilde"
+trigger = "tld"
+body = "\\tilde{|}"
