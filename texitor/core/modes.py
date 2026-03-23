@@ -12,15 +12,17 @@ class Mode(Enum):
     VISUAL = auto()
     VISUAL_LINE = auto()
     COMMAND = auto()
+    SEARCH = auto()
 
 
 # Valid transitions: {from_mode: {to_mode, ...}}
 _TRANSITIONS = {
-    Mode.NORMAL: {Mode.INSERT, Mode.VISUAL, Mode.VISUAL_LINE, Mode.COMMAND},
+    Mode.NORMAL: {Mode.INSERT, Mode.VISUAL, Mode.VISUAL_LINE, Mode.COMMAND, Mode.SEARCH},
     Mode.INSERT: {Mode.NORMAL},
-    Mode.VISUAL: {Mode.NORMAL, Mode.COMMAND},
-    Mode.VISUAL_LINE: {Mode.NORMAL, Mode.COMMAND},
+    Mode.VISUAL: {Mode.NORMAL, Mode.COMMAND, Mode.SEARCH},
+    Mode.VISUAL_LINE: {Mode.NORMAL, Mode.COMMAND, Mode.SEARCH},
     Mode.COMMAND: {Mode.NORMAL},
+    Mode.SEARCH: {Mode.NORMAL},
 }
 
 
@@ -42,6 +44,7 @@ class ModeStateMachine:
     def is_insert(self): return self._mode is Mode.INSERT
     def is_visual(self): return self._mode in (Mode.VISUAL, Mode.VISUAL_LINE)
     def is_command(self): return self._mode is Mode.COMMAND
+    def is_search(self): return self._mode is Mode.SEARCH
 
     def __repr__(self):
         return f"ModeStateMachine({self._mode.name})"

@@ -10,6 +10,7 @@ from texitor.core.keybinds import KeybindRegistry
 from texitor.core.modes import Mode, ModeStateMachine
 from texitor.ui.editor import EditorWidget
 from texitor.ui.statusbar import StatusBar
+from texitor.latex.snippets import SnippetManager
 
 
 
@@ -56,9 +57,21 @@ class TxtrApp(App):
         self.keybinds = KeybindRegistry()
         self._yank = []
         self.visual_anchor = None
-        self.cmd_input = ""          # current command line input
+        # search and command input states 
+        self.cmd_input = ""
+        self.searchPattern = ""
+        self.searchMatches = []    # list of (row, col, length) for all matches
+        self.searchIndex = 0       # current match index
+        self.searchBackward = False
         self._pending_key = ""
-        self._awaiting_replace = False  # true after r — next key replaces char
+        self._awaiting_replace = False
+        self.tabStops = []
+        self.tabStopIdx = 0
+        self._justExpanded = False
+        self._revertCount = 0
+
+        self.snippets = SnippetManager()
+        self.snippets.load()
 
         if filename:
             self.buffer.load(filename)
@@ -126,8 +139,10 @@ class TxtrApp(App):
 
         # insert mode - any chars printable 
         if self.msm.is_insert() and event.character and event.character.isprintable():
+            self._justExpanded = False
             self.buffer.checkpoint()
             self.buffer.insert(event.character)
+            self._checkSnippetTrigger()
             self._refresh_all()
 
         # command mode - type into cmd_input, backspace to delete
@@ -138,6 +153,33 @@ class TxtrApp(App):
             elif event.character and event.character.isprintable():
                 self.cmd_input += event.character
                 self.query_one(StatusBar).refresh()
+
+        # search mode - type into searchPattern, backspace to delete
+        elif self.msm.is_search():
+            if key == "backspace":
+                self.searchPattern = self.searchPattern[:-1]
+                self.query_one(StatusBar).refresh()
+            elif event.character and event.character.isprintable():
+                self.searchPattern += event.character
+                self.query_one(StatusBar).refresh()
+
+    def _checkSnippetTrigger(self):
+        buf = self.buffer
+        textBefore = buf.current_line[:buf.cursor_col]
+        trigger, snippet = self.snippets.findAutoTrigger(textBefore)
+        if trigger and snippet:
+            body = snippet.get("body", "")
+            # checkpoint here - buffer currently has the full trigger typed,
+            # so one undo will restore exactly back to it
+            buf.checkpoint()
+            self.tabStops = self.snippets.expandInBuffer(trigger, body, buf)
+            self.tabStopIdx = 0
+            self._justExpanded = True
+            self._revertCount = 1
+            if self.tabStops:
+                row, col = self.tabStops[0]
+                buf.move_to(row, col)
+                self.tabStopIdx = 1
 
     def _is_prefix(self, mode, prefix):
         return any(
@@ -157,6 +199,7 @@ class TxtrApp(App):
         self.visual_anchor = None
         self._pending_key = ""
         self.cmd_input = ""
+        self.searchPattern = ""
         # move to last char 
         buf  = self.buffer
         line = buf.current_line
@@ -194,6 +237,60 @@ class TxtrApp(App):
         self.msm.transition(Mode.COMMAND)
         self._pending_key = ""
         self.cmd_input = ""
+
+    def _action_enter_search(self):
+        self.msm.transition(Mode.SEARCH)
+        self._pending_key = ""
+        self.searchPattern = ""
+        self.searchBackward = False
+
+    def _action_enter_search_back(self):
+        self.msm.transition(Mode.SEARCH)
+        self._pending_key = ""
+        self.searchPattern = ""
+        self.searchBackward = True
+
+    def _action_execute_search(self):
+        self._findMatches(self.searchPattern)
+        if self.searchMatches:
+            if self.searchBackward:
+                self.searchIndex = len(self.searchMatches) - 1
+            else:
+                self.searchIndex = 0
+            self._jumpToMatch(self.searchIndex)
+        self._action_enter_normal()
+
+    def _action_search_next(self):
+        if not self.searchMatches:
+            return
+        self.searchIndex = (self.searchIndex + 1) % len(self.searchMatches)
+        self._jumpToMatch(self.searchIndex)
+
+    def _action_search_prev(self):
+        if not self.searchMatches:
+            return
+        self.searchIndex = (self.searchIndex - 1) % len(self.searchMatches)
+        self._jumpToMatch(self.searchIndex)
+
+    def _findMatches(self, pattern):
+        import re
+        self.searchMatches = []
+        if not pattern:
+            return
+        try:
+            regex = re.compile(pattern)
+        except:
+            return
+        for rowIdx, line in enumerate(self.buffer.lines):
+            for match in regex.finditer(line):
+                self.searchMatches.append((rowIdx, match.start(), match.end() - match.start()))
+
+    def _jumpToMatch(self, matchIdx):
+        if not self.searchMatches or matchIdx >= len(self.searchMatches):
+            return
+        row, col, length = self.searchMatches[matchIdx]
+        self.buffer.move_to(row, col)
+        self._refresh_all()
 
     # i thought about not defining methods for these but maintainbility is peak
     def _action_cursor_left(self): self.buffer.move(dcol=-1)
@@ -252,8 +349,38 @@ class TxtrApp(App):
 
     # more one line functions - so peak for readability
     # if you havent gathered, i write random stuff in these comments.
-    def _action_backspace(self): self.buffer.checkpoint(); self.buffer.backspace()
-    def _action_newline(self): self.buffer.checkpoint(); self.buffer.newline()
+    def _action_backspace(self):
+        # if a snippet just expanded and user wants to undo it, revert the whole trigger
+        if self._justExpanded:
+            self._justExpanded = False
+            self.tabStops = []
+            self.tabStopIdx = 0
+            for _ in range(self._revertCount):
+                self.buffer.undo()
+            self._revertCount = 0
+            return
+        self._justExpanded = False
+        self.buffer.checkpoint()
+        self.buffer.backspace()
+
+    def _action_newline(self):
+        import re
+        self.buffer.checkpoint()
+        line = self.buffer.current_line
+        m = re.search(r'\\begin\{([^}]+)\}', line)
+        if m:
+            envName = m.group(1)
+            indent = Buffer._leading_whitespace(line)
+            self.buffer.newline()
+            # drop cursor on blank indented line, then close env below
+            contentRow = self.buffer.cursor_row
+            contentCol = self.buffer.cursor_col
+            self.buffer.insert("    ")
+            self.buffer.newline()
+            self.buffer.insert(f"{indent}\\end{{{envName}}}")
+            self.buffer.move_to(contentRow, contentCol + 4)
+        else:
+            self.buffer.newline()
     def _action_delete_char(self): self.buffer.checkpoint(); self.buffer.delete_char()
     def _action_undo(self): self.buffer.undo()
     def _action_redo(self): self.buffer.redo()
@@ -378,8 +505,41 @@ class TxtrApp(App):
         self.exit()
     
     def _action_insert_tab(self):
-        self.buffer.checkpoint()
-        self.buffer.insert("    ")
+        buf = self.buffer
+        textBefore = buf.current_line[:buf.cursor_col]
+
+        # new snippet trigger takes priority over stale tab stops from a previous snippet
+        trigger, snippet = self.snippets.findTabTrigger(textBefore)
+        if trigger and snippet:
+            self.buffer.checkpoint()
+            self.tabStops = self.snippets.expandInBuffer(trigger, snippet.get("body", ""), buf)
+            self.tabStopIdx = 0
+            self._justExpanded = True
+            self._revertCount = 1
+            if self.tabStops:
+                row, col = self.tabStops[0]
+                buf.move_to(row, col)
+                self.tabStopIdx = 1
+            return
+
+        # jump to next tab stop if we have leftover ones from the current snippet
+        if self.tabStops and self.tabStopIdx < len(self.tabStops):
+            self._justExpanded = False
+            self._revertCount = 0
+            row, col = self.tabStops[self.tabStopIdx]
+            self.tabStopIdx += 1
+            if self.tabStopIdx >= len(self.tabStops):
+                self.tabStops = []
+                self.tabStopIdx = 0
+            self.buffer.move_to(row, col)
+            return
+
+        # otherwise indent if line is blank before cursor
+        self._justExpanded = False
+        before = buf.current_line[:buf.cursor_col]
+        if not before.strip():
+            buf.checkpoint()
+            buf.insert("    ")
 
     # placeholders for later
     def _action_smart_tab(self): pass

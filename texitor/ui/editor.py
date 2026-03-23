@@ -36,6 +36,9 @@ _CURSOR_BLOCK = {
 }
 _CURSOR_INSERT_FG = "#a6e3a1"   # cursor in insert mode
 _SEL_BG = "#45475a"   # surface1 - shows active line
+_MATCH_BG = "#f9e2af"  # peach bg for search matches
+_MATCH_FG = "#1e1e2e"  # dark text on peach
+# i really do need to make theme config at some point, but for now this is fine
 
 # syntax highlight colors
 _HL_CMD     = "#89b4fa"   # blue   - \commands
@@ -137,6 +140,12 @@ class EditorWidget(Widget):
 
         # syntax highlighted content — visual selection + cursor get layered on top
         content = _highlight(line, cur_bg)
+
+        # highlight search matches on this line
+        if self._app.searchMatches:
+            for row, col, length in self._app.searchMatches:
+                if row == line_idx:
+                    content.stylize(Style(color=_MATCH_FG, bgcolor=_MATCH_BG), col, col + length)
         
         # highlight visual selection if in visual mode
         anchor = self._app.visual_anchor

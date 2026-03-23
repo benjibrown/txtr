@@ -1,5 +1,5 @@
 # statusbar - mode pill, filename, position
-# also doubles as the command line input bar when in COMMAND mode
+# also doubles as input bar for COMMAND and SEARCH modes
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
@@ -28,12 +28,14 @@ _MODE_STYLE = {
     Mode.VISUAL:      ("VISUAL",      "#1e1e2e", "#cba6f7"),
     Mode.VISUAL_LINE: ("VISUAL LINE", "#1e1e2e", "#cba6f7"),
     Mode.COMMAND:     ("COMMAND",     "#1e1e2e", "#f38ba8"),
+    Mode.SEARCH:      ("SEARCH",      "#1e1e2e", "#89b4fa"),
 }
 
 _BAR_BG = "#181825"
 _BAR_FG = "#cdd6f4"
 _POS_BG = "#313244"
 _CMD_FG = "#f38ba8"
+_SEARCH_FG = "#89b4fa"
 
 
 class StatusBar(Widget):
@@ -59,12 +61,21 @@ class StatusBar(Widget):
         msm = self._msm
         width = self.size.width
 
-        # command mode - render as input bar instead
+        # command mode - render as input bar
         if msm.mode is Mode.COMMAND:
             text = Text(no_wrap=True)
             text.append(":", style=Style(color=_CMD_FG, bgcolor=_BAR_BG, bold=True))
             text.append(self._app.cmd_input, style=Style(color=_BAR_FG, bgcolor=_BAR_BG))
-            text.append(" ", style=Style(bgcolor=_CMD_FG))  # cursor block
+            text.append(" ", style=Style(bgcolor=_CMD_FG))
+            return Strip(list(text.render(_CONSOLE))).adjust_cell_length(width)
+
+        # search mode - render as search bar
+        if msm.mode is Mode.SEARCH:
+            text = Text(no_wrap=True)
+            prompt = "? " if self._app.searchBackward else "/ "
+            text.append(prompt, style=Style(color=_SEARCH_FG, bgcolor=_BAR_BG, bold=True))
+            text.append(self._app.searchPattern, style=Style(color=_BAR_FG, bgcolor=_BAR_BG))
+            text.append(" ", style=Style(bgcolor=_SEARCH_FG))
             return Strip(list(text.render(_CONSOLE))).adjust_cell_length(width)
 
         label, fg, bg = _MODE_STYLE.get(msm.mode, ("???", _BAR_FG, _BAR_BG))

@@ -37,6 +37,10 @@ _DEFAULTS = {
         "v":       "enter_visual",
         "V":       "enter_visual_line",
         ":":       "enter_command",
+        "/":       "enter_search",
+        "?":       "enter_search_back",
+        "n":       "search_next",
+        "N":       "search_prev",
         # edit
         "d d":     "delete_line",
         "y y":     "yank_line",
@@ -89,6 +93,10 @@ _DEFAULTS = {
     Mode.COMMAND: {
         "escape": "enter_normal",
         "enter":  "execute_command",
+    },
+    Mode.SEARCH: {
+        "escape": "enter_normal",
+        "enter":  "execute_search",
     },
 }
 # TODO - add the rest later
