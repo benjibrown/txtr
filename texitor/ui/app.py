@@ -8,9 +8,12 @@ from textual.events import Key
 from texitor.core.buffer import Buffer
 from texitor.core.keybinds import KeybindRegistry
 from texitor.core.modes import Mode, ModeStateMachine
+from texitor.core.firstrun import ensureUserConfig
 from texitor.ui.editor import EditorWidget
 from texitor.ui.statusbar import StatusBar
+from texitor.ui.autocomplete import AutocompleteWidget
 from texitor.latex.snippets import SnippetManager
+from texitor.latex.completer import LatexCompleter
 
 
 
@@ -20,7 +23,9 @@ class TxtrApp(App):
     TITLE = "txtr" # aka texitor but who wants to type allat
     ENABLE_COMMAND_PALETTE = False
     CSS = """
-    Screen { }
+    Screen {
+        layers: base overlay;
+    }
 
     ToastRack {
         align: right top;
@@ -48,6 +53,13 @@ class TxtrApp(App):
         border-left: tall #89b4fa;
         color: #cdd6f4;
     }
+
+    AutocompleteWidget {
+        layer: overlay;
+        width: 36;
+        height: auto;
+        display: none;
+    }
     """
 
     def __init__(self, filename=None):
@@ -70,8 +82,19 @@ class TxtrApp(App):
         self._justExpanded = False
         self._revertCount = 0
 
+        # autocomplete state
+        self.acItems = []    # list of (cmd, desc) currently shown
+        self.acIndex = 0     # selected item index
+        self.acActive = False  # whether the popup is open
+        self.acPrefix = ""   # the \prefix that triggered it
+
         self.snippets = SnippetManager()
+        self.completer = LatexCompleter()
+
+        # seed ~/.config/txtr/ with defaults on first run, then load
+        ensureUserConfig()
         self.snippets.load()
+        self.completer.load()
 
         if filename:
             self.buffer.load(filename)
@@ -79,6 +102,7 @@ class TxtrApp(App):
     # layout of app (editor + bar)
     def compose(self):
         yield EditorWidget(self.buffer, self.msm, self)
+        yield AutocompleteWidget(self)
         yield StatusBar(self.buffer, self.msm, self)
 
     # key handling
@@ -143,6 +167,7 @@ class TxtrApp(App):
             self.buffer.checkpoint()
             self.buffer.insert(event.character)
             self._checkSnippetTrigger()
+            self._updateAutocomplete()
             self._refresh_all()
 
         # command mode - type into cmd_input, backspace to delete
@@ -192,9 +217,99 @@ class TxtrApp(App):
         editor.scroll_to_cursor()
         editor.refresh()
         self.query_one(StatusBar).refresh()
+        if self.acActive:
+            self._refreshAutocomplete()
+
+    # autocomplete helpers
+    # so peak - proud of this frfr
+    def _updateAutocomplete(self):
+        # called after every insert/backspace - opens or updates the popup
+        textBefore = self.buffer.current_line[:self.buffer.cursor_col]
+
+        # find the \prefix at the end of the line (eg \fra, \alp)
+        idx = len(textBefore) - 1
+        while idx >= 0 and (textBefore[idx].isalpha() or textBefore[idx] == "\\"):
+            if textBefore[idx] == "\\":
+                prefix = textBefore[idx:]
+                items = self.completer.getCompletions(prefix)
+                if items:
+                    self.acItems = items
+                    self.acIndex = 0
+                    self.acPrefix = prefix
+                    self.acActive = True
+                    ac = self.query_one(AutocompleteWidget)
+                    ac.resetScroll()
+                    self._positionAutocomplete()
+                    ac.display = True
+                    return
+                break
+            idx -= 1
+
+        # nothing to show - dismiss
+        self._dismissAutocomplete()
+
+    def _positionAutocomplete(self):
+        # position the popup just below the cursor in the editor
+        editor = self.query_one(EditorWidget)
+        buf = self.buffer
+        ac = self.query_one(AutocompleteWidget)
+
+        # figure out the cursor's screen position
+        gutterWidth = max(len(str(buf.line_count)), 2) + 3  # "NNN │ "
+        screenRow = buf.cursor_row - editor._scroll_top
+        screenCol = gutterWidth + buf.cursor_col - len(self.acPrefix)
+
+        # clamp so it doesn't go off-screen
+        editorHeight = editor.size.height
+        popupHeight = min(len(self.acItems), 8)
+        row = screenRow + 1
+        if row + popupHeight > editorHeight:
+            row = max(0, screenRow - popupHeight)
+
+        col = max(0, screenCol)
+
+        ac.styles.offset = (col, row)
+
+    def _refreshAutocomplete(self):
+        ac = self.query_one(AutocompleteWidget)
+        self._positionAutocomplete()
+        ac.refresh()
+
+    def _dismissAutocomplete(self):
+        self.acActive = False
+        self.acItems = []
+        self.acIndex = 0
+        self.acPrefix = ""
+        try:
+            ac = self.query_one(AutocompleteWidget)
+            ac.display = False
+            ac.refresh()
+        except Exception:
+            pass  # widget not mounted yet
+
+    def _confirmAutocomplete(self):
+        # insert the selected completion, replacing the prefix already typed
+        if not self.acActive or not self.acItems:
+            return
+        cmd, _ = self.acItems[self.acIndex]
+        buf = self.buffer
+        col = buf.cursor_col
+        # remove the prefix already in the buffer
+        line = buf.lines[buf.cursor_row]
+        buf.lines[buf.cursor_row] = line[:col - len(self.acPrefix)] + line[col:]
+        buf.cursor_col = col - len(self.acPrefix)
+        buf.checkpoint()
+        buf.insert(cmd)
+        buf.modified = True
+        self._dismissAutocomplete()
 
     # mode trans 
     def _action_enter_normal(self):
+        # if autocomplete is open, escape just dismisses it (stay in insert)
+        if self.acActive:
+            self._dismissAutocomplete()
+            self._refresh_all()
+            return
         self.msm.transition(Mode.NORMAL)
         self.visual_anchor = None
         self._pending_key = ""
@@ -358,12 +473,19 @@ class TxtrApp(App):
             for _ in range(self._revertCount):
                 self.buffer.undo()
             self._revertCount = 0
+            self._dismissAutocomplete()
             return
         self._justExpanded = False
         self.buffer.checkpoint()
         self.buffer.backspace()
+        self._updateAutocomplete()
 
     def _action_newline(self):
+        # if autocomplete is open, enter confirms the selection
+        if self.acActive and self.acItems:
+            self._confirmAutocomplete()
+            self._refresh_all()
+            return
         import re
         self.buffer.checkpoint()
         line = self.buffer.current_line
@@ -505,6 +627,12 @@ class TxtrApp(App):
         self.exit()
     
     def _action_insert_tab(self):
+        # autocomplete popup is open - tab cycles down through items
+        if self.acActive and self.acItems:
+            self.acIndex = (self.acIndex + 1) % len(self.acItems)
+            self._refreshAutocomplete()
+            return
+
         buf = self.buffer
         textBefore = buf.current_line[:buf.cursor_col]
 
@@ -543,8 +671,14 @@ class TxtrApp(App):
 
     # placeholders for later
     def _action_smart_tab(self): pass
-    def _action_clear_tab_stops(self): pass
-    def _action_accept_autocomplete(self): pass
+    def _action_clear_tab_stops(self):
+        # shift+tab — dismiss autocomplete or just clear tab stops
+        self.tabStops = []
+        self.tabStopIdx = 0
+        self._dismissAutocomplete()
+    def _action_accept_autocomplete(self):
+        # ctrl+space — confirm selected completion
+        self._confirmAutocomplete()
 
     # replace char mode
     def _action_replace_char(self):
