@@ -1,0 +1,47 @@
+# txtr latex command completions
+# each section is a category - just for organisation, all commands are treated equally
+# format: "\\command" = "description"
+# edit this file to add, remove, or change completions
+# this file lives at ~/.config/txtr/commands.toml - delete it to regenerate from defaults
+
+
+[math_operators]
+"\\frac"     = "fraction"
+"\\sqrt"     = "square root"
+"\\sum"      = "summation"
+"\\prod"     = "product"
+"\\int"      = "integral"
+"\\oint"     = "contour integral"
+"\\iint"     = "double integral"
+"\\iiint"    = "triple integral"
+"\\lim"      = "limit"
+"\\inf"      = "infimum"
+"\\sup"      = "supremum"
+"\\max"      = "maximum"
+"\\min"      = "minimum"
+"\\log"      = "logarithm"
+"\\ln"       = "natural log"
+"\\exp"      = "exponential"
+"\\sin"      = "sine"
+"\\cos"      = "cosine"
+"\\tan"      = "tangent"
+"\\arcsin"   = "arcsine"
+"\\arccos"   = "arccosine"
+"\\arctan"   = "arctangent"
+"\\sinh"     = "hyperbolic sine"
+"\\cosh"     = "hyperbolic cosine"
+"\\tanh"     = "hyperbolic tangent"
+"\\partial"  = "partial derivative"
+"\\nabla"    = "nabla / gradient"
+"\\infty"    = "infinity"
+"\\pm"       = "plus-minus"
+"\\mp"       = "minus-plus"
+"\\times"    = "multiplication"
+"\\cdot"     = "dot product"
+"\\div"      = "division"
+"\\oplus"    = "direct sum"
+"\\otimes"   = "tensor product"
+"\\circ"     = "composition"
+"\\bullet"   = "bullet"
+
+
