@@ -38,7 +38,7 @@ _DEFAULTS = {
         "V":       "enter_visual_line",
         ":":       "enter_command",
         "/":       "enter_search",
-        "?":       "enter_search_back",
+        "?":       "open_help",
         "n":       "search_next",
         "N":       "search_prev",
         # edit
