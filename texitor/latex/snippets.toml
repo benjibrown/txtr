@@ -109,6 +109,106 @@ trigger = "@f"
 body = "\\phi"
 auto_expand = true
 
+[triggers.xi]
+name = "Xi"
+trigger = "@x"
+body = "\\xi"
+auto_expand = true
+
+[triggers.eta]
+name = "Eta"
+trigger = "@h"
+body = "\\eta"
+auto_expand = true
+
+[triggers.nu]
+name = "Nu"
+trigger = "@n"
+body = "\\nu"
+auto_expand = true
+
+[triggers.rho]
+name = "Rho"
+trigger = "@r"
+body = "\\rho"
+auto_expand = true
+
+[triggers.tau]
+name = "Tau"
+trigger = "@u"
+body = "\\tau"
+auto_expand = true
+
+[triggers.chi]
+name = "Chi"
+trigger = "@c"
+body = "\\chi"
+auto_expand = true
+
+[triggers.psi]
+name = "Psi"
+trigger = "@y"
+body = "\\psi"
+auto_expand = true
+
+
+# uppercase greek — @Uppercase letter
+
+[triggers.Gamma]
+name = "Gamma (upper)"
+trigger = "@G"
+body = "\\Gamma"
+auto_expand = true
+
+[triggers.Delta]
+name = "Delta (upper)"
+trigger = "@D"
+body = "\\Delta"
+auto_expand = true
+
+[triggers.Sigma]
+name = "Sigma (upper)"
+trigger = "@S"
+body = "\\Sigma"
+auto_expand = true
+
+[triggers.Lambda]
+name = "Lambda (upper)"
+trigger = "@L"
+body = "\\Lambda"
+auto_expand = true
+
+[triggers.Omega]
+name = "Omega (upper)"
+trigger = "@O"
+body = "\\Omega"
+auto_expand = true
+
+[triggers.Theta]
+name = "Theta (upper)"
+trigger = "@T"
+body = "\\Theta"
+auto_expand = true
+
+[triggers.Pi]
+name = "Pi (upper)"
+trigger = "@P"
+body = "\\Pi"
+auto_expand = true
+
+[triggers.Phi]
+name = "Phi (upper)"
+trigger = "@F"
+body = "\\Phi"
+auto_expand = true
+
+[triggers.Psi]
+name = "Psi (upper)"
+trigger = "@Y"
+body = "\\Psi"
+auto_expand = true
+
+
 
 # environment snippets — shortcode + tab to expand (won't fire while typing)
 
