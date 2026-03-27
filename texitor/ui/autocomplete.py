@@ -43,6 +43,29 @@ class AutocompleteWidget(Widget):
         super().__init__()
         self._app = app
 
+    def on_mouse_scroll_down(self, event):
+        if not self._app.acActive or not self._app.acItems:
+            return
+        self._app.acIndex = (self._app.acIndex + 1) % len(self._app.acItems)
+        self._app._refreshAutocomplete()
+
+    def on_mouse_scroll_up(self, event):
+        if not self._app.acActive or not self._app.acItems:
+            return
+        self._app.acIndex = (self._app.acIndex - 1) % len(self._app.acItems)
+        self._app._refreshAutocomplete()
+
+    def on_click(self, event):
+        # click an item to confirm it
+        if not self._app.acActive or not self._app.acItems:
+            return
+        scrollTop = getattr(self, "_acScrollTop", 0)
+        clickedIdx = scrollTop + event.y
+        if clickedIdx < len(self._app.acItems):
+            self._app.acIndex = clickedIdx
+            self._app._confirmAutocomplete()
+            self._app._refresh_all()
+
     def get_content_height(self, container, viewport, width):
         count = min(len(self._app.acItems), MAX_VISIBLE)
         return max(count, 1)
