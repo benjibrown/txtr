@@ -18,29 +18,33 @@ _CONSOLE = Console(width=500, no_color=False, highlight=False, markup=False, emo
 
 # catppuccin colours
 _BG          = "#1e1e2e"
-_BG_HEADER   = "#181825"
-_BG_ALT      = "#181825"   # alternate row bg for readability
-_FG          = "#cdd6f4"
+_BG_ALT      = "#181825"
 _FG_DIM      = "#6c7086"
 _FG_KEY      = "#89b4fa"   # blue - keybind / trigger
-_FG_ACTION   = "#cdd6f4"   # text - action description
-_FG_SECTION  = "#cba6f7"   # mauve - section header
-_FG_TAB_ACT  = "#1e1e2e"   # active tab fg
-_BG_TAB_ACT  = "#89b4fa"   # active tab bg
+_FG_ACTION   = "#cdd6f4"
+_FG_SECTION  = "#cba6f7"   # mauve - section headers
+_FG_TAB_ACT  = "#1e1e2e"
+_BG_TAB_ACT  = "#89b4fa"
 _FG_TAB_IDLE = "#6c7086"
 _BG_TAB_IDLE = "#313244"
-_FG_SNIP_TRIG = "#a6e3a1"  # green - snippet trigger
-_FG_SNIP_BODY = "#fab387"  # peach - snippet body preview
-_FG_AUTO_BADGE = "#f9e2af" # yellow - auto badge
+_BORDER      = "#45475a"   # surface1 - border lines
+_TITLE_FG    = "#cba6f7"   # mauve - "txtr help" title
 
-# extra sections registered by plugins - list of (title, callable -> list of rows)
-# each row is either ("header", label) or ("row", left_col, right_col)
+# box drawing chars
+_TL = "╭"
+_TR = "╮"
+_BL = "╰"
+_BR = "╯"
+_H  = "─"
+_V  = "│"
+
+# plugin sections registered before widget mounts
 _PLUGIN_SECTIONS = []
 
 
 def registerSection(title, rowsFn):
     # plugins call this to add a section to the help menu
-    # rowsFn() should return a list of ("header", label) or ("row", left, right)
+    # rowsFn() returns list of ("header", label) or ("row", left, right)
     _PLUGIN_SECTIONS.append((title, rowsFn))
 
 
@@ -60,31 +64,24 @@ def _keybindRows(keybinds):
             continue
         rows.append(("header", modeLabels[mode]))
         for key, action in sorted(binds.items()):
-            # make the action name a bit more readable
-            pretty = action.replace("_", " ")
-            rows.append(("row", key, pretty))
+            rows.append(("row", key, action.replace("_", " ")))
     return rows
 
 
 def _snippetRows(snippets):
     rows = []
-    auto = {t: s for t, s in snippets._autoTriggers.items()}
-    tab  = {t: s for t, s in snippets._tabTriggers.items()}
-
+    auto = dict(snippets._autoTriggers)
+    tab  = dict(snippets._tabTriggers)
     if auto:
         rows.append(("header", "Auto triggers  (fire as you type)"))
         for trigger, snip in sorted(auto.items()):
             body = snip.get("body", "").replace("\n", " ↵ ")
-            label = f"{snip.get('name', trigger)}  →  {body}"
-            rows.append(("row", trigger, label))
-
+            rows.append(("row", trigger, f"{snip.get('name', trigger)}  →  {body}"))
     if tab:
         rows.append(("header", "Tab triggers  (shortcode + tab)"))
         for trigger, snip in sorted(tab.items()):
             body = snip.get("body", "").replace("\n", " ↵ ")
-            label = f"{snip.get('name', trigger)}  →  {body}"
-            rows.append(("row", trigger, label))
-
+            rows.append(("row", trigger, f"{snip.get('name', trigger)}  →  {body}"))
     return rows
 
 
@@ -94,34 +91,48 @@ class HelpMenu(Widget):
     HelpMenu {
         layer: overlay;
         display: none;
+        width: 84;
+        height: 26;
     }
     """
 
     def __init__(self, app):
         super().__init__()
         self._app = app
-        # sections: list of (title, rowsFn)
-        # rowsFn is called each time the menu opens so it's always fresh
         self._sections = [
-            ("Keybinds",  lambda: _keybindRows(self._app.keybinds)),
-            ("Snippets",  lambda: _snippetRows(self._app.snippets)),
+            ("Keybinds", lambda: _keybindRows(self._app.keybinds)),
+            ("Snippets", lambda: _snippetRows(self._app.snippets)),
         ]
-        # add any plugin sections registered before the widget was created
         self._sections.extend(_PLUGIN_SECTIONS)
         self._activeTab = 0
         self._scrollTop = 0
+        self._rows = []
+        self._tabRanges = []
 
     def registerSection(self, title, rowsFn):
-        # add a section at runtime (eg from a plugin loaded after startup)
         self._sections.append((title, rowsFn))
 
     def open(self):
         self._activeTab = 0
         self._scrollTop = 0
         self._rows = self._buildRows()
-        self._tabRanges = []  # [(start_col, end_col, tab_idx)] - set during render
+        self._tabRanges = []
+        self._center()
         self.display = True
         self.refresh()
+
+    def _center(self):
+        # calculate offset to center the widget on screen
+        screenW = self.app.size.width
+        screenH = self.app.size.height
+        x = max(0, (screenW - 84) // 2)
+        y = max(0, (screenH - 26) // 2)
+        self.styles.offset = (x, y)
+
+    def on_resize(self, event):
+        # re-center if terminal is resized while open
+        if self.display:
+            self._center()
 
     def close(self):
         self.display = False
@@ -134,7 +145,8 @@ class HelpMenu(Widget):
         self.refresh()
 
     def scrollDown(self, n=1):
-        maxScroll = max(0, len(self._rows) - (self.size.height - 2))
+        # content area is height - 4 (top border + tab bar + footer + bottom border)
+        maxScroll = max(0, len(self._rows) - (self.size.height - 4))
         self._scrollTop = min(self._scrollTop + n, maxScroll)
         self.refresh()
 
@@ -142,7 +154,6 @@ class HelpMenu(Widget):
         self._scrollTop = max(0, self._scrollTop - n)
         self.refresh()
 
-    # mouse support
     def on_mouse_scroll_down(self, event):
         self.scrollDown(3)
 
@@ -150,9 +161,9 @@ class HelpMenu(Widget):
         self.scrollUp(3)
 
     def on_click(self, event):
-        # click on tab bar (y == 0) switches tabs
-        if event.y == 0:
-            for start, end, idx in getattr(self, "_tabRanges", []):
+        # y=1 is the tab bar row (inside the top border)
+        if event.y == 1:
+            for start, end, idx in self._tabRanges:
                 if start <= event.x < end:
                     self._activeTab = idx
                     self._scrollTop = 0
@@ -164,75 +175,132 @@ class HelpMenu(Widget):
         _, rowsFn = self._sections[self._activeTab]
         return rowsFn()
 
-    # ── rendering ──────────────────────────────────────────────────────────────
+    # tuff as hell
 
     def get_content_height(self, container, viewport, width):
-        return viewport.height
+        return self.styles.height.value if self.styles.height else 26
 
     def render_line(self, y):
         width = self.size.width
         height = self.size.height
+        inner = width - 2  # content width between borders
 
         if y == 0:
-            return self._renderTabBar(width)
+            return self._renderTopBorder(width, inner)
+        if y == 1:
+            return self._renderTabBar(width, inner)
+        if y == 2:
+            return self._renderDivider(width, inner)
+        if y == height - 2:
+            return self._renderDivider(width, inner)
         if y == height - 1:
-            return self._renderFooter(width)
+            return self._renderFooter(width, inner)
+        if y == height:
+            return self._renderBottomBorder(width, inner)
 
         # content rows
-        contentY = y - 1
+        contentY = y - 3
         rowIdx = self._scrollTop + contentY
-        rows = getattr(self, "_rows", [])
-
-        if rowIdx >= len(rows):
-            t = Text(no_wrap=True)
-            t.append(" " * width, style=Style(bgcolor=_BG))
-            return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
-
-        kind = rows[rowIdx][0]
+        if rowIdx >= len(self._rows):
+            return self._renderBlankRow(width, inner)
+        kind = self._rows[rowIdx][0]
         if kind == "header":
-            return self._renderHeader(rows[rowIdx][1], width)
-        return self._renderRow(rows[rowIdx][1], rows[rowIdx][2], rowIdx, width)
+            return self._renderHeader(self._rows[rowIdx][1], width, inner)
+        return self._renderRow(self._rows[rowIdx][1], self._rows[rowIdx][2], rowIdx, width, inner)
 
-    def _renderTabBar(self, width):
+    def _renderTopBorder(self, width, inner):
+        title = " txtr help "
         t = Text(no_wrap=True)
-        t.append(" ", style=Style(bgcolor=_BG_HEADER))
-        col = 1
+        borderStyle = Style(color=_BORDER, bgcolor=_BG)
+        t.append(_TL, style=borderStyle)
+        t.append(_H, style=borderStyle)
+        t.append(title, style=Style(color=_TITLE_FG, bgcolor=_BG, bold=True))
+        remaining = inner - 1 - len(title)
+        t.append(_H * max(0, remaining), style=borderStyle)
+        t.append(_TR, style=borderStyle)
+        return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
+
+    def _renderTabBar(self, width, inner):
+        t = Text(no_wrap=True)
+        borderStyle = Style(color=_BORDER, bgcolor=_BG)
+        t.append(_V, style=borderStyle)
+        t.append(" ", style=Style(bgcolor=_BG))
+
+        # track click regions - offset by 1 for the left border char
         self._tabRanges = []
+        col = 2
         for i, (title, _) in enumerate(self._sections):
-            tabWidth = len(title) + 2  # " title "
+            tabWidth = len(title) + 2
             self._tabRanges.append((col, col + tabWidth, i))
-            col += tabWidth + 1  # +1 for the gap space after
+            col += tabWidth + 1
             if i == self._activeTab:
                 t.append(f" {title} ", style=Style(color=_FG_TAB_ACT, bgcolor=_BG_TAB_ACT, bold=True))
             else:
                 t.append(f" {title} ", style=Style(color=_FG_TAB_IDLE, bgcolor=_BG_TAB_IDLE))
-            t.append(" ", style=Style(bgcolor=_BG_HEADER))
-        # fill rest of bar
-        t.append(" " * width, style=Style(bgcolor=_BG_HEADER))
+            t.append(" ", style=Style(bgcolor=_BG))
+
+        # fill to right border
+        t.append(" " * inner, style=Style(bgcolor=_BG))
+        t.append(_V, style=borderStyle)
         return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
 
-    def _renderHeader(self, label, width):
+    def _renderDivider(self, width, inner):
         t = Text(no_wrap=True)
-        t.append(f"  {label}", style=Style(color=_FG_SECTION, bgcolor=_BG_ALT, bold=True))
-        t.append(" " * width, style=Style(bgcolor=_BG_ALT))
+        borderStyle = Style(color=_BORDER, bgcolor=_BG)
+        t.append("├", style=borderStyle)
+        t.append(_H * inner, style=borderStyle)
+        t.append("┤", style=borderStyle)
         return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
 
-    def _renderRow(self, left, right, rowIdx, width):
+    def _renderBlankRow(self, width, inner):
+        t = Text(no_wrap=True)
+        borderStyle = Style(color=_BORDER, bgcolor=_BG)
+        t.append(_V, style=borderStyle)
+        t.append(" " * inner, style=Style(bgcolor=_BG))
+        t.append(_V, style=borderStyle)
+        return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
+
+    def _renderHeader(self, label, width, inner):
+        t = Text(no_wrap=True)
+        borderStyle = Style(color=_BORDER, bgcolor=_BG)
+        t.append(_V, style=borderStyle)
+        content = f"  {label}"
+        t.append(content, style=Style(color=_FG_SECTION, bgcolor=_BG, bold=True))
+        t.append(" " * max(0, inner - len(content)), style=Style(bgcolor=_BG))
+        t.append(_V, style=borderStyle)
+        return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
+
+    def _renderRow(self, left, right, rowIdx, width, inner):
         bg = _BG_ALT if rowIdx % 2 == 0 else _BG
+        borderStyle = Style(color=_BORDER, bgcolor=bg)
         t = Text(no_wrap=True)
+        t.append(_V, style=borderStyle)
         t.append("  ", style=Style(bgcolor=bg))
-        t.append(f"{left:<14}", style=Style(color=_FG_KEY, bgcolor=bg, bold=True))
+        keyCol = f"{left:<14}"
+        t.append(keyCol, style=Style(color=_FG_KEY, bgcolor=bg, bold=True))
         t.append("  ", style=Style(bgcolor=bg))
-        # trim right col to fit
-        available = width - 18
+        available = inner - len(keyCol) - 4
         trimmed = right[:available] if available > 0 else ""
         t.append(trimmed, style=Style(color=_FG_ACTION, bgcolor=bg))
-        t.append(" " * width, style=Style(bgcolor=bg))
+        t.append(" " * inner, style=Style(bgcolor=bg))  # flood fill then clamp
+        t.append(_V, style=Style(color=_BORDER, bgcolor=bg))
         return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
 
-    def _renderFooter(self, width):
-        hints = "  tab  next tab    j/k  scroll    q / esc  close"
+    def _renderFooter(self, width, inner):
+        hints = "  tab next tab   j/k scroll   q / esc close"
         t = Text(no_wrap=True)
-        t.append(hints, style=Style(color=_FG_DIM, bgcolor=_BG_HEADER))
-        t.append(" " * width, style=Style(bgcolor=_BG_HEADER))
+        borderStyle = Style(color=_BORDER, bgcolor=_BG)
+        t.append(_V, style=borderStyle)
+        t.append(hints, style=Style(color=_FG_DIM, bgcolor=_BG))
+        t.append(" " * max(0, inner - len(hints)), style=Style(bgcolor=_BG))
+        t.append(_V, style=borderStyle)
         return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
+
+    def _renderBottomBorder(self, width, inner):
+        t = Text(no_wrap=True)
+        borderStyle = Style(color=_BORDER, bgcolor=_BG)
+        t.append(_BL, style=borderStyle)
+        t.append(_H * inner, style=borderStyle)
+        t.append(_BR, style=borderStyle)
+        return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
+
