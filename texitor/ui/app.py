@@ -12,6 +12,7 @@ from texitor.core.firstrun import ensureUserConfig
 from texitor.ui.editor import EditorWidget
 from texitor.ui.statusbar import StatusBar
 from texitor.ui.autocomplete import AutocompleteWidget
+from texitor.ui.helpmenu import HelpMenu
 from texitor.latex.snippets import SnippetManager
 from texitor.latex.completer import LatexCompleter
 
@@ -60,6 +61,13 @@ class TxtrApp(App):
         height: auto;
         display: none;
     }
+
+    HelpMenu {
+        layer: overlay;
+        width: 100%;
+        height: 100%;
+        display: none;
+    }
     """
 
     def __init__(self, filename=None):
@@ -83,10 +91,13 @@ class TxtrApp(App):
         self._revertCount = 0
 
         # autocomplete state
-        self.acItems = []    # list of (cmd, desc) currently shown
-        self.acIndex = 0     # selected item index
-        self.acActive = False  # whether the popup is open
-        self.acPrefix = ""   # the \prefix that triggered it
+        self.acItems = []
+        self.acIndex = 0
+        self.acActive = False
+        self.acPrefix = ""
+
+        # help menu state
+        self.helpOpen = False
 
         self.snippets = SnippetManager()
         self.completer = LatexCompleter()
@@ -103,6 +114,7 @@ class TxtrApp(App):
     def compose(self):
         yield EditorWidget(self.buffer, self.msm, self)
         yield AutocompleteWidget(self)
+        yield HelpMenu(self)
         yield StatusBar(self.buffer, self.msm, self)
 
     # key handling
@@ -111,6 +123,22 @@ class TxtrApp(App):
         event.prevent_default()
 
         key = event.key
+
+        # help menu swallows all keys while open
+        if self.helpOpen:
+            if key in ("q", "escape"):
+                self._action_close_help()
+            elif key == "tab":
+                self.query_one(HelpMenu).nextTab()
+            elif key in ("j", "down"):
+                self.query_one(HelpMenu).scrollDown()
+            elif key in ("k", "up"):
+                self.query_one(HelpMenu).scrollUp()
+            elif key == "ctrl+d":
+                self.query_one(HelpMenu).scrollDown(8)
+            elif key == "ctrl+u":
+                self.query_one(HelpMenu).scrollUp(8)
+            return
 
         # replace_char mode
         if self._awaiting_replace:
@@ -387,6 +415,15 @@ class TxtrApp(App):
         self.searchIndex = (self.searchIndex - 1) % len(self.searchMatches)
         self._jumpToMatch(self.searchIndex)
 
+    def _action_open_help(self):
+        self.helpOpen = True
+        self.query_one(HelpMenu).open()
+
+    def _action_close_help(self):
+        self.helpOpen = False
+        self.query_one(HelpMenu).close()
+        self._refresh_all()
+
     def _findMatches(self, pattern):
         import re
         self.searchMatches = []
@@ -601,6 +638,15 @@ class TxtrApp(App):
             self.exit()
         elif cmd == "q!":
             self.exit()
+        elif cmd in ("help", "h"):
+            self._action_open_help()
+        elif cmd in ("snippets", "snips"):
+            # open help menu straight to the snippets tab
+            self.helpOpen = True
+            menu = self.query_one(HelpMenu)
+            menu.open()
+            # advance to snippets tab (index 1)
+            menu.nextTab()
         elif cmd.startswith("e "):
             path = cmd[2:].strip()
             if path:
