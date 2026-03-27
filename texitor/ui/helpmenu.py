@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from texitor.ui.app import TxtrApp
 
 _CONSOLE = Console(width=500, no_color=False, highlight=False, markup=False, emoji=False)
-
+# TODO - dont hardcode colors, theme system or smth, but for now just make it look nice with catppuccin 
 # catppuccin colours
 _BG          = "#1e1e2e"
 _BG_ALT      = "#181825"
@@ -270,6 +270,8 @@ class HelpMenu(Widget):
         t.append(_V, style=borderStyle)
         return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
 
+
+    # not a single new line lmao
     def _renderRow(self, left, right, rowIdx, width, inner):
         bg = _BG_ALT if rowIdx % 2 == 0 else _BG
         borderStyle = Style(color=_BORDER, bgcolor=bg)
@@ -285,7 +287,8 @@ class HelpMenu(Widget):
         t.append(" " * inner, style=Style(bgcolor=bg))  # flood fill then clamp
         t.append(_V, style=Style(color=_BORDER, bgcolor=bg))
         return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
-
+    
+    # hints for footer cos people forget lol
     def _renderFooter(self, width, inner):
         hints = "  tab next tab   j/k scroll   q / esc close"
         t = Text(no_wrap=True)
