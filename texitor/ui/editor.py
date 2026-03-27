@@ -108,6 +108,32 @@ class EditorWidget(Widget):
         elif row >= self._scroll_top + height:
             self._scroll_top = row - height + 1
 
+    def on_mouse_scroll_down(self, event):
+        buf = self._buf
+        step = 3
+        self._scroll_top = min(self._scroll_top + step, max(0, buf.line_count - 1))
+        self.refresh()
+
+    def on_mouse_scroll_up(self, event):
+        self._scroll_top = max(0, self._scroll_top - 3)
+        self.refresh()
+
+    def on_click(self, event):
+        # click moves cursor - need to account for gutter width
+        buf = self._buf
+        ln_w = max(len(str(buf.line_count)), 2)
+        gutterWidth = ln_w + 3  # "NNN │ "
+        clickedRow = self._scroll_top + event.y
+        clickedCol = max(0, event.x - gutterWidth)
+        if clickedRow >= buf.line_count:
+            return
+        buf.cursor_row = clickedRow
+        buf.cursor_col = min(clickedCol, max(0, len(buf.lines[clickedRow]) - 1))
+        # click in normal mode just moves, click in insert mode allows free positioning
+        if self._msm.is_insert():
+            buf.cursor_col = min(clickedCol, len(buf.lines[clickedRow]))
+        self._app._refresh_all()
+
     # rendering
     def render_line(self, y):
         buf = self._buf
