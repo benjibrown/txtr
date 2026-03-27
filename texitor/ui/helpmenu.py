@@ -119,6 +119,7 @@ class HelpMenu(Widget):
         self._activeTab = 0
         self._scrollTop = 0
         self._rows = self._buildRows()
+        self._tabRanges = []  # [(start_col, end_col, tab_idx)] - set during render
         self.display = True
         self.refresh()
 
@@ -140,6 +141,24 @@ class HelpMenu(Widget):
     def scrollUp(self, n=1):
         self._scrollTop = max(0, self._scrollTop - n)
         self.refresh()
+
+    # mouse support
+    def on_mouse_scroll_down(self, event):
+        self.scrollDown(3)
+
+    def on_mouse_scroll_up(self, event):
+        self.scrollUp(3)
+
+    def on_click(self, event):
+        # click on tab bar (y == 0) switches tabs
+        if event.y == 0:
+            for start, end, idx in getattr(self, "_tabRanges", []):
+                if start <= event.x < end:
+                    self._activeTab = idx
+                    self._scrollTop = 0
+                    self._rows = self._buildRows()
+                    self.refresh()
+                    return
 
     def _buildRows(self):
         _, rowsFn = self._sections[self._activeTab]
@@ -177,7 +196,12 @@ class HelpMenu(Widget):
     def _renderTabBar(self, width):
         t = Text(no_wrap=True)
         t.append(" ", style=Style(bgcolor=_BG_HEADER))
+        col = 1
+        self._tabRanges = []
         for i, (title, _) in enumerate(self._sections):
+            tabWidth = len(title) + 2  # " title "
+            self._tabRanges.append((col, col + tabWidth, i))
+            col += tabWidth + 1  # +1 for the gap space after
             if i == self._activeTab:
                 t.append(f" {title} ", style=Style(color=_FG_TAB_ACT, bgcolor=_BG_TAB_ACT, bold=True))
             else:
