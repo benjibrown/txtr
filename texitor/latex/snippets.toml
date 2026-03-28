@@ -208,6 +208,133 @@ trigger = "@Y"
 body = "\\Psi"
 auto_expand = true
 
+[triggers.Xi]
+name = "Xi (upper)"
+trigger = "@X"
+body = "\\Xi"
+auto_expand = true
+
+
+# math relations — auto expand on symbol combos
+
+[triggers.neq]
+name = "Not equal"
+trigger = "!="
+body = "\\neq"
+auto_expand = true
+
+[triggers.leq]
+name = "Less or equal"
+trigger = "<="
+body = "\\leq"
+auto_expand = true
+
+[triggers.geq]
+name = "Greater or equal"
+trigger = ">="
+body = "\\geq"
+auto_expand = true
+
+[triggers.approx]
+name = "Approx equal"
+trigger = "~="
+body = "\\approx"
+auto_expand = true
+
+[triggers.Rightarrow]
+name = "Implies"
+trigger = "=>"
+body = "\\Rightarrow"
+auto_expand = true
+
+[triggers.rightarrow]
+name = "Right arrow"
+trigger = "->"
+body = "\\rightarrow"
+auto_expand = true
+
+[triggers.leftarrow]
+name = "Left arrow"
+trigger = "<-"
+body = "\\leftarrow"
+auto_expand = true
+
+[triggers.Leftrightarrow]
+name = "Iff"
+trigger = "<=>"
+body = "\\Leftrightarrow"
+auto_expand = true
+
+[commands.infty]
+name = "Infinity"
+trigger = "oo"
+body = "\\infty"
+
+[triggers.cdot]
+name = "Dot product"
+trigger = "**"
+body = "\\cdot"
+auto_expand = true
+
+[commands.times]
+name = "Times"
+trigger = "xx"
+body = "\\times"
+
+[triggers.ldots]
+name = "Ellipsis"
+trigger = "..."
+body = "\\ldots"
+auto_expand = true
+
+[triggers.in]
+name = "Element of"
+trigger = "@i"
+body = "\\in"
+auto_expand = true
+
+[triggers.notin]
+name = "Not element of"
+trigger = "!in"
+body = "\\notin"
+auto_expand = true
+
+[commands.subset]
+name = "Subset"
+trigger = "sub"
+body = "\\subset"
+
+[commands.cup]
+name = "Union"
+trigger = "uu"
+body = "\\cup"
+
+[commands.cap]
+name = "Intersection"
+trigger = "nn"
+body = "\\cap"
+
+[commands.forall]
+name = "For all"
+trigger = "AA"
+body = "\\forall"
+
+[commands.exists]
+name = "Exists"
+trigger = "EE"
+body = "\\exists"
+
+[commands.partial]
+name = "Partial"
+trigger = "pd"
+body = "\\partial"
+
+[commands.nabla]
+name = "Nabla"
+trigger = "nab"
+body = "\\nabla"
+
+
 
 
 # environment snippets — shortcode + tab to expand (won't fire while typing)
