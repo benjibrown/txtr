@@ -20,7 +20,7 @@ _CONSOLE = Console(
     width=500, no_color=False, highlight=False, markup=False, emoji=False
 )
 
-# (label, fg, bg) per mode — catppuccin mocha, i will not apologize for this choice, catppuccin is love, catppuccin is life 
+# (label, fg, bg) per mode - catppuccin mocha, i will not apologize for this choice, catppuccin is love, catppuccin is life 
 # TODO - configurable themes :)
 _MODE_STYLE = {
     Mode.NORMAL:      ("NORMAL",      "#1e1e2e", "#89b4fa"),

@@ -1,5 +1,4 @@
-"""Entry point — `txtr [file]`."""
-
+# main entry point
 import sys
 
 

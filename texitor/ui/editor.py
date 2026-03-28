@@ -30,7 +30,7 @@ _GUTTER_SEP = "#45475a"   # surface1
 _TEXT = "#cdd6f4"   # text
 _TILDE = "#45475a"
 _CURSOR_BLOCK = {
-    Mode.NORMAL: ("#1e1e2e", "#89b4fa"),   # fg, bg — blue
+    Mode.NORMAL: ("#1e1e2e", "#89b4fa"),   # fg, bg - blue
     Mode.VISUAL: ("#1e1e2e", "#cba6f7"),   # mauve
     Mode.VISUAL_LINE: ("#1e1e2e", "#cba6f7"),
 }
@@ -56,7 +56,7 @@ def _highlight(line, bg):
     def col(color, start, end):
         t.stylize(Style(color=color, bgcolor=bg), start, min(end, len(line)))
 
-    # braces/brackets first (lowest priority — get overridden below where needed)
+    # braces/brackets first (lowest priority - get overridden below where needed)
     for m in re.finditer(r'[{}\[\]]', line):
         col(_HL_BRACE, m.start(), m.end())
 
@@ -64,7 +64,7 @@ def _highlight(line, bg):
     for m in re.finditer(r'\\[a-zA-Z]+\*?', line):
         col(_HL_CMD, m.start(), m.end())
 
-    # env name inside \begin{name} / \end{name} — override the plain text between braces
+    # env name inside \begin{name} / \end{name} - override the plain text between braces
     for m in re.finditer(r'\\(?:begin|end)\{([^}]*)\}', line):
         name = m.group(1)
         brace_pos = line.index('{', m.start())
@@ -74,7 +74,7 @@ def _highlight(line, bg):
     for m in re.finditer(r'\$\$.*?\$\$|\$[^$\n]*?\$', line):
         col(_HL_MATH, m.start(), m.end())
 
-    # comments — % to end of line (skip escaped \%)
+    # comments - % to end of line (skip escaped \%)
     cm = re.search(r'(?<!\\)%', line)
     if cm:
         col(_HL_COMMENT, cm.start(), len(line))
@@ -164,7 +164,7 @@ class EditorWidget(Widget):
             text.append(ln_str, style=Style(color=_LINENUM_OFF))
         text.append(" │ ", style=Style(color=_GUTTER_SEP, bgcolor=cur_bg))
 
-        # syntax highlighted content — visual selection + cursor get layered on top
+        # syntax highlighted content - visual selection + cursor get layered on top
         content = _highlight(line, cur_bg)
 
         # highlight search matches on this line
