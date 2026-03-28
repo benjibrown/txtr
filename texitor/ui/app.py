@@ -20,6 +20,7 @@ from texitor.latex.completer import LatexCompleter
 
 class TxtrApp(App):
     # main app class - the big boy class that holds all of my janky code together...
+    # i just realised how ridicously long this file is - a fair bit came from the textual boilerplate and the rest is me just being really inefficient :)
 
     TITLE = "txtr" # aka texitor but who wants to type allat
     ENABLE_COMMAND_PALETTE = False
@@ -85,6 +86,8 @@ class TxtrApp(App):
         self._awaiting_replace = False
         self.tabStops = []
         self.tabStopIdx = 0
+        self._lastTabRow = 0   # row we jumped to for the current stop
+        self._lastTabCol = 0   # col we jumped to for the current stop
         self._justExpanded = False
         self._revertCount = 0
 
@@ -157,7 +160,7 @@ class TxtrApp(App):
 
         # key handling for cmds with multiple keys ie gg or my favourite - dd
         # event.key gives textual's name (e.g. "colon" for :, "dollar_sign" for $)
-        # event.character gives the actual char — we try both so keybinds.py can use either
+        # event.character gives the actual char - we try both so keybinds.py can use either
         mode = self.msm.mode
         char = event.character or ""
         candidate = (self._pending_key + " " + key).strip()
@@ -230,6 +233,7 @@ class TxtrApp(App):
             if self.tabStops:
                 row, col = self.tabStops[0]
                 buf.move_to(row, col)
+                self._lastTabRow, self._lastTabCol = row, col
                 self.tabStopIdx = 1
 
     def _is_prefix(self, mode, prefix):
@@ -659,14 +663,14 @@ class TxtrApp(App):
 
     def _cmd_write(self):
         if not self.buffer.path:
-            self.notify("no file name — use :w <filename>", severity="warning")
+            self.notify("no file name - use :w <filename>", severity="warning")
             return
         self.buffer.save()
         self.notify(f"saved {self.buffer.path}")
 
     def _cmd_quit(self):
         if self.buffer.modified:
-            self.notify("unsaved changes — use :q! to force quit", severity="warning")
+            self.notify("unsaved changes - use :q! to force quit", severity="warning")
             return
         self.exit()
     
@@ -691,18 +695,33 @@ class TxtrApp(App):
             if self.tabStops:
                 row, col = self.tabStops[0]
                 buf.move_to(row, col)
+                self._lastTabRow, self._lastTabCol = row, col
                 self.tabStopIdx = 1
             return
 
-        # jump to next tab stop if we have leftover ones from the current snippet
+        # jump to next tab stop - adjust positions for any chars typed at the previous stop
         if self.tabStops and self.tabStopIdx < len(self.tabStops):
             self._justExpanded = False
             self._revertCount = 0
+
+            # chars typed since we landed on the last stop (same row only)
+            delta = 0
+            if buf.cursor_row == self._lastTabRow:
+                delta = buf.cursor_col - self._lastTabCol
+
+            # shift all remaining stops on the same row by that delta
+            if delta != 0:
+                self.tabStops = [
+                    (r, c + delta if r == self._lastTabRow else c)
+                    for r, c in self.tabStops
+                ]
+
             row, col = self.tabStops[self.tabStopIdx]
             self.tabStopIdx += 1
             if self.tabStopIdx >= len(self.tabStops):
                 self.tabStops = []
                 self.tabStopIdx = 0
+            self._lastTabRow, self._lastTabCol = row, col
             self.buffer.move_to(row, col)
             return
 
@@ -716,12 +735,12 @@ class TxtrApp(App):
     # placeholders for later
     def _action_smart_tab(self): pass
     def _action_clear_tab_stops(self):
-        # shift+tab — dismiss autocomplete or just clear tab stops
+        # shift+tab - dismiss autocomplete or just clear tab stops
         self.tabStops = []
         self.tabStopIdx = 0
         self._dismissAutocomplete()
     def _action_accept_autocomplete(self):
-        # ctrl+space — confirm selected completion
+        # ctrl+space - confirm selected completion
         self._confirmAutocomplete()
 
     # replace char mode
