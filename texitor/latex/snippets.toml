@@ -419,7 +419,7 @@ name = "Tilde"
 trigger = "tld"
 body = "\\tilde{|}"
 
-# trig functions — tab-triggered (alphabetic, safe)
+# trig functions - tab-triggered (alphabetic, safe)
 
 [commands.sin]
 name = "Sine"
