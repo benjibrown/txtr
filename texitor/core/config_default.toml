@@ -1,0 +1,39 @@
+# txtr default config
+# this file is copied to ~/.config/txtr/config.toml on first run
+# edit that file to customise - this one is just the fallback
+#
+# TODO: some options below are not yet implemented and are marked as [wip]
+
+[editor]
+# show line numbers relative to cursor (nvim style) [wip]
+relative_numbers = false
+
+# auto compile on save [wip]
+autocompile = false
+
+# compiler to use - "latexmk" or "pdflatex" TODO
+compiler = "latexmk"
+
+# number of spaces for tab indent - TODO stop hardcoding 4
+tab_width = 4
+
+# auto close brackets and braces - wip
+auto_pairs = true
+
+
+[theme]
+# built-in themes: catppuccin rn TODO - more
+name = "catppuccin"
+
+
+[statusbar]
+# show word count in statusbar [wip] - wil add as a demo plugin 
+show_wordcount = false
+
+# show column number
+show_col = true 
+
+# show current mode
+show_mode = true
+
+
