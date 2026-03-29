@@ -19,11 +19,5 @@ txtr <filename.tex>
 # UNDER ACTIVE DEVELOPMENT 
 > many things are still being worked on, there are likely to be bugs amd missing features. If you want to contribute, please feel free to fork the repository and submit a pull request.
 
-## TODO
-- help menu
-- snippets menu 
-- more snippets 
-- update readme to outline usage 
-- compile latex + error handling 
-- better synltax highlighting
+
 
