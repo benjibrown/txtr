@@ -9,13 +9,40 @@ from texitor.core.buffer import Buffer
 from texitor.core.keybinds import KeybindRegistry
 from texitor.core.modes import Mode, ModeStateMachine
 from texitor.core.firstrun import ensureUserConfig
+from texitor.core.config import config as cfg
 from texitor.ui.editor import EditorWidget
 from texitor.ui.statusbar import StatusBar
 from texitor.ui.autocomplete import AutocompleteWidget
 from texitor.ui.helpmenu import HelpMenu
+from texitor.ui.configpanel import ConfigPanel
 from texitor.latex.snippets import SnippetManager
 from texitor.latex.completer import LatexCompleter
 
+
+
+def _coerceValue(raw):
+    # coerce string config values to proper python types
+    if raw.lower() == "true":  return True
+    if raw.lower() == "false": return False
+    try:                       return int(raw)
+    except ValueError:         pass
+    try:                       return float(raw)
+    except ValueError:         pass
+    return raw
+
+
+def _resolveConfigKey(dotKey):
+    # accepts "section.key" or bare "key" (searches all sections)
+    # returns (section, key) or (None, None) if not found
+    from texitor.core.config import config as cfg
+    if "." in dotKey:
+        section, key = dotKey.split(".", 1)
+        return (section, key)
+    # bare key - find which section it lives in
+    for section, values in cfg.all().items():
+        if dotKey in values:
+            return (section, dotKey)
+    return (None, None)
 
 
 class TxtrApp(App):
@@ -67,6 +94,11 @@ class TxtrApp(App):
         layer: overlay;
         display: none;
     }
+
+    ConfigPanel {
+        layer: overlay;
+        display: none;
+    }
     """
 
     def __init__(self, filename=None):
@@ -98,13 +130,15 @@ class TxtrApp(App):
         self.acPrefix = ""
 
         # help menu state
-        self.helpOpen = False
+        self.helpOpen   = False
+        self.configOpen = False
 
         self.snippets = SnippetManager()
         self.completer = LatexCompleter()
 
         # seed ~/.config/txtr/ with defaults on first run, then load
         ensureUserConfig()
+        cfg.load()
         self.snippets.load()
         self.completer.load()
 
@@ -116,6 +150,7 @@ class TxtrApp(App):
         yield EditorWidget(self.buffer, self.msm, self)
         yield AutocompleteWidget(self)
         yield HelpMenu(self)
+        yield ConfigPanel()
         yield StatusBar(self.buffer, self.msm, self)
 
     # key handling
@@ -125,21 +160,62 @@ class TxtrApp(App):
 
         key = event.key
 
-        # help menu swallows all keys while open
+        # help menu swallows most keys while open
+        # but : and escape-from-command fall through so user can type commands while reading help
         if self.helpOpen:
-            if key in ("q", "escape"):
+            if self.msm.is_command():
+                pass  # fall through to command mode handling below
+            elif key in ("q", "escape"):
                 self._action_close_help()
+                return
+            elif key == "colon" or event.character == ":":
+                self._action_enter_command()
+                self._refresh_all()
+                return
             elif key == "tab":
                 self.query_one(HelpMenu).nextTab()
+                return
             elif key in ("j", "down"):
                 self.query_one(HelpMenu).scrollDown()
+                return
             elif key in ("k", "up"):
                 self.query_one(HelpMenu).scrollUp()
+                return
             elif key == "ctrl+d":
                 self.query_one(HelpMenu).scrollDown(8)
+                return
             elif key == "ctrl+u":
                 self.query_one(HelpMenu).scrollUp(8)
-            return
+                return
+            else:
+                return
+
+        # config panel swallows most keys while open, same deal
+        if self.configOpen:
+            if self.msm.is_command():
+                pass  # fall through to command mode handling below
+            elif key in ("q", "escape"):
+                self.configOpen = False
+                self.query_one(ConfigPanel).close()
+                return
+            elif key == "colon" or event.character == ":":
+                self._action_enter_command()
+                self._refresh_all()
+                return
+            elif key in ("j", "down"):
+                self.query_one(ConfigPanel).scrollDown()
+                return
+            elif key in ("k", "up"):
+                self.query_one(ConfigPanel).scrollUp()
+                return
+            elif key == "ctrl+d":
+                self.query_one(ConfigPanel).scrollDown(8)
+                return
+            elif key == "ctrl+u":
+                self.query_one(ConfigPanel).scrollUp(8)
+                return
+            else:
+                return
 
         # replace_char mode
         if self._awaiting_replace:
@@ -350,6 +426,8 @@ class TxtrApp(App):
         line = buf.current_line
         if buf.cursor_col > 0 and buf.cursor_col >= len(line):
             buf.cursor_col = max(0, len(line) - 1)
+        # note: helpOpen / configOpen are NOT cleared here
+        # popups stay open until user explicitly closes them with q/escape from within the popup
     
     # todo - fix some of this 
 
@@ -658,8 +736,51 @@ class TxtrApp(App):
             path = cmd[2:].strip()
             if path:
                 self.buffer.save(path)
+        elif cmd in ("config show", "config"):
+            self._cmd_configShow()
+        elif cmd in ("config set", "config get"):
+            # bare command without args — show usage
+            self.notify(f":{cmd} <section.key> <value>" if cmd == "config set" else f":{cmd} <section.key>", severity="warning")
+        elif cmd.startswith("config set"):
+            self._cmd_configSet(cmd[len("config set"):].strip())
+        elif cmd.startswith("config get"):
+            self._cmd_configGet(cmd[len("config get"):].strip())
         else:
             self.notify(f"unknown command: {cmd}", severity="warning")
+
+    def _cmd_configShow(self):
+        self.configOpen = True
+        self.query_one(ConfigPanel).open()
+
+    def _cmd_configSet(self, args):
+        # :config set section.key value  OR  :config set key value (auto-detects section)
+        parts = args.split(None, 1)
+        if len(parts) != 2:
+            self.notify(":config set <section.key> <value>", severity="warning")
+            return
+        dotKey, rawVal = parts
+        section, key = _resolveConfigKey(dotKey)
+        if section is None:
+            self.notify(f"config: unknown key '{dotKey}'", severity="warning")
+            return
+        value = _coerceValue(rawVal)
+        cfg.set(section, key, value)
+        self.notify(f"config: {section}.{key} = {value}")
+
+    def _cmd_configGet(self, dotKey):
+        # :config get section.key  OR  :config get key
+        if not dotKey:
+            self.notify(":config get <section.key>", severity="warning")
+            return
+        section, key = _resolveConfigKey(dotKey)
+        if section is None:
+            self.notify(f"config: unknown key '{dotKey}'", severity="warning")
+            return
+        val = cfg.get(section, key)
+        if val is None:
+            self.notify(f"config: {section}.{key} not set", severity="warning")
+        else:
+            self.notify(f"{section}.{key} = {val}")
 
     def _cmd_write(self):
         if not self.buffer.path:
