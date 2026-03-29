@@ -85,6 +85,52 @@ def _snippetRows(snippets):
     return rows
 
 
+# all : commands, grouped by category
+_CMD_SECTIONS = [
+    ("File", [
+        (":w",              "save file"),
+        (":w <file>",       "save as file"),
+        (":wq  /  :x",     "save and quit"),
+        (":q",              "quit (fails if unsaved)"),
+        (":q!",             "force quit"),
+        (":e <file>",       "open file"),
+    ]),
+    ("View", [
+        (":help  /  :h",             "open help menu"),
+        (":snippets  /  :snips",     "open snippets tab in help"),
+        (":config  /  :config show", "show config panel"),
+    ]),
+    ("Config", [
+        (":config set <s.key> <v>", "set a config value (saved to disk)"),
+        (":config get <s.key>",     "print a config value"),
+    ]),
+]
+
+# plugin-registered command sections - populated before widget mounts via registerPluginCommands()
+_PLUGIN_CMD_SECTIONS = []
+
+
+def registerPluginCommands(pluginName, cmds):
+    # plugins call this to add their commands to the Commands tab
+    # cmds is a list of (":cmd syntax", "description") tuples
+    # shows up as a named subsection under the plugin's name
+    _PLUGIN_CMD_SECTIONS.append((pluginName, cmds))
+
+
+def _commandRows():
+    rows = []
+    for section, cmds in _CMD_SECTIONS:
+        rows.append(("header", section))
+        for cmd, desc in cmds:
+            rows.append(("row", cmd, desc))
+    # append any plugin-registered commands at the bottom
+    for pluginName, cmds in _PLUGIN_CMD_SECTIONS:
+        rows.append(("header", f"Plugin: {pluginName}"))
+        for cmd, desc in cmds:
+            rows.append(("row", cmd, desc))
+    return rows
+
+
 class HelpMenu(Widget):
 
     DEFAULT_CSS = """
@@ -102,6 +148,7 @@ class HelpMenu(Widget):
         self._sections = [
             ("Keybinds", lambda: _keybindRows(self._app.keybinds)),
             ("Snippets", lambda: _snippetRows(self._app.snippets)),
+            ("Commands", _commandRows),
         ]
         self._sections.extend(_PLUGIN_SECTIONS)
         self._activeTab = 0
