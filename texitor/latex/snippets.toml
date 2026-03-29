@@ -35,7 +35,7 @@ body = "_{|}"
 auto_expand = true
 
 
-# greek letters — @letter, auto expand as you type
+# greek letters - @letter, auto expand as you type
 
 [triggers.alpha]
 name = "Alpha"
@@ -152,7 +152,7 @@ body = "\\psi"
 auto_expand = true
 
 
-# uppercase greek — @Uppercase letter
+# uppercase greek - @Uppercase letter
 
 [triggers.Gamma]
 name = "Gamma (upper)"
@@ -215,7 +215,7 @@ body = "\\Xi"
 auto_expand = true
 
 
-# math relations — auto expand on symbol combos
+# math relations - auto expand on symbol combos
 
 [triggers.neq]
 name = "Not equal"
@@ -335,9 +335,26 @@ trigger = "nab"
 body = "\\nabla"
 
 
+# document templates - full preamble skeletons, tab to expand
+# peak snippets
+
+[templates.doc]
+name = "Basic document"
+trigger = "doc"
+body = "\\documentclass[12pt]{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amsmath, amssymb, amsthm}\n\\usepackage{geometry}\n\\geometry{margin=1in}\n\n\\title{|}\n\\author{|}\n\\date{\\today}\n\n\\begin{document}\n\n\\maketitle\n\n|\n\n\\end{document}"
+
+[templates.beamer]
+name = "Beamer presentation"
+trigger = "beamer"
+body = "\\documentclass{beamer}\n\\usepackage{amsmath, amssymb}\n\n\\title{|}\n\\author{|}\n\\date{\\today}\n\n\\begin{document}\n\n\\begin{frame}\n    \\titlepage\n\\end{frame}\n\n\\begin{frame}{|}\n    |\n\\end{frame}\n\n\\end{document}"
+
+[templates.report]
+name = "Report document"
+trigger = "rep"
+body = "\\documentclass[12pt]{report}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amsmath, amssymb, amsthm}\n\\usepackage{geometry}\n\\geometry{margin=1in}\n\n\\title{|}\n\\author{|}\n\\date{\\today}\n\n\\begin{document}\n\n\\maketitle\n\\tableofcontents\n\n\\chapter{|}\n\n|\n\n\\end{document}"
 
 
-# environment snippets — shortcode + tab to expand (won't fire while typing)
+# environment snippets - shortcode + tab to expand (won't fire while typing)
 
 [environments.equation]
 name = "Equation"
@@ -365,7 +382,7 @@ trigger = "fig"
 body = "\\begin{figure}[h]\n    \\centering\n    \\includegraphics[width=|\\textwidth]{|}\n    \\caption{|}\n    \\label{fig:|}\n\\end{figure}"
 
 
-# command snippets — shortcode + tab to expand
+# command snippets - shortcode + tab to expand
 # mostly not that much faster but useful still as it avoids {} and \ 
 [commands.sqrt]
 name = "Square Root"
@@ -401,3 +418,100 @@ body = "\\overline{|}"
 name = "Tilde"
 trigger = "tld"
 body = "\\tilde{|}"
+
+# trig functions — tab-triggered (alphabetic, safe)
+
+[commands.sin]
+name = "Sine"
+trigger = "sin"
+body = "\\sin"
+
+[commands.cos]
+name = "Cosine"
+trigger = "cos"
+body = "\\cos"
+
+[commands.tan]
+name = "Tangent"
+trigger = "tan"
+body = "\\tan"
+
+[commands.cot]
+name = "Cotangent"
+trigger = "cot"
+body = "\\cot"
+
+[commands.sec]
+name = "Secant"
+trigger = "sec"
+body = "\\sec"
+
+[commands.csc]
+name = "Cosecant"
+trigger = "csc"
+body = "\\csc"
+
+[commands.arcsin]
+name = "Arcsine"
+trigger = "arcsin"
+body = "\\arcsin"
+
+[commands.arccos]
+name = "Arccosine"
+trigger = "arccos"
+body = "\\arccos"
+
+[commands.arctan]
+name = "Arctangent"
+trigger = "arctan"
+body = "\\arctan"
+
+[commands.sinh]
+name = "Hyperbolic sine"
+trigger = "sinh"
+body = "\\sinh"
+
+[commands.cosh]
+name = "Hyperbolic cosine"
+trigger = "cosh"
+body = "\\cosh"
+
+[commands.tanh]
+name = "Hyperbolic tangent"
+trigger = "tanh"
+body = "\\tanh"
+
+[commands.log]
+name = "Logarithm"
+trigger = "log"
+body = "\\log"
+
+[commands.ln]
+name = "Natural log"
+trigger = "ln"
+body = "\\ln"
+
+[commands.exp]
+name = "Exponential"
+trigger = "exp"
+body = "\\exp"
+
+[commands.lim]
+name = "Limit"
+trigger = "lim"
+body = "\\lim_{| \\to |}"
+
+[commands.sum]
+name = "Sum"
+trigger = "sum"
+body = "\\sum_{|}^{|}"
+
+[commands.prod]
+name = "Product"
+trigger = "prod"
+body = "\\prod_{|}^{|}"
+
+[commands.int]
+name = "Integral"
+trigger = "int"
+body = "\\int_{|}^{|} | \\, d|"
