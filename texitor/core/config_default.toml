@@ -26,8 +26,30 @@ system_clipboard = false
 
 
 [theme]
-# built-in themes: catppuccin rn TODO - more
+# built-in themes: catppuccin, gruvbox
 name = "catppuccin"
+
+# for custom themes: set name = "custom" and provide a path to your theme toml file
+# custom theme toml format (flat, all fields required):
+#   name = "my-theme"
+#   bg = "#1a1b26"
+#   bg_alt = "#16161e"
+#   bg_popup = "#1f2335"
+#   cursor_line = "#1e2030"
+#   bg_sel = "#2d3f76"
+#   bg_search = "#ffc777"
+#   border = "#3b4261"
+#   fg = "#c0caf5"
+#   fg_dim = "#565f89"
+#   fg_muted = "#545c7e"
+#   fg_sub = "#9aa5ce"
+#   accent = "#7aa2f7"
+#   accent2 = "#bb9af7"
+#   green = "#9ece6a"
+#   yellow = "#e0af68"
+#   orange = "#ff9e64"
+#   red = "#f7768e"
+custom_path = ""
 
 
 [statusbar]
