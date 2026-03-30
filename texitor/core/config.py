@@ -21,7 +21,8 @@ _DEFAULTS = {
         "system_clipboard": False,
     },
     "theme": {
-        "name": "catppuccin"
+        "name":        "catppuccin",
+        "custom_path": "",
     },
     "statusbar": {
         "show_wordcount": False, # not implemented yet - might do as demo plugin so this might get removed to be put under plugin config
