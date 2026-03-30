@@ -12,6 +12,7 @@ from textual.widget import Widget
 
 from texitor.core.buffer import Buffer
 from texitor.core.modes import Mode, ModeStateMachine
+from texitor.core.theme import theme as _theme
 
 
 if TYPE_CHECKING:
@@ -21,31 +22,30 @@ _CONSOLE = Console(
     width=500, no_color=False, highlight=False, markup=False, emoji=False
 )
 
-# color palette (catpuccin rn), will add this to config later so its easy to change
-_BG = "#1e1e2e"
-_CURSORLINE = "#252537"
-_LINENUM_CUR = "#cba6f7"   # mauve
-_LINENUM_OFF = "#585b70"   # overlay1
-_GUTTER_SEP = "#45475a"   # surface1
-_TEXT = "#cdd6f4"   # text
-_TILDE = "#45475a"
+# colors - all sourced from the active theme
+_BG           = _theme.bg
+_CURSORLINE   = _theme.cursor_line
+_LINENUM_CUR  = _theme.accent2
+_LINENUM_OFF  = _theme.fg_muted
+_GUTTER_SEP   = _theme.border
+_TEXT         = _theme.fg
+_TILDE        = _theme.border
 _CURSOR_BLOCK = {
-    Mode.NORMAL: ("#1e1e2e", "#89b4fa"),   # fg, bg - blue
-    Mode.VISUAL: ("#1e1e2e", "#cba6f7"),   # mauve
-    Mode.VISUAL_LINE: ("#1e1e2e", "#cba6f7"),
+    Mode.NORMAL:      (_theme.bg, _theme.accent),
+    Mode.VISUAL:      (_theme.bg, _theme.accent2),
+    Mode.VISUAL_LINE: (_theme.bg, _theme.accent2),
 }
-_CURSOR_INSERT_FG = "#a6e3a1"   # cursor in insert mode
-_SEL_BG = "#45475a"   # surface1 - shows active line
-_MATCH_BG = "#f9e2af"  # peach bg for search matches
-_MATCH_FG = "#1e1e2e"  # dark text on peach
-# i really do need to make theme config at some point, but for now this is fine
+_CURSOR_INSERT_FG = _theme.green
+_SEL_BG   = _theme.bg_sel
+_MATCH_BG = _theme.bg_search
+_MATCH_FG = _theme.bg
 
 # syntax highlight colors
-_HL_CMD     = "#89b4fa"   # blue   - \commands
-_HL_ENV     = "#a6e3a1"   # green  - env names in \begin{}/\end{}
-_HL_MATH    = "#fab387"   # peach  - $math$
-_HL_COMMENT = "#585b70"   # muted  - % comments
-_HL_BRACE   = "#cba6f7"   # mauve  - { } [ ]
+_HL_CMD     = _theme.accent
+_HL_ENV     = _theme.green
+_HL_MATH    = _theme.orange
+_HL_COMMENT = _theme.fg_muted
+_HL_BRACE   = _theme.accent2
 
 
 def _highlight(line, bg):
