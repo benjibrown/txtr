@@ -12,16 +12,17 @@ from textual.widget import Widget
 
 _CONSOLE = Console(width=500, no_color=False, highlight=False, markup=False, emoji=False)
 
-# catppuccin colours - same as helpmenu
-# i really shouldnt be hardcoded but i cba to add themes yet lol
-_BG         = "#1e1e2e"
-_BG_ALT     = "#181825"
-_FG_DIM     = "#6c7086"
-_FG_KEY     = "#89b4fa"
-_FG_VAL     = "#cdd6f4"
-_FG_SECTION = "#cba6f7"
-_BORDER     = "#45475a"
-_TITLE_FG   = "#cba6f7"
+# colors - all sourced from the active theme
+from texitor.core.theme import theme as _theme
+
+_BG         = _theme.bg
+_BG_ALT     = _theme.bg_alt
+_FG_DIM     = _theme.fg_dim
+_FG_KEY     = _theme.accent
+_FG_VAL     = _theme.fg
+_FG_SECTION = _theme.accent2
+_BORDER     = _theme.border
+_TITLE_FG   = _theme.accent2
 
 _TL = "╭"; _TR = "╮"; _BL = "╰"; _BR = "╯"; _H = "─"; _V = "│"
 
