@@ -17,8 +17,12 @@ compiler = "latexmk"
 # number of spaces for tab indent - TODO stop hardcoding 4
 tab_width = 4
 
-# auto close brackets and braces - wip
+# auto close brackets and braces [wip]
 auto_pairs = true
+
+# use system clipboard for yank/paste (wl-copy/xclip/xsel)
+# false = use txtr internal register only
+system_clipboard = false
 
 
 [theme]

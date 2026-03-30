@@ -18,6 +18,7 @@ _DEFAULTS = {
         "compiler":         "latexmk",
         "tab_width":        4,
         "auto_pairs":       True,
+        "system_clipboard": False,
     },
     "theme": {
         "name": "catppuccin"
