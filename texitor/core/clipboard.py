@@ -1,11 +1,9 @@
 # clipboard - system clipboard read/write for txtr
-# tries wl-copy/wl-paste (wayland) first, then xclip, then xsel
+# priority order: macOS pbcopy/pbpaste, Wayland wl-copy/wl-paste, X11 xclip, X11 xsel
 # no third party deps - just subprocess calls
-#
-# TODO: add windows support (win32clipboard or ctypes) if ever needed
-# TODO: add macOS support (pbcopy/pbpaste) - easy addition
 
 import subprocess
+import sys
 
 
 def _run(cmd, input=None):
@@ -22,9 +20,19 @@ def _run(cmd, input=None):
 
 
 def copyToSystem(text):
-    # write text to system clipboard - tries wayland then x11
-    # uses Popen (non-blocking) so it doesn't stall the editor
+    # write text to system clipboard - non-blocking via Popen so it never stalls the editor
     data = text.encode()
+
+    # pbcopy is macOS native - try it first on darwin, fall through on other platforms
+    if sys.platform == "darwin":
+        try:
+            proc = subprocess.Popen(["pbcopy"], stdin=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            proc.stdin.write(data)
+            proc.stdin.close()
+            return
+        except FileNotFoundError:
+            pass
+
     for cmd in (
         ["wl-copy"],
         ["xclip", "-selection", "clipboard"],
@@ -40,7 +48,12 @@ def copyToSystem(text):
 
 
 def pasteFromSystem():
-    # read text from system clipboard - tries wayland then x11
+    # read text from system clipboard
+    if sys.platform == "darwin":
+        ok, out = _run(["pbpaste"])
+        if ok:
+            return out.decode(errors="replace")
+
     ok, out = _run(["wl-paste", "--no-newline"])
     if ok: return out.decode(errors="replace")
 
