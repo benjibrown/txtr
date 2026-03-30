@@ -16,14 +16,16 @@ if TYPE_CHECKING:
 
 _CONSOLE = Console(width=500, no_color=False, highlight=False, markup=False, emoji=False)
 
-# catppuccin colours matching the rest of the editor
-_BG_NORMAL   = "#313244"   # surface0
-_BG_SELECTED = "#45475a"   # surface1
-_FG_CMD      = "#89b4fa"   # blue - command name
-_FG_DESC     = "#6c7086"   # overlay0 - description
-_FG_SEL_CMD  = "#cdd6f4"   # text - selected command
-_FG_SEL_DESC = "#a6adc8"   # subtext1 - selected description
-_BORDER_COL  = "#585b70"   # overlay1
+# colors - all sourced from the active theme
+from texitor.core.theme import theme as _theme
+
+_BG_NORMAL   = _theme.bg_popup
+_BG_SELECTED = _theme.bg_sel
+_FG_CMD      = _theme.accent
+_FG_DESC     = _theme.fg_dim
+_FG_SEL_CMD  = _theme.fg
+_FG_SEL_DESC = _theme.fg_sub
+_BORDER_COL  = _theme.fg_muted
 
 MAX_VISIBLE = 8   # max rows shown at once
 
