@@ -10,6 +10,7 @@ from texitor.core.keybinds import KeybindRegistry
 from texitor.core.modes import Mode, ModeStateMachine
 from texitor.core.firstrun import ensureUserConfig
 from texitor.core.config import config as cfg
+from texitor.core.clipboard import copyToSystem, pasteFromSystem
 from texitor.ui.editor import EditorWidget
 from texitor.ui.statusbar import StatusBar
 from texitor.ui.autocomplete import AutocompleteWidget
@@ -43,6 +44,16 @@ def _resolveConfigKey(dotKey):
         if dotKey in values:
             return (section, dotKey)
     return (None, None)
+
+
+def _tabStr():
+    # get the indent string based on config tab_width
+    from texitor.core.config import config as cfg
+    return " " * cfg.get("editor", "tab_width", 4)
+
+
+def _useSystemClip():
+    return cfg.get("editor", "system_clipboard", False)
 
 
 class TxtrApp(App):
@@ -270,7 +281,7 @@ class TxtrApp(App):
         if self.msm.is_insert() and event.character and event.character.isprintable():
             self._justExpanded = False
             self.buffer.checkpoint()
-            self.buffer.insert(event.character)
+            self._insertWithAutoPairs(event.character)
             self._checkSnippetTrigger()
             self._updateAutocomplete()
             self._refresh_all()
@@ -594,7 +605,35 @@ class TxtrApp(App):
             return
         self._justExpanded = False
         self.buffer.checkpoint()
-        self.buffer.backspace()
+
+        buf = self.buffer
+        # delete matching closer if cursor is between an empty pair eg {|}
+        if cfg.get("editor", "auto_pairs", True):
+            col = buf.cursor_col
+            line = buf.current_line
+            if col > 0:
+                prevCh = line[col - 1]
+                nextCh = line[col:col + 1]
+                if prevCh in self._PAIRS and self._PAIRS[prevCh] == nextCh:
+                    # remove both chars
+                    buf.lines[buf.cursor_row] = line[:col - 1] + line[col + 1:]
+                    buf.cursor_col = col - 1
+                    buf.modified = True
+                    self._updateAutocomplete()
+                    return
+
+        # if cursor is at a tab-stop boundary, delete the whole indent chunk at once
+        buf = self.buffer
+        tab = _tabStr()
+        tabW = len(tab)
+        before = buf.current_line[:buf.cursor_col]
+        if before and before == " " * len(before) and len(before) % tabW == 0 and len(before) > 0:
+            # delete one full tab chunk
+            for _ in range(tabW):
+                buf.backspace()
+        else:
+            buf.backspace()
+
         self._updateAutocomplete()
 
     def _action_newline(self):
@@ -614,10 +653,10 @@ class TxtrApp(App):
             # drop cursor on blank indented line, then close env below
             contentRow = self.buffer.cursor_row
             contentCol = self.buffer.cursor_col
-            self.buffer.insert("    ")
+            self.buffer.insert(_tabStr())
             self.buffer.newline()
             self.buffer.insert(f"{indent}\\end{{{envName}}}")
-            self.buffer.move_to(contentRow, contentCol + 4)
+            self.buffer.move_to(contentRow, contentCol + len(_tabStr()))
         else:
             self.buffer.newline()
     def _action_delete_char(self): self.buffer.checkpoint(); self.buffer.delete_char()
@@ -643,30 +682,74 @@ class TxtrApp(App):
         buf.cursor_col = len(indent)
         buf.modified = True
 
+    # pairs for auto-close - opener: closer
+    _PAIRS = {"{": "}", "(": ")", "[": "]", '"': '"', "`": "`"}
+    # closers that should just move past instead of inserting duplicate
+    _CLOSERS = set("})]\"`")
+
+    def _insertWithAutoPairs(self, ch):
+        buf = self.buffer
+        if not cfg.get("editor", "auto_pairs", True):
+            buf.insert(ch)
+            return
+
+        # if typing a closer and next char is already that closer, just skip past it
+        nextCh = buf.current_line[buf.cursor_col:buf.cursor_col + 1]
+        if ch in self._CLOSERS and nextCh == ch:
+            buf.cursor_col += 1
+            return
+
+        buf.insert(ch)
+
+        # if opener, insert the matching closer after and leave cursor between them
+        if ch in self._PAIRS:
+            closer = self._PAIRS[ch]
+            col = buf.cursor_col
+            line = buf.current_line
+            buf.lines[buf.cursor_row] = line[:col] + closer + line[col:]
+            # cursor stays between the pair (insert() already moved it right)
+
+    def _doYank(self, lines):
+        # store lines in internal register and optionally copy to system clipboard
+        self._yank = lines
+        if _useSystemClip():
+            copyToSystem("\n".join(lines))
+
+    def _getPaste(self):
+        # get lines to paste from system clipboard or internal register
+        if _useSystemClip():
+            text = pasteFromSystem()
+            return text.split("\n") if text else []
+        return self._yank
+
     def _action_yank_line(self):
-        self._yank = [self.buffer.current_line]
+        self._doYank([self.buffer.current_line])
+        self.notify("1 line yanked")
 
     def _action_delete_line(self):
         self.buffer.checkpoint()
-        self._yank = self.buffer.delete_line()
+        self._doYank(self.buffer.delete_line())
+        self.notify(f"{len(self._yank)} line{'s' if len(self._yank) != 1 else ''} deleted")
 
     def _action_paste_after(self):
-        if not self._yank:
+        lines = self._getPaste()
+        if not lines:
             return
         self.buffer.checkpoint()
         buf = self.buffer
-        for i, text in enumerate(self._yank):
+        for i, text in enumerate(lines):
             buf.lines.insert(buf.cursor_row + 1 + i, text)
         buf.cursor_row += 1
         buf.cursor_col = buf.first_nonblank()
         buf.modified = True
 
     def _action_paste_before(self):
-        if not self._yank:
+        lines = self._getPaste()
+        if not lines:
             return
         self.buffer.checkpoint()
         buf = self.buffer
-        for i, text in enumerate(self._yank):
+        for i, text in enumerate(lines):
             buf.lines.insert(buf.cursor_row + i, text)
         buf.cursor_col = buf.first_nonblank()
         buf.modified = True
@@ -674,8 +757,9 @@ class TxtrApp(App):
     def _action_indent(self):
         self.buffer.checkpoint()
         buf = self.buffer
-        buf.lines[buf.cursor_row] = "    " + buf.current_line
-        buf.cursor_col = min(buf.cursor_col + 4, len(buf.current_line))
+        tab = _tabStr()
+        buf.lines[buf.cursor_row] = tab + buf.current_line
+        buf.cursor_col = min(buf.cursor_col + len(tab), len(buf.current_line))
         buf.modified = True
 
     def _action_dedent(self):
@@ -851,7 +935,7 @@ class TxtrApp(App):
         before = buf.current_line[:buf.cursor_col]
         if not before.strip():
             buf.checkpoint()
-            buf.insert("    ")
+            buf.insert(_tabStr())
 
     # placeholders for later
     def _action_smart_tab(self): pass
@@ -885,22 +969,24 @@ class TxtrApp(App):
                 return
             r0 = min(self.visual_anchor[0], buf.cursor_row)
             r1 = max(self.visual_anchor[0], buf.cursor_row)
-            self._yank = list(buf.lines[r0 : r1 + 1])
+            yanked = list(buf.lines[r0 : r1 + 1])
         else:
             bounds = self._selection_bounds()
             if bounds is None:
                 return
             r0, c0, r1, c1 = bounds
             if r0 == r1:
-                self._yank = [buf.lines[r0][c0 : c1 + 1]]
+                yanked = [buf.lines[r0][c0 : c1 + 1]]
             else:
-                self._yank = (
+                yanked = (
                     [buf.lines[r0][c0:]]
                     + list(buf.lines[r0 + 1 : r1])
                     + [buf.lines[r1][: c1 + 1]]
                 )
+        self._doYank(yanked)
         self._action_enter_normal()
-        # this looks very messy tbh, its not i promise
+        n = len(self._yank)
+        self.notify(f"{n} line{'s' if n != 1 else ''} yanked")
 
     def _action_delete_selection(self):
         buf = self.buffer
@@ -910,7 +996,7 @@ class TxtrApp(App):
                 return
             r0 = min(self.visual_anchor[0], buf.cursor_row)
             r1 = max(self.visual_anchor[0], buf.cursor_row)
-            self._yank = list(buf.lines[r0 : r1 + 1])
+            self._doYank(list(buf.lines[r0 : r1 + 1]))
             del buf.lines[r0 : r1 + 1]
             if not buf.lines:
                 buf.lines = [""]
@@ -923,11 +1009,11 @@ class TxtrApp(App):
             r0, c0, r1, c1 = bounds
             if r0 == r1:
                 line = buf.lines[r0]
-                self._yank = [line[c0 : c1 + 1]]
+                self._doYank([line[c0 : c1 + 1]])
                 buf.lines[r0] = line[:c0] + line[c1 + 1 :]
                 buf.cursor_col = c0
             else:
-                self._yank = (
+                self._doYank(
                     [buf.lines[r0][c0:]]
                     + list(buf.lines[r0 + 1 : r1])
                     + [buf.lines[r1][: c1 + 1]]
