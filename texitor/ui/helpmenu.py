@@ -15,20 +15,22 @@ if TYPE_CHECKING:
     from texitor.ui.app import TxtrApp
 
 _CONSOLE = Console(width=500, no_color=False, highlight=False, markup=False, emoji=False)
-# TODO - dont hardcode colors, theme system or smth, but for now just make it look nice with catppuccin 
-# catppuccin colours
-_BG          = "#1e1e2e"
-_BG_ALT      = "#181825"
-_FG_DIM      = "#6c7086"
-_FG_KEY      = "#89b4fa"   # blue - keybind / trigger
-_FG_ACTION   = "#cdd6f4"
-_FG_SECTION  = "#cba6f7"   # mauve - section headers
-_FG_TAB_ACT  = "#1e1e2e"
-_BG_TAB_ACT  = "#89b4fa"
-_FG_TAB_IDLE = "#6c7086"
-_BG_TAB_IDLE = "#313244"
-_BORDER      = "#45475a"   # surface1 - border lines
-_TITLE_FG    = "#cba6f7"   # mauve - "txtr help" title
+
+# colors - all sourced from the active theme
+from texitor.core.theme import theme as _theme
+
+_BG          = _theme.bg
+_BG_ALT      = _theme.bg_alt
+_FG_DIM      = _theme.fg_dim
+_FG_KEY      = _theme.accent
+_FG_ACTION   = _theme.fg
+_FG_SECTION  = _theme.accent2
+_FG_TAB_ACT  = _theme.bg
+_BG_TAB_ACT  = _theme.accent
+_FG_TAB_IDLE = _theme.fg_dim
+_BG_TAB_IDLE = _theme.bg_popup
+_BORDER      = _theme.border
+_TITLE_FG    = _theme.accent2
 
 # box drawing chars
 _TL = "╭"
@@ -103,6 +105,7 @@ _CMD_SECTIONS = [
     ("Config", [
         (":config set <s.key> <v>", "set a config value (saved to disk)"),
         (":config get <s.key>",     "print a config value"),
+        (":config set theme.name <n>", "switch theme (catppuccin, gruvbox, custom)"),
     ]),
 ]
 
