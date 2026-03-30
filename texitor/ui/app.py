@@ -1,4 +1,3 @@
-
 # main app.
 from __future__ import annotations
 
@@ -11,6 +10,7 @@ from texitor.core.modes import Mode, ModeStateMachine
 from texitor.core.firstrun import ensureUserConfig
 from texitor.core.config import config as cfg
 from texitor.core.clipboard import copyToSystem, pasteFromSystem
+from texitor.core.theme import theme as _theme, getStartupWarning
 from texitor.ui.editor import EditorWidget
 from texitor.ui.statusbar import StatusBar
 from texitor.ui.autocomplete import AutocompleteWidget
@@ -18,6 +18,59 @@ from texitor.ui.helpmenu import HelpMenu
 from texitor.ui.configpanel import ConfigPanel
 from texitor.latex.snippets import SnippetManager
 from texitor.latex.completer import LatexCompleter
+
+
+def _buildAppCss(t):
+    # generate the app CSS from the active theme
+    return f"""
+    Screen {{
+        layers: base overlay;
+    }}
+
+    ToastRack {{
+        align: right top;
+        margin: 1 2;
+    }}
+
+    Toast {{
+        background: {t.bg_popup};
+        color: {t.fg};
+        border-left: tall {t.accent};
+        padding: 0 1;
+    }}
+
+    Toast.-warning {{
+        border-left: tall {t.yellow};
+        color: {t.yellow};
+    }}
+
+    Toast.-error {{
+        border-left: tall {t.red};
+        color: {t.red};
+    }}
+
+    Toast.-information {{
+        border-left: tall {t.accent};
+        color: {t.fg};
+    }}
+
+    AutocompleteWidget {{
+        layer: overlay;
+        width: 36;
+        height: auto;
+        display: none;
+    }}
+
+    HelpMenu {{
+        layer: overlay;
+        display: none;
+    }}
+
+    ConfigPanel {{
+        layer: overlay;
+        display: none;
+    }}
+    """
 
 
 
@@ -62,55 +115,7 @@ class TxtrApp(App):
 
     TITLE = "txtr" # aka texitor but who wants to type allat
     ENABLE_COMMAND_PALETTE = False
-    CSS = """
-    Screen {
-        layers: base overlay;
-    }
-
-    ToastRack {
-        align: right top;
-        margin: 1 2;
-    }
-
-    Toast {
-        background: #313244;
-        color: #cdd6f4;
-        border-left: tall #89b4fa;
-        padding: 0 1;
-    }
-
-    Toast.-warning {
-        border-left: tall #f9e2af;
-        color: #f9e2af;
-    }
-
-    Toast.-error {
-        border-left: tall #f38ba8;
-        color: #f38ba8;
-    }
-
-    Toast.-information {
-        border-left: tall #89b4fa;
-        color: #cdd6f4;
-    }
-
-    AutocompleteWidget {
-        layer: overlay;
-        width: 36;
-        height: auto;
-        display: none;
-    }
-
-    HelpMenu {
-        layer: overlay;
-        display: none;
-    }
-
-    ConfigPanel {
-        layer: overlay;
-        display: none;
-    }
-    """
+    CSS = _buildAppCss(_theme)
 
     def __init__(self, filename=None):
         super().__init__()
@@ -163,6 +168,12 @@ class TxtrApp(App):
         yield HelpMenu(self)
         yield ConfigPanel()
         yield StatusBar(self.buffer, self.msm, self)
+
+    def on_mount(self):
+        # show any theme loading warning from startup
+        warn = getStartupWarning()
+        if warn:
+            self.notify(warn, severity="warning", timeout=6)
 
     # key handling
     def on_key(self, event: Key):
