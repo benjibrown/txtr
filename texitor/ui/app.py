@@ -823,7 +823,8 @@ class TxtrApp(App):
         elif cmd in ("config show", "config"):
             self._cmd_configShow()
         elif cmd in ("config set", "config get"):
-            # bare command without args — show usage
+            # bare commands without args 
+            # TODO - make this better
             self.notify(f":{cmd} <section.key> <value>" if cmd == "config set" else f":{cmd} <section.key>", severity="warning")
         elif cmd.startswith("config set"):
             self._cmd_configSet(cmd[len("config set"):].strip())
@@ -983,6 +984,7 @@ class TxtrApp(App):
                     + list(buf.lines[r0 + 1 : r1])
                     + [buf.lines[r1][: c1 + 1]]
                 )
+        # hello random person reading this code
         self._doYank(yanked)
         self._action_enter_normal()
         n = len(self._yank)
@@ -991,6 +993,7 @@ class TxtrApp(App):
     def _action_delete_selection(self):
         buf = self.buffer
         buf.checkpoint()
+        # i need to seperate this across diff files, using vim to edit 1k+ lines is cancer :(, most of the code is just the same but for diff selection modes, so forgive the repetition please ...
         if self.msm.mode is Mode.VISUAL_LINE:
             if self.visual_anchor is None:
                 return
