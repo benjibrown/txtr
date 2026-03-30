@@ -12,6 +12,7 @@ from textual.widget import Widget
 
 from texitor.core.buffer import Buffer
 from texitor.core.modes import Mode, ModeStateMachine
+from texitor.core.theme import theme as _theme
 
 if TYPE_CHECKING:
     from texitor.ui.app import TxtrApp
@@ -20,22 +21,21 @@ _CONSOLE = Console(
     width=500, no_color=False, highlight=False, markup=False, emoji=False
 )
 
-# (label, fg, bg) per mode - catppuccin mocha, i will not apologize for this choice, catppuccin is love, catppuccin is life 
-# TODO - configurable themes :)
+# colors - all sourced from the active theme
 _MODE_STYLE = {
-    Mode.NORMAL:      ("NORMAL",      "#1e1e2e", "#89b4fa"),
-    Mode.INSERT:      ("INSERT",      "#1e1e2e", "#a6e3a1"),
-    Mode.VISUAL:      ("VISUAL",      "#1e1e2e", "#cba6f7"),
-    Mode.VISUAL_LINE: ("VISUAL LINE", "#1e1e2e", "#cba6f7"),
-    Mode.COMMAND:     ("COMMAND",     "#1e1e2e", "#f38ba8"),
-    Mode.SEARCH:      ("SEARCH",      "#1e1e2e", "#89b4fa"),
+    Mode.NORMAL:      ("NORMAL",      _theme.bg, _theme.accent),
+    Mode.INSERT:      ("INSERT",      _theme.bg, _theme.green),
+    Mode.VISUAL:      ("VISUAL",      _theme.bg, _theme.accent2),
+    Mode.VISUAL_LINE: ("VISUAL LINE", _theme.bg, _theme.accent2),
+    Mode.COMMAND:     ("COMMAND",     _theme.bg, _theme.red),
+    Mode.SEARCH:      ("SEARCH",      _theme.bg, _theme.accent),
 }
 
-_BAR_BG = "#181825"
-_BAR_FG = "#cdd6f4"
-_POS_BG = "#313244"
-_CMD_FG = "#f38ba8"
-_SEARCH_FG = "#89b4fa"
+_BAR_BG    = _theme.bg_alt
+_BAR_FG    = _theme.fg
+_POS_BG    = _theme.bg_popup
+_CMD_FG    = _theme.red
+_SEARCH_FG = _theme.accent
 
 
 class StatusBar(Widget):
