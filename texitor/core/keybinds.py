@@ -43,6 +43,7 @@ _DEFAULTS = {
         "N":       "search_prev",
         # edit
         "d d":     "delete_line",
+        "_ d d":   "blackhole_delete_line",
         "y y":     "yank_line",
         "p":       "paste_after",
         "P":       "paste_before",
