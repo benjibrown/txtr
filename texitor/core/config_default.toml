@@ -20,9 +20,16 @@ tab_width = 4
 # auto close brackets and braces [wip]
 auto_pairs = true
 
-# use system clipboard for yank/paste (wl-copy/xclip/xsel)
+# use system clipboard for yank/paste (wl-copy/xclip/xsel/pbcopy)
 # false = use txtr internal register only
 system_clipboard = false
+
+# when true, dd/d (delete) never yanks - use p to paste last explicit yank only
+# "_dd always deletes to blackhole regardless of this setting
+blackhole_delete = false
+
+# show indent guide bars at each tab stop within leading whitespace
+indent_guides = true
 
 
 [theme]
