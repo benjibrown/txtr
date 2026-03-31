@@ -48,13 +48,32 @@ _HL_COMMENT = _theme.fg_muted
 _HL_BRACE   = _theme.accent2
 
 
-def _highlight(line, bg):
+_INDENT_GUIDE = _theme.border   # subtle - same as border color
+
+
+def _highlight(line, bg, tab_width=4, indent_guides=True):
     # tokenise and colour a single line of latex
+
+    # indent guides - replace a space at each tab stop in leading whitespace with a visible bar
+    guide_positions = set()
+    if indent_guides and tab_width > 0:
+        leading = len(line) - len(line.lstrip(" "))
+        guide_positions = {p for p in range(tab_width, leading, tab_width) if p < len(line) and line[p] == " "}
+        if guide_positions:
+            chars = list(line)
+            for p in guide_positions:
+                chars[p] = "▎"
+            line = "".join(chars)
+
     t = Text(no_wrap=True)
     t.append(line, style=Style(color=_TEXT, bgcolor=bg))
 
     def col(color, start, end):
         t.stylize(Style(color=color, bgcolor=bg), start, min(end, len(line)))
+
+    # style guide chars (done after Text is built so they get the right color)
+    for p in guide_positions:
+        t.stylize(Style(color=_INDENT_GUIDE, bgcolor=bg), p, p + 1)
 
     # braces/brackets first (lowest priority - get overridden below where needed)
     for m in re.finditer(r'[{}\[\]]', line):
@@ -165,7 +184,10 @@ class EditorWidget(Widget):
         text.append(" │ ", style=Style(color=_GUTTER_SEP, bgcolor=cur_bg))
 
         # syntax highlighted content - visual selection + cursor get layered on top
-        content = _highlight(line, cur_bg)
+        from texitor.core.config import config as cfg
+        tw = cfg.get("editor", "tab_width", 4)
+        ig = cfg.get("editor", "indent_guides", True)
+        content = _highlight(line, cur_bg, tab_width=tw, indent_guides=ig)
 
         # highlight search matches on this line
         if self._app.searchMatches:
