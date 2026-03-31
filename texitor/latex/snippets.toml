@@ -356,6 +356,52 @@ body = "\\documentclass[12pt]{report}\n\\usepackage[utf8]{inputenc}\n\\usepackag
 
 # environment snippets - shortcode + tab to expand (won't fire while typing)
 
+# math mode entry snippets
+[environments.display_math]
+name = "Display math"
+trigger = "dm"
+body = "\\[\n    |\n\\]"
+
+[environments.inline_math]
+name = "Inline math"
+trigger = "im"
+body = "$|$"
+
+[environments.double_dollar]
+name = "Display math ($$)"
+trigger = "$$"
+body = "$$|$$"
+
+[environments.align_star]
+name = "Align*"
+trigger = "ali*"
+body = "\\begin{align*}\n    |\n\\end{align*}"
+
+[environments.gather]
+name = "Gather"
+trigger = "gat"
+body = "\\begin{gather}\n    |\n\\end{gather}"
+
+[environments.gather_star]
+name = "Gather*"
+trigger = "gat*"
+body = "\\begin{gather*}\n    |\n\\end{gather*}"
+
+[environments.multline]
+name = "Multline"
+trigger = "mlt"
+body = "\\begin{multline}\n    |\n\\end{multline}"
+
+[environments.cases]
+name = "Cases"
+trigger = "cas"
+body = "\\begin{cases}\n    | & | \\\\\\\\\n    | & |\n\\end{cases}"
+
+[environments.matrix]
+name = "Matrix"
+trigger = "mat"
+body = "\\begin{pmatrix}\n    |\n\\end{pmatrix}"
+
 [environments.equation]
 name = "Equation"
 trigger = "eq"
