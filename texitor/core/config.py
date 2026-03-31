@@ -19,6 +19,8 @@ _DEFAULTS = {
         "tab_width":        4,
         "auto_pairs":       True,
         "system_clipboard": False,
+        "blackhole_delete": False,
+        "indent_guides":    True,
     },
     "theme": {
         "name":        "catppuccin",
