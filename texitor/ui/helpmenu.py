@@ -106,6 +106,7 @@ _CMD_SECTIONS = [
         (":config set <s.key> <v>", "set a config value (saved to disk)"),
         (":config get <s.key>",     "print a config value"),
         (":config set theme.name <n>", "switch theme (catppuccin, gruvbox, custom)"),
+        (":config set editor.blackhole_delete true", "dd deletes without yanking (use \"_dd to always blackhole)"),
     ]),
 ]
 
