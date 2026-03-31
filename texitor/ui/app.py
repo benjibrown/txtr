@@ -720,8 +720,11 @@ class TxtrApp(App):
             buf.lines[buf.cursor_row] = line[:col] + closer + line[col:]
             # cursor stays between the pair (insert() already moved it right)
 
-    def _doYank(self, lines):
+    def _doYank(self, lines, blackhole=False):
         # store lines in internal register and optionally copy to system clipboard
+        # blackhole=True discards the lines entirely (no register, no clipboard)
+        if blackhole:
+            return
         self._yank = lines
         if _useSystemClip():
             copyToSystem("\n".join(lines))
@@ -739,8 +742,19 @@ class TxtrApp(App):
 
     def _action_delete_line(self):
         self.buffer.checkpoint()
-        self._doYank(self.buffer.delete_line())
-        self.notify(f"{len(self._yank)} line{'s' if len(self._yank) != 1 else ''} deleted")
+        bh = cfg.get("editor", "blackhole_delete", False)
+        deleted = self.buffer.delete_line()
+        self._doYank(deleted, blackhole=bh)
+        n = len(deleted)
+        self.notify(f"{n} line{'s' if n != 1 else ''} deleted")
+
+    def _action_blackhole_delete_line(self):
+        # "_dd - always deletes without yanking, regardless of config
+        self.buffer.checkpoint()
+        deleted = self.buffer.delete_line()
+        self._doYank(deleted, blackhole=True)
+        n = len(deleted)
+        self.notify(f"{n} line{'s' if n != 1 else ''} deleted")
 
     def _action_paste_after(self):
         lines = self._getPaste()
@@ -1010,7 +1024,8 @@ class TxtrApp(App):
                 return
             r0 = min(self.visual_anchor[0], buf.cursor_row)
             r1 = max(self.visual_anchor[0], buf.cursor_row)
-            self._doYank(list(buf.lines[r0 : r1 + 1]))
+            bh = cfg.get("editor", "blackhole_delete", False)
+            self._doYank(list(buf.lines[r0 : r1 + 1]), blackhole=bh)
             del buf.lines[r0 : r1 + 1]
             if not buf.lines:
                 buf.lines = [""]
@@ -1021,16 +1036,18 @@ class TxtrApp(App):
             if bounds is None:
                 return
             r0, c0, r1, c1 = bounds
+            bh = cfg.get("editor", "blackhole_delete", False)
             if r0 == r1:
                 line = buf.lines[r0]
-                self._doYank([line[c0 : c1 + 1]])
+                self._doYank([line[c0 : c1 + 1]], blackhole=bh)
                 buf.lines[r0] = line[:c0] + line[c1 + 1 :]
                 buf.cursor_col = c0
             else:
                 self._doYank(
                     [buf.lines[r0][c0:]]
                     + list(buf.lines[r0 + 1 : r1])
-                    + [buf.lines[r1][: c1 + 1]]
+                    + [buf.lines[r1][: c1 + 1]],
+                    blackhole=bh,
                 )
                 buf.lines[r0] = buf.lines[r0][:c0] + buf.lines[r1][c1 + 1 :]
                 del buf.lines[r0 + 1 : r1 + 1]
