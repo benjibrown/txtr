@@ -16,6 +16,8 @@ from texitor.ui.statusbar import StatusBar
 from texitor.ui.autocomplete import AutocompleteWidget
 from texitor.ui.helpmenu import HelpMenu
 from texitor.ui.configpanel import ConfigPanel
+from texitor.ui.buildpanel import BuildPanel
+import texitor.core.compiler as _compiler
 from texitor.latex.snippets import SnippetManager
 from texitor.latex.completer import LatexCompleter
 
@@ -69,6 +71,15 @@ def _buildAppCss(t):
     ConfigPanel {{
         layer: overlay;
         display: none;
+    }}
+
+    BuildPanel {{
+        layer: overlay;
+        display: none;
+        width: 80%;
+        height: 60%;
+        offset-x: 10%;
+        offset-y: 20%;
     }}
     """
 
@@ -148,6 +159,8 @@ class TxtrApp(App):
         # help menu state
         self.helpOpen   = False
         self.configOpen = False
+        self.buildOpen  = False
+        self._buildTask = None
 
         self.snippets = SnippetManager()
         self.completer = LatexCompleter()
@@ -167,6 +180,7 @@ class TxtrApp(App):
         yield AutocompleteWidget(self)
         yield HelpMenu(self)
         yield ConfigPanel()
+        yield BuildPanel()
         yield StatusBar(self.buffer, self.msm, self)
 
     def on_mount(self):
@@ -235,6 +249,27 @@ class TxtrApp(App):
                 return
             elif key == "ctrl+u":
                 self.query_one(ConfigPanel).scrollUp(8)
+                return
+            else:
+                return
+
+        # build panel swallows keys while open
+        if self.buildOpen:
+            if key in ("q", "escape"):
+                self.buildOpen = False
+                self.query_one(BuildPanel).display = False
+                return
+            elif key in ("j", "down"):
+                self.query_one(BuildPanel).scrollDown()
+                return
+            elif key in ("k", "up"):
+                self.query_one(BuildPanel).scrollUp()
+                return
+            elif key == "ctrl+d":
+                self.query_one(BuildPanel).scrollDown(8)
+                return
+            elif key == "ctrl+u":
+                self.query_one(BuildPanel).scrollUp(8)
                 return
             else:
                 return
@@ -855,6 +890,11 @@ class TxtrApp(App):
             self._cmd_configSet(cmd[len("config set"):].strip())
         elif cmd.startswith("config get"):
             self._cmd_configGet(cmd[len("config get"):].strip())
+        elif cmd in ("build", "compile", "b"):
+            self._cmd_build()
+        elif cmd.startswith("build ") or cmd.startswith("compile "):
+            engine = cmd.split(None, 1)[1].strip()
+            self._cmd_build(engine=engine)
         else:
             self.notify(f"unknown command: {cmd}", severity="warning")
 
@@ -898,6 +938,58 @@ class TxtrApp(App):
             return
         self.buffer.save()
         self.notify(f"saved {self.buffer.path}")
+
+    def _cmd_build(self, engine=None):
+        if not self.buffer.path:
+            self.notify("save file first before building", severity="warning")
+            return
+
+        if self._buildTask and not self._buildTask.done():
+            self._buildTask.cancel()
+
+        self.buffer.save()
+
+        engine    = engine or cfg.get("editor", "compiler", "latexmk")
+        auxDir    = cfg.get("editor", "aux_dir", ".aux")
+        customCmd = cfg.get("editor", "custom_compile_cmd", "") or None
+
+        if not customCmd and engine not in _compiler.PRESETS:
+            self.notify(f"unknown engine '{engine}' - use latexmk, pdflatex, xelatex or lualatex", severity="warning")
+            return
+
+        panel = self.query_one(BuildPanel)
+        panel.reset(engine, self.buffer.path)
+        panel.display = True
+        self.buildOpen = True
+
+        async def _run():
+            def onLine(line, isErr):
+                panel.appendLine(line, isErr)
+
+            try:
+                rc, _ = await _compiler.compile(
+                    self.buffer.path,
+                    engine=engine,
+                    auxConfig=auxDir,
+                    customCmd=customCmd,
+                    onLine=onLine,
+                )
+                panel.setDone(rc)
+                if rc == 0:
+                    self.notify(f"build succeeded ({engine})", timeout=3)
+                else:
+                    self.notify(f"build failed (exit {rc})", severity="error", timeout=5)
+            except asyncio.CancelledError:
+                panel.appendLine("build cancelled", True)
+                panel.setDone(1)
+            except Exception as e:
+                panel.appendLine(f"error: {e}", True)
+                panel.setDone(1)
+
+        import asyncio
+        self._buildTask = asyncio.create_task(_run())
+
+
 
     def _cmd_quit(self):
         if self.buffer.modified:
