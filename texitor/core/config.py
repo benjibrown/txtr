@@ -16,6 +16,8 @@ _DEFAULTS = {
         "relative_numbers": False,
         "autocompile":      False,
         "compiler":         "latexmk",
+        "aux_dir":          ".aux",
+        "custom_compile_cmd": "",
         "tab_width":        4,
         "auto_pairs":       True,
         "system_clipboard": False,
