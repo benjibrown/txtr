@@ -86,52 +86,22 @@ def _snippetRows(snippets):
             rows.append(("row", trigger, f"{snip.get('name', trigger)}  →  {body}"))
     return rows
 
-
-# all : commands, grouped by category
-_CMD_SECTIONS = [
-    ("File", [
-        (":w",              "save file"),
-        (":w <file>",       "save as file"),
-        (":wq  /  :x",     "save and quit"),
-        (":q",              "quit (fails if unsaved)"),
-        (":q!",             "force quit"),
-        (":e <file>",       "open file"),
-    ]),
-    ("View", [
-        (":help  /  :h",             "open help menu"),
-        (":snippets  /  :snips",     "open snippets tab in help"),
-        (":config  /  :config show", "show config panel"),
-    ]),
-    ("Config", [
-        (":config set <s.key> <v>", "set a config value (saved to disk)"),
-        (":config get <s.key>",     "print a config value"),
-        (":config set theme.name <n>", "switch theme (catppuccin, gruvbox, custom)"),
-        (":config set editor.blackhole_delete true", "dd deletes without yanking (use \"_dd to always blackhole)"),
-    ]),
-]
-
-# plugin-registered command sections - populated before widget mounts via registerPluginCommands()
-_PLUGIN_CMD_SECTIONS = []
+from texitor.core.cmdregistry import registry as _cmdRegistry
 
 
 def registerPluginCommands(pluginName, cmds):
-    # plugins call this to add their commands to the Commands tab
+    # plugins register their commands via the central registry
     # cmds is a list of (":cmd syntax", "description") tuples
-    # shows up as a named subsection under the plugin's name
-    _PLUGIN_CMD_SECTIONS.append((pluginName, cmds))
+    _cmdRegistry.registerSection(f"Plugin: {pluginName}", cmds)
 
 
 def _commandRows():
     rows = []
-    for section, cmds in _CMD_SECTIONS:
+    for section, cmds in _cmdRegistry.sections():
         rows.append(("header", section))
         for cmd, desc in cmds:
             rows.append(("row", cmd, desc))
-    # append any plugin-registered commands at the bottom
-    for pluginName, cmds in _PLUGIN_CMD_SECTIONS:
-        rows.append(("header", f"Plugin: {pluginName}"))
-        for cmd, desc in cmds:
-            rows.append(("row", cmd, desc))
+        rows.append(("gap",))   # blank line between sections
     return rows
 
 
@@ -257,6 +227,8 @@ class HelpMenu(Widget):
         kind = self._rows[rowIdx][0]
         if kind == "header":
             return self._renderHeader(self._rows[rowIdx][1], width, inner)
+        if kind == "gap":
+            return self._renderBlankRow(width, inner)
         return self._renderRow(self._rows[rowIdx][1], self._rows[rowIdx][2], rowIdx, width, inner)
 
     def _renderTopBorder(self, width, inner):
