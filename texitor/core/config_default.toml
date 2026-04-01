@@ -8,10 +8,10 @@
 # show line numbers relative to cursor (nvim style) [wip]
 relative_numbers = false
 
-# auto compile on save [wip]
-autocompile = false
-
-# compiler to use: "latexmk", "pdflatex", "xelatex", or "lualatex"
+# compiler to use: "latexmk" (default), "latexmk-lua", "latexmk-xe",
+#   "pdflatex", "xelatex", "lualatex", or "tectonic"
+# latexmk variants recommended - proper outdir/auxdir separation
+# use :engines in the editor to see all options
 compiler = "latexmk"
 
 # directory for aux/log files - relative to file dir, or absolute
@@ -21,6 +21,9 @@ aux_dir = ".aux"
 # if set, this command is used instead of the engine above
 # placeholders: {file} abs path, {dir} source dir, {stem} no extension, {aux} aux dir
 custom_compile_cmd = ""
+
+# auto compile on save - runs :build after every :w
+autocompile = false
 
 # number of spaces for tab indent - TODO stop hardcoding 4
 tab_width = 4
