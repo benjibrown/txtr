@@ -895,6 +895,14 @@ class TxtrApp(App):
         elif cmd.startswith("build ") or cmd.startswith("compile "):
             engine = cmd.split(None, 1)[1].strip()
             self._cmd_build(engine=engine)
+        elif cmd == "clean":
+            self._cmd_clean()
+        elif cmd in ("buildlog", "buildpanel"):
+            self._cmd_buildlog()
+        elif cmd in ("buildstop", "killbuild"):
+            self._cmd_buildstop()
+        elif cmd in ("engines", "compilers"):
+            self._cmd_listEngines()
         else:
             self.notify(f"unknown command: {cmd}", severity="warning")
 
@@ -938,6 +946,8 @@ class TxtrApp(App):
             return
         self.buffer.save()
         self.notify(f"saved {self.buffer.path}")
+        if cfg.get("editor", "autocompile", False):
+            self._cmd_build()
 
     def _cmd_build(self, engine=None):
         if not self.buffer.path:
@@ -953,8 +963,9 @@ class TxtrApp(App):
         auxDir    = cfg.get("editor", "aux_dir", ".aux")
         customCmd = cfg.get("editor", "custom_compile_cmd", "") or None
 
+        # custom_compile_cmd takes priority - no need to change compiler setting
         if not customCmd and engine not in _compiler.PRESETS:
-            self.notify(f"unknown engine '{engine}' - use latexmk, pdflatex, xelatex or lualatex", severity="warning")
+            self.notify(f"unknown engine '{engine}' - use :engines to list options", severity="warning")
             return
 
         panel = self.query_one(BuildPanel)
@@ -988,6 +999,52 @@ class TxtrApp(App):
 
         import asyncio
         self._buildTask = asyncio.create_task(_run())
+
+    def _cmd_clean(self):
+        if not self.buffer.path:
+            self.notify("no file open", severity="warning")
+            return
+        auxDir = cfg.get("editor", "aux_dir", ".aux")
+        try:
+            count = _compiler.cleanAuxDir(self.buffer.path, auxDir)
+            self.notify(f"cleaned {count} file{'s' if count != 1 else ''} from aux dir")
+        except Exception as e:
+            self.notify(f"clean failed: {e}", severity="error")
+
+    def _cmd_buildlog(self):
+        panel = self.query_one(BuildPanel)
+        if not panel._lines:
+            self.notify("no build output yet - run :build first", severity="warning")
+            return
+        panel.display = True
+        self.buildOpen = True
+
+    def _cmd_buildstop(self):
+        if self._buildTask and not self._buildTask.done():
+            self._buildTask.cancel()
+            self.notify("build cancelled")
+        else:
+            self.notify("no build running", severity="warning")
+
+    def _cmd_listEngines(self):
+        panel = self.query_one(BuildPanel)
+        panel.reset("engines", "available engines")
+        for name, desc in _compiler.ENGINE_DESCRIPTIONS.items():
+            panel.appendLine(f"  {name:<14} {desc}", autoScroll=False)
+        current = cfg.get("editor", "compiler", "latexmk")
+        customCmd = cfg.get("editor", "custom_compile_cmd", "")
+        panel.appendLine("", autoScroll=False)
+        if customCmd:
+            panel.appendLine(f"  custom_compile_cmd is set - will be used instead of engine", autoScroll=False)
+            panel.appendLine(f"  cmd: {customCmd}", autoScroll=False)
+        else:
+            panel.appendLine(f"  current engine: {current}  (editor.compiler)", autoScroll=False)
+            panel.appendLine(f"  to use custom cmd: set editor.custom_compile_cmd", autoScroll=False)
+        panel._scroll = 0
+        panel.setDone(0)
+        panel.display = True
+        self.buildOpen = True
+
 
 
 
