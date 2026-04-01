@@ -80,4 +80,9 @@ registry.registerSection("Config", [
     (":config get <section.key>",         "print a config value"),
 ])
 
+registry.registerSection("Compiler", [
+    (":build",          "build with configured engine",          [":compile", ":b"]),
+    (":build <engine>", "build with specific engine (overrides config)"),
+])
+
 
