@@ -53,9 +53,10 @@ class BuildPanel(Widget):
         self._file = filePath
         self.refresh()
 
-    def appendLine(self, text, isErr=False):
+    def appendLine(self, text, isErr=False, autoScroll=True):
         self._lines.append((text, isErr))
-        self._scroll = max(0, len(self._lines) - self._innerHeight())
+        if autoScroll:
+            self._scroll = max(0, len(self._lines) - self._innerHeight())
         self.refresh()
 
     def setDone(self, returncode):
