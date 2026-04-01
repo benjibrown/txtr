@@ -11,8 +11,16 @@ relative_numbers = false
 # auto compile on save [wip]
 autocompile = false
 
-# compiler to use - "latexmk" or "pdflatex" TODO
+# compiler to use: "latexmk", "pdflatex", "xelatex", or "lualatex"
 compiler = "latexmk"
+
+# directory for aux/log files - relative to file dir, or absolute
+# default ".aux" keeps your project folder clean
+aux_dir = ".aux"
+
+# if set, this command is used instead of the engine above
+# placeholders: {file} abs path, {dir} source dir, {stem} no extension, {aux} aux dir
+custom_compile_cmd = ""
 
 # number of spaces for tab indent - TODO stop hardcoding 4
 tab_width = 4
