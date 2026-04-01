@@ -1,3 +1,7 @@
+# txtr stuff  
+# hide .aux cos then i dont need to keep deleting ts
+.aux
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 texitor/__pycache__/
