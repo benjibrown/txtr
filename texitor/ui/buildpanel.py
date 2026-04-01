@@ -99,3 +99,68 @@ class BuildPanel(Widget):
         t.append(_V, style=Style(color=_BORDER, bgcolor=_BG))
         return _strip(t, w)
 
+    def _renderHeader(self, w):
+        statusColor = {
+            "running": _YELLOW,
+            "success": _GREEN,
+            "error":   _RED,
+            "idle":    _FG_DIM,
+        }.get(self._status, _FG_DIM)
+
+        statusLabel = {
+            "running": " compiling… ",
+            "success": " success   ",
+            "error":   " error     ",
+            "idle":    " idle       ",
+        }.get(self._status, "")
+
+        fname = self._file.split("/")[-1] if self._file else ""
+        title = f" Build  {self._engine}  {fname} "
+        statusLen = len(statusLabel) + 2
+        remaining = max(0, w - 2 - 2 - len(title) - statusLen)
+
+        t = Text(no_wrap=True)
+        t.append(_TL + _H * 2, style=Style(color=_BORDER, bgcolor=_BG_HEAD))
+        t.append(title, style=Style(color=_ACCENT, bgcolor=_BG_HEAD, bold=True))
+        t.append(_H * remaining, style=Style(color=_BORDER, bgcolor=_BG_HEAD))
+        t.append(" " + statusLabel + " ", style=Style(color=statusColor, bgcolor=_BG_HEAD, bold=True))
+        t.append(_TR, style=Style(color=_BORDER, bgcolor=_BG_HEAD))
+        return _strip(t, w)
+
+    def _renderFooter(self, w):
+        hint = "  q/esc close   j/k scroll  "
+        total = len(self._lines)
+        shown = min(self._scroll + self._innerHeight(), total)
+        lineInfo = f" {self._scroll + 1}-{shown}/{total} " if total else " 0 lines "
+        mid = max(0, w - 2 - len(hint) - len(lineInfo))
+
+        t = Text(no_wrap=True)
+        t.append(_BL, style=Style(color=_BORDER, bgcolor=_BG_HEAD))
+        t.append(hint, style=Style(color=_FG_DIM, bgcolor=_BG_HEAD))
+        t.append(_H * mid, style=Style(color=_BORDER, bgcolor=_BG_HEAD))
+        t.append(lineInfo, style=Style(color=_FG_DIM, bgcolor=_BG_HEAD))
+        t.append(_BR, style=Style(color=_BORDER, bgcolor=_BG_HEAD))
+        return _strip(t, w)
+
+    def _renderOutputLine(self, lineData, w):
+        text, isErr = lineData
+        if isErr or "error" in text.lower():
+            fg = _RED
+        elif "warning" in text.lower():
+            fg = _YELLOW
+        elif text.startswith("!"):
+            fg = _RED
+        elif text.startswith("Output written") or "successfully" in text.lower():
+            fg = _GREEN
+        else:
+            fg = _FG
+
+        inner = w - 2
+        display = text[:inner] if len(text) > inner else text.ljust(inner)
+
+        t = Text(no_wrap=True)
+        t.append(_V, style=Style(color=_BORDER, bgcolor=_BG))
+        t.append(display, style=Style(color=fg, bgcolor=_BG))
+        t.append(_V, style=Style(color=_BORDER, bgcolor=_BG))
+        return _strip(t, w)
+
