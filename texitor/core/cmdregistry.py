@@ -83,6 +83,10 @@ registry.registerSection("Config", [
 registry.registerSection("Compiler", [
     (":build",          "build with configured engine",          [":compile", ":b"]),
     (":build <engine>", "build with specific engine (overrides config)"),
+    (":clean",          "delete aux dir contents (.log, .aux, etc.)"),
+    (":buildlog",       "reopen last build output panel"),
+    (":buildstop",      "cancel running build"),
+    (":engines",        "list available engines and current setting", [":compilers"]),
 ])
 
 
