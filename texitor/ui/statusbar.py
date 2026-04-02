@@ -87,10 +87,15 @@ class StatusBar(Widget):
         if buf.modified:
             name += " ●"
         text.append(f"  {name}", style=Style(color=_BAR_FG, bgcolor=_BAR_BG))
-
+        
+        buildStatus = getattr(self._app, "_buildStatus", "")
         pos = f" {buf.cursor_row + 1}:{buf.cursor_col + 1} "
-        used = (len(label) + 2) + (len(name) + 2) + len(pos)
+        statusLen = (len(f"  {buildStatus}  ") if buildStatus else 0)
+        used = (len(label) + 2) + (len(name) + 2) + len(pos) + statusLen
         text.append(" " * max(0, width - used), style=Style(bgcolor=_BAR_BG))
+        if buildStatus:
+            statusColor = _theme.red if buildStatus.startswith("e") or buildStatus.startswith("f") else (_theme.yellow if buildStatus == "building ..." else _theme.green)
+            text.append(f"  {buildStatus}   ", style=Style(color=statusColor, bgcolor=_BAR_BG, bold=True))
         text.append(pos, style=Style(color=_BAR_FG, bgcolor=_POS_BG, bold=True))
 
         return Strip(list(text.render(_CONSOLE))).adjust_cell_length(width)
