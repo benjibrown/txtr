@@ -104,15 +104,21 @@ class ConfigPanel(Widget):
         kind = self._rows[rowIdx][0]
         if kind == "header":
             return _renderHeader(self._rows[rowIdx][1], width, inner)
+        if kind == "gap":
+            return _renderBlank(width, inner) # new lines for diff sections
         return _renderRow(self._rows[rowIdx][1], self._rows[rowIdx][2], rowIdx, width, inner)
 
 
 # row builders frfr
 def _buildRows(data):
     rows = []
-    for section, values in data.items():
+    sections = list(data.items())
+    # gaps between new sections
+    for i, (section, values) in enumerate(sections):
+        if i > 0:
+            rows.append(("gap",))
         rows.append(("header", f"[{section}]"))
-        for k, v in values.items():
+        for k,v in values.items():
             rows.append(("row", k, str(v)))
     return rows
 
