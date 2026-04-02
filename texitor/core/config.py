@@ -14,15 +14,19 @@ _bundledPath = Path(__file__).parent.parent / "core" / "config_default.toml"
 _DEFAULTS = {
     "editor": {
         "relative_numbers": False,
-        "autocompile":      False,
-        "compiler":         "latexmk",
-        "aux_dir":          ".aux",
-        "custom_compile_cmd": "",
         "tab_width":        4,
         "auto_pairs":       True,
         "system_clipboard": False,
         "blackhole_delete": False,
         "indent_guides":    True,
+    },
+    "compiler": {
+        "engine":           "latexmk",
+        "aux_dir":          ".aux",
+        "custom_cmd":       "",
+        "autocompile":      "save", # 3 modes - always/off/save - always doesnt require initialising, off will never autocompile and save will autocompile when the file is saved but only if user initialises the compiler once first
+        "build_log_autohide":   False,
+        "build_log_autoclose":  False,
     },
     "theme": {
         "name":        "catppuccin",
