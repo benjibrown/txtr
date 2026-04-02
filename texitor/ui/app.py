@@ -165,6 +165,10 @@ class TxtrApp(App):
         self.snippets = SnippetManager()
         self.completer = LatexCompleter()
 
+        # additional compiler stuff 
+        self._buildPrimed = False 
+        self._buildStatus = ""
+
         # seed ~/.config/txtr/ with defaults on first run, then load
         ensureUserConfig()
         cfg.load()
@@ -946,7 +950,13 @@ class TxtrApp(App):
             return
         self.buffer.save()
         self.notify(f"saved {self.buffer.path}")
-        if cfg.get("editor", "autocompile", False):
+        mode = cfg.get("compiler", "autocompile", "save")
+
+        if mode is True:
+            mode = "save"
+        elif mode is False:
+            mode = "off"
+        if mode == "always" or (mode == "save" and self._buildPrimed):
             self._cmd_build()
 
     def _cmd_build(self, engine=None):
@@ -959,9 +969,11 @@ class TxtrApp(App):
 
         self.buffer.save()
 
-        engine    = engine or cfg.get("editor", "compiler", "latexmk")
-        auxDir    = cfg.get("editor", "aux_dir", ".aux")
-        customCmd = cfg.get("editor", "custom_compile_cmd", "") or None
+        engine    = engine or cfg.get("compiler", "engine", "latexmk")
+        auxDir    = cfg.get("compiler", "aux_dir", ".aux")
+        customCmd = cfg.get("compiler", "custom_cmd", "") or None
+        autohide  = cfg.get("compiler", "build_log_autohide", False)
+        autoclose = cfg.get("compiler", "build_log_autoclose", False)
 
         # custom_compile_cmd takes priority - no need to change compiler setting
         if not customCmd and engine not in _compiler.PRESETS:
@@ -970,8 +982,12 @@ class TxtrApp(App):
 
         panel = self.query_one(BuildPanel)
         panel.reset(engine, self.buffer.path)
-        panel.display = True
-        self.buildOpen = True
+        if not autohide:
+            panel.display = True 
+            self.buildOpen = True 
+
+        self._buildStatus = "building ..."
+        self.query_one(StatusBar).refresh()
 
         async def _run():
             def onLine(line, isErr):
@@ -987,15 +1003,25 @@ class TxtrApp(App):
                 )
                 panel.setDone(rc)
                 if rc == 0:
+                    self._buildPrimed = True 
+                    # set build status - to be shown in the statusbar
+                    self._buildStatus = "built"
                     self.notify(f"build succeeded ({engine})", timeout=3)
+                    if autoclose and self.buildOpen:
+                        panel.display = False
+                        self.buildOpen = False
                 else:
+                    self._buildStatus = "failed"
                     self.notify(f"build failed (exit {rc})", severity="error", timeout=5)
             except asyncio.CancelledError:
                 panel.appendLine("build cancelled", True)
                 panel.setDone(1)
+                self._buildStatus = ""
             except Exception as e:
                 panel.appendLine(f"error: {e}", True)
                 panel.setDone(1)
+                self._buildStatus = "error"
+            self.query_one(StatusBar).refresh
 
         import asyncio
         self._buildTask = asyncio.create_task(_run())
@@ -1004,7 +1030,7 @@ class TxtrApp(App):
         if not self.buffer.path:
             self.notify("no file open", severity="warning")
             return
-        auxDir = cfg.get("editor", "aux_dir", ".aux")
+        auxDir = cfg.get("compiler", "aux_dir", ".aux")
         try:
             count = _compiler.cleanAuxDir(self.buffer.path, auxDir)
             self.notify(f"cleaned {count} file{'s' if count != 1 else ''} from aux dir")
@@ -1031,15 +1057,15 @@ class TxtrApp(App):
         panel.reset("engines", "available engines")
         for name, desc in _compiler.ENGINE_DESCRIPTIONS.items():
             panel.appendLine(f"  {name:<14} {desc}", autoScroll=False)
-        current = cfg.get("editor", "compiler", "latexmk")
-        customCmd = cfg.get("editor", "custom_compile_cmd", "")
+        current = cfg.get("compiler", "engine", "latexmk")
+        customCmd = cfg.get("compiler", "custom_cmd", "")
         panel.appendLine("", autoScroll=False)
         if customCmd:
-            panel.appendLine(f"  custom_compile_cmd is set - will be used instead of engine", autoScroll=False)
+            panel.appendLine(f"  custom_cmd is set - will be used instead of engine", autoScroll=False)
             panel.appendLine(f"  cmd: {customCmd}", autoScroll=False)
         else:
-            panel.appendLine(f"  current engine: {current}  (editor.compiler)", autoScroll=False)
-            panel.appendLine(f"  to use custom cmd: set editor.custom_compile_cmd", autoScroll=False)
+            panel.appendLine(f"  current engine: {current}  (compiler.engine)", autoScroll=False)
+            panel.appendLine(f"  to use custom cmd: set compiler.custom_cmd", autoScroll=False)
         panel._scroll = 0
         panel.setDone(0)
         panel.display = True
