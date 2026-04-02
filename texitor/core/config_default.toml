@@ -45,7 +45,7 @@ custom_cmd = ""
 # "save" - whenever the file is saved, the latex is compiled however you must manually build it once in order to start the auto-compilation
 # "always" - whenever the file is saved, the latex is compiled to pdf, you do not need to prime the compiler like in save mode
 # "off" - zero autocompilation enabled 
-autocompile = "always"
+autocompile = "off"
 
 # only opens the build log if an error actually occurs
 build_log_autohide = false
