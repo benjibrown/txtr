@@ -19,19 +19,19 @@
 [triggers.frac]
 name = "Fraction"
 trigger = "//"
-body = "\\frac{|}{|}"
+body = "\\frac{${1}}{${2}}"
 auto_expand = true
 
 [triggers.sup]
 name = "Superscript"
 trigger = "^^"
-body = "^{|}"
+body = "^{${1}}"
 auto_expand = true
 
 [triggers.sub]
 name = "Subscript"
 trigger = "__"
-body = "_{|}"
+body = "_{${1}}"
 auto_expand = true
 
 
@@ -341,17 +341,17 @@ body = "\\nabla"
 [templates.doc]
 name = "Basic document"
 trigger = "doc"
-body = "\\documentclass[12pt]{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amsmath, amssymb, amsthm}\n\\usepackage{geometry}\n\\geometry{margin=1in}\n\n\\title{|}\n\\author{|}\n\\date{\\today}\n\n\\begin{document}\n\n\\maketitle\n\n|\n\n\\end{document}"
+body = "\\documentclass[12pt]{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amsmath, amssymb, amsthm}\n\\usepackage{geometry}\n\\geometry{margin=1in}\n\n\\title{${1}}\n\\author{${2}}\n\\date{\\today}\n\n\\begin{document}\n\n\\maketitle\n\n${3}\n\n\\end{document}"
 
 [templates.beamer]
 name = "Beamer presentation"
 trigger = "beamer"
-body = "\\documentclass{beamer}\n\\usepackage{amsmath, amssymb}\n\n\\title{|}\n\\author{|}\n\\date{\\today}\n\n\\begin{document}\n\n\\begin{frame}\n    \\titlepage\n\\end{frame}\n\n\\begin{frame}{|}\n    |\n\\end{frame}\n\n\\end{document}"
+body = "\\documentclass{beamer}\n\\usepackage{amsmath, amssymb}\n\n\\title{${1}}\n\\author{${2}}\n\\date{\\today}\n\n\\begin{document}\n\n\\begin{frame}\n    \\titlepage\n\\end{frame}\n\n\\begin{frame}{${3}}\n    ${4}\n\\end{frame}\n\n\\end{document}"
 
 [templates.report]
 name = "Report document"
 trigger = "rep"
-body = "\\documentclass[12pt]{report}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amsmath, amssymb, amsthm}\n\\usepackage{geometry}\n\\geometry{margin=1in}\n\n\\title{|}\n\\author{|}\n\\date{\\today}\n\n\\begin{document}\n\n\\maketitle\n\\tableofcontents\n\n\\chapter{|}\n\n|\n\n\\end{document}"
+body = "\\documentclass[12pt]{report}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amsmath, amssymb, amsthm}\n\\usepackage{geometry}\n\\geometry{margin=1in}\n\n\\title{${1}}\n\\author{${2}}\n\\date{\\today}\n\n\\begin{document}\n\n\\maketitle\n\\tableofcontents\n\n\\chapter{${3}}\n\n${4}\n\n\\end{document}"
 
 
 # environment snippets - shortcode + tab to expand (won't fire while typing)
@@ -360,72 +360,72 @@ body = "\\documentclass[12pt]{report}\n\\usepackage[utf8]{inputenc}\n\\usepackag
 [environments.display_math]
 name = "Display math"
 trigger = "dm"
-body = "\\[\n    |\n\\]"
+body = "\\[\n    ${1}\n\\]"
 
 [environments.inline_math]
 name = "Inline math"
 trigger = "im"
-body = "$|$"
+body = "$${1}$"
 
 [environments.double_dollar]
 name = "Display math ($$)"
 trigger = "$$"
-body = "$$|$$"
+body = "$$${1}$$"
 
 [environments.align_star]
 name = "Align*"
 trigger = "ali*"
-body = "\\begin{align*}\n    |\n\\end{align*}"
+body = "\\begin{align*}\n    ${1}\n\\end{align*}"
 
 [environments.gather]
 name = "Gather"
 trigger = "gat"
-body = "\\begin{gather}\n    |\n\\end{gather}"
+body = "\\begin{gather}\n    ${1}\n\\end{gather}"
 
 [environments.gather_star]
 name = "Gather*"
 trigger = "gat*"
-body = "\\begin{gather*}\n    |\n\\end{gather*}"
+body = "\\begin{gather*}\n    ${1}\n\\end{gather*}"
 
 [environments.multline]
 name = "Multline"
 trigger = "mlt"
-body = "\\begin{multline}\n    |\n\\end{multline}"
+body = "\\begin{multline}\n    ${1}\n\\end{multline}"
 
 [environments.cases]
 name = "Cases"
 trigger = "cas"
-body = "\\begin{cases}\n    | & | \\\\\\\\\n    | & |\n\\end{cases}"
+body = "\\begin{cases}\n    ${1} & ${2} \\\\\\\\\n    ${3} & ${4}\n\\end{cases}"
 
 [environments.matrix]
 name = "Matrix"
 trigger = "mat"
-body = "\\begin{pmatrix}\n    |\n\\end{pmatrix}"
+body = "\\begin{pmatrix}\n    ${1}\n\\end{pmatrix}"
 
 [environments.equation]
 name = "Equation"
 trigger = "eq"
-body = "\\begin{equation}\n    |\n\\end{equation}"
+body = "\\begin{equation}\n    ${1}\n\\end{equation}"
 
 [environments.align]
 name = "Align"
 trigger = "ali"
-body = "\\begin{align}\n    | &= | \\\\\\\\\n\\end{align}" # this looks cancner but its just creating newlines and escaping the & and \ characters
+body = "\\begin{align}\n    ${1} &= ${2} \\\\\\\\\n\\end{align}" # this looks cancner but its just creating newlines and escaping the & and \ characters
 
 [environments.itemize]
 name = "Itemize"
 trigger = "itm"
-body = "\\begin{itemize}\n    \\item |\n\\end{itemize}"
+body = "\\begin{itemize}\n    \\item ${1}\n\\end{itemize}"
 
 [environments.enumerate]
 name = "Enumerate"
 trigger = "enu"
-body = "\\begin{enumerate}\n    \\item |\n\\end{enumerate}"
+body = "\\begin{enumerate}\n    \\item ${1}\n\\end{enumerate}"
 
 [environments.figure]
 name = "Figure"
 trigger = "fig"
-body = "\\begin{figure}[h]\n    \\centering\n    \\includegraphics[width=|\\textwidth]{|}\n    \\caption{|}\n    \\label{fig:|}\n\\end{figure}"
+body = "\\begin{figure}[h]\n    \\centering\n    \\includegraphics[width=${1}\\textwidth]{${2}}\n    \\caption{${3}}\n    \\label{fig:${4}}\n\\end{figure}"
 
 
 # command snippets - shortcode + tab to expand
@@ -433,37 +433,37 @@ body = "\\begin{figure}[h]\n    \\centering\n    \\includegraphics[width=|\\text
 [commands.sqrt]
 name = "Square Root"
 trigger = "sq"
-body = "\\sqrt{|}"
+body = "\\sqrt{${1}}"
 
 [commands.text]
 name = "Text in math"
 trigger = "tt"
-body = "\\text{|}"
+body = "\\text{${1}}"
 
 [commands.vec]
 name = "Vector"
 trigger = "vec"
-body = "\\vec{|}"
+body = "\\vec{${1}}"
 
 [commands.hat]
 name = "Hat"
 trigger = "hat" 
-body = "\\hat{|}"
+body = "\\hat{${1}}"
 
 [commands.bar]
 name = "Bar"
 trigger = "bar"
-body = "\\bar{|}"
+body = "\\bar{${1}}"
 
 [commands.overline]
 name = "Overline"
 trigger = "ovl"
-body = "\\overline{|}"
+body = "\\overline{${1}}"
 
 [commands.tilde]
 name = "Tilde"
 trigger = "tld"
-body = "\\tilde{|}"
+body = "\\tilde{${1}}"
 
 # trig functions - tab-triggered (alphabetic, safe)
 
@@ -545,19 +545,20 @@ body = "\\exp"
 [commands.lim]
 name = "Limit"
 trigger = "lim"
-body = "\\lim_{| \\to |}"
+body = "\\lim_{${1} \\to ${2}}"
 
 [commands.sum]
 name = "Sum"
 trigger = "sum"
-body = "\\sum_{|}^{|}"
+body = "\\sum_{${1}}^{${2}}"
 
 [commands.prod]
 name = "Product"
 trigger = "prod"
-body = "\\prod_{|}^{|}"
+body = "\\prod_{${1}}^{${2}}"
 
 [commands.int]
 name = "Integral"
 trigger = "int"
-body = "\\int_{|}^{|} | \\, d|"
+body = "\\int_{${1}}^{${2}} ${3} \\, d${4}"
+
