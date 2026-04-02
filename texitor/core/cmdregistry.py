@@ -73,6 +73,8 @@ registry.registerSection("View", [
     (":help",               "open help menu",           [":h"]),
     (":snippets",           "open snippets tab",        [":snips"]),
     (":config",             "open config panel",        [":config show"]),
+    (":set wrap",           "enable soft line wrapping"),
+    (":set nowrap",         "disable soft line wrapping"),
 ])
 
 registry.registerSection("Config", [
