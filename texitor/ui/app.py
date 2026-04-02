@@ -381,6 +381,7 @@ class TxtrApp(App):
 
     def _refresh_all(self):
         editor = self.query_one(EditorWidget)
+        editor.rebuildVisualLines()
         editor.scroll_to_cursor()
         editor.refresh()
         self.query_one(StatusBar).refresh()
@@ -907,6 +908,16 @@ class TxtrApp(App):
             self._cmd_buildstop()
         elif cmd in ("engines", "compilers"):
             self._cmd_listEngines()
+        elif cmd == "set wrap":
+            cfg.set("editor", "wrap", True)
+            self.query_one(EditorWidget).rebuildVisualLines()
+            self._refresh_all()
+            self.notify("wrap on")
+        elif cmd == "set nowrap":
+            cfg.set("editor", "wrap", False)
+            self.query_one(EditorWidget).rebuildVisualLines()
+            self._refresh_all()
+            self.notify("wrap off")
         else:
             self.notify(f"unknown command: {cmd}", severity="warning")
 
