@@ -26,6 +26,8 @@ blackhole_delete = false
 # show indent guide bars at each tab stop within leading whitespace
 indent_guides = true
 
+wrap = true
+
 [compiler]
 
 # compiler to use: "latexmk" is the default, "latexmk-lua", "latexmk-xe", "pdflatex", "xelatex", "lualatex" or "tectonic" are all supported / builtin 
