@@ -1,11 +1,15 @@
 # snippet manager - loads from toml, matches triggers, expands into buffer
-
+import re
 import tomllib
 from pathlib import Path
 
 # default snippets bundled with txtr (fallback if no user config)
 defaultPath = Path(__file__).parent / "snippets.toml"
 userPath = Path.home() / ".config" / "txtr" / "snippets.toml"
+
+# TODO - new tab stop system, dont use | --> better syntax should be ${1} ${2}, ${1:placeholder}
+# TODO - keep support for | just in case 
+_STOP_RE = re.compile(r"\$\{(\d+)(?::([^}]*))?\}") # i hope this works
 
 # peak snippet manager - proud of this lol
 class SnippetManager:
@@ -53,7 +57,8 @@ class SnippetManager:
 
     def expandInBuffer(self, trigger, body, buf):
         # deletes trigger from buffer, inserts expanded body
-        # returns list of (row, col) tab stop positions
+        # returns list of (row, col) tab stop positions - sort by stop number 
+        # ${N}, ${N:placeholder} and | 
         trigLen = len(trigger)
         curRow = buf.cursor_row
         curCol = buf.cursor_col
@@ -63,24 +68,55 @@ class SnippetManager:
         buf.lines[curRow] = line[:curCol - trigLen] + line[curCol:]
         buf.cursor_col = curCol - trigLen
 
+        # pass 1 - find all numbered stops 
+        numStops = {}
+        for m in _STOP_RE.finditer(body):
+            n = int(m.group(1))
+            if n not in numStops:
+                numStops[n] = m.group(2) or ""
+
+        pipeCount = body.count("|")
+        nextN = (max(numStops.keys()) +1) if numStops else 1
+        pipeNums = list(range(nextN, nextN + pipeCount))
+
+        # pass 2  - build clean text 
         # walk body to find tab stop positions and build clean text
         cleanBody = ""
-        tabStops = []
+        stopPos = {} # probably row, col, len 
+        pipeIdx = 0 
         row = buf.cursor_row
         col = buf.cursor_col
+        i = 0
+        while i < len(body):
+            m = _STOP_RE.match(body, i)
+            if m:
+                n = int(m.group(1))
+                ph = m.group(2) or ""
+                # first occurence of each num records the position (hopefully)
+                if n not in stopPos:
+                    stopPos[n] = (row, col, len(ph))
+                cleanBody += ph 
+                col += len(ph)
+                i = m.end()
+                continue
+               
+            ch = body[i]
 
-        for ch in body:
-            if ch == "|":
-                tabStops.append((row, col))
-            elif ch == "\n":
+            if ch == "|": # legacy 
+                if pipeIdx < len(pipeNums):
+                    n = pipeNums(pipeIdx)
+                    stopPos[n] = (row, col, 0)
+                    pipeIdx += 1
+                i += 1
+                continue
+            if ch == "\n":
                 cleanBody += ch
                 row += 1
                 col = 0
             else:
                 cleanBody += ch
                 col += 1
-
+            i += 1
         buf.insert(cleanBody)
         buf.modified = True
-        return tabStops
-
+        return [(r,c,l) for _, (r,c,l) in sorted(stopPos.items())]
