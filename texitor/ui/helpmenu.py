@@ -60,13 +60,14 @@ def _keybindRows(keybinds):
         Mode.VISUAL:      "Visual",
         Mode.VISUAL_LINE: "Visual Line",
     }
-    for mode in modeOrder:
+    sections = [mode for mode in modeOrder if keybinds.all_for_mode(mode)]
+    for i, mode in enumerate(sections):
         binds = keybinds.all_for_mode(mode)
-        if not binds:
-            continue
         rows.append(("header", modeLabels[mode]))
         for key, action in sorted(binds.items()):
             rows.append(("row", key, action.replace("_", " ")))
+        if i < len(sections) - 1:
+            rows.append(("gap",))
     return rows
 
 
@@ -79,6 +80,8 @@ def _snippetRows(snippets):
         for trigger, snip in sorted(auto.items()):
             body = snip.get("body", "").replace("\n", " ↵ ")
             rows.append(("row", trigger, f"{snip.get('name', trigger)}  →  {body}"))
+        if tab:
+            rows.append(("gap",))
     if tab:
         rows.append(("header", "Tab triggers  (shortcode + tab)"))
         for trigger, snip in sorted(tab.items()):
