@@ -1033,8 +1033,10 @@ class TxtrApp(App):
                 panel.appendLine(f"error: {e}", True)
                 panel.setDone(1)
                 self._buildStatus = "error"
-            self.query_one(StatusBar).refresh()
-
+            # resolves NoMatches error as this is asnyc, and status bar may no longer be in the DOM
+            sb = self.query(StatusBar).first(None)
+            if sb:
+                sb.refresh()
         import asyncio
         self._buildTask = asyncio.create_task(_run())
 
