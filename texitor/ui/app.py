@@ -147,6 +147,7 @@ class TxtrApp(App):
         self.tabStopIdx = 0
         self._lastTabRow = 0   # row we jumped to for the current stop
         self._lastTabCol = 0   # col we jumped to for the current stop
+        self._lastTabLength = 0
         self._justExpanded = False
         self._revertCount = 0
 
@@ -368,9 +369,9 @@ class TxtrApp(App):
             self._justExpanded = True
             self._revertCount = 1
             if self.tabStops:
-                row, col = self.tabStops[0]
+                row, col, length = self.tabStops[0]
                 buf.move_to(row, col)
-                self._lastTabRow, self._lastTabCol = row, col
+                self._lastTabRow, self._lastTabCol, self._lastTabLength = row, col, length
                 self.tabStopIdx = 1
 
     def _is_prefix(self, mode, prefix):
@@ -1032,7 +1033,7 @@ class TxtrApp(App):
                 panel.appendLine(f"error: {e}", True)
                 panel.setDone(1)
                 self._buildStatus = "error"
-            self.query_one(StatusBar).refresh
+            self.query_one(StatusBar).refresh()
 
         import asyncio
         self._buildTask = asyncio.create_task(_run())
@@ -1110,9 +1111,9 @@ class TxtrApp(App):
             self._justExpanded = True
             self._revertCount = 1
             if self.tabStops:
-                row, col = self.tabStops[0]
+                row, col, length = self.tabStops[0]
                 buf.move_to(row, col)
-                self._lastTabRow, self._lastTabCol = row, col
+                self._lastTabRow, self._lastTabCol, self._lastTabLength = row, col, length
                 self.tabStopIdx = 1
             return
 
@@ -1122,23 +1123,26 @@ class TxtrApp(App):
             self._revertCount = 0
 
             # chars typed since we landed on the last stop (same row only)
+            # baseline is the end of the placeholder
             delta = 0
             if buf.cursor_row == self._lastTabRow:
                 delta = buf.cursor_col - self._lastTabCol
+                baseline = self._lastTabCol + self._lastTabLength
+                delta = buf.cursor_col - baseline
 
             # shift all remaining stops on the same row by that delta
             if delta != 0:
                 self.tabStops = [
-                    (r, c + delta if r == self._lastTabRow else c)
-                    for r, c in self.tabStops
+                    (r, c + delta if r == self._lastTabRow else c, l)
+                    for r, c, l in self.tabStops
                 ]
 
-            row, col = self.tabStops[self.tabStopIdx]
+            row, col, length = self.tabStops[self.tabStopIdx]
             self.tabStopIdx += 1
             if self.tabStopIdx >= len(self.tabStops):
                 self.tabStops = []
                 self.tabStopIdx = 0
-            self._lastTabRow, self._lastTabCol = row, col
+            self._lastTabRow, self._lastTabCol, self._lastTabLength = row, col, length
             self.buffer.move_to(row, col)
             return
 
