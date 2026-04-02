@@ -19,6 +19,7 @@ _DEFAULTS = {
         "system_clipboard": False,
         "blackhole_delete": False,
         "indent_guides":    True,
+        "wrap":             True, # soft line wrap config
     },
     "compiler": {
         "engine":           "latexmk",
