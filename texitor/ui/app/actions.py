@@ -443,3 +443,92 @@ class ActionsMixin:
             buf.checkpoint()
             buf.insert(_tabStr())
 
+    def _action_smart_tab(self): pass
+
+    def _action_clear_tab_stops(self):
+        self.tabStops = []
+        self.tabStopIdx = 0
+        self._dismissAutocomplete()
+
+    def _action_accept_autocomplete(self):
+        self._confirmAutocomplete()
+
+    # visual selection helpers
+
+    def _selection_bounds(self):
+        if self.visual_anchor is None:
+            return None
+        a_row, a_col = self.visual_anchor
+        c_row, c_col = self.buffer.cursor_row, self.buffer.cursor_col
+        if (a_row, a_col) <= (c_row, c_col):
+            return a_row, a_col, c_row, c_col
+        return c_row, c_col, a_row, a_col
+
+    def _action_yank_selection(self):
+        from texitor.core.modes import Mode
+        buf = self.buffer
+        if self.msm.mode is Mode.VISUAL_LINE:
+            if self.visual_anchor is None:
+                return
+            r0 = min(self.visual_anchor[0], buf.cursor_row)
+            r1 = max(self.visual_anchor[0], buf.cursor_row)
+            yanked = list(buf.lines[r0 : r1 + 1])
+        else:
+            bounds = self._selection_bounds()
+            if bounds is None:
+                return
+            r0, c0, r1, c1 = bounds
+            if r0 == r1:
+                yanked = [buf.lines[r0][c0 : c1 + 1]]
+            else:
+                yanked = (
+                    [buf.lines[r0][c0:]]
+                    + list(buf.lines[r0 + 1 : r1])
+                    + [buf.lines[r1][: c1 + 1]]
+                )
+        self._doYank(yanked)
+        self._action_enter_normal()
+        n = len(self._yank)
+        self.notify(f"{n} line{'s' if n != 1 else ''} yanked")
+
+    def _action_delete_selection(self):
+        from texitor.core.config import config as cfg
+        from texitor.core.modes import Mode
+        buf = self.buffer
+        buf.checkpoint()
+        if self.msm.mode is Mode.VISUAL_LINE:
+            if self.visual_anchor is None:
+                return
+            r0 = min(self.visual_anchor[0], buf.cursor_row)
+            r1 = max(self.visual_anchor[0], buf.cursor_row)
+            bh = cfg.get("editor", "blackhole_delete", False)
+            self._doYank(list(buf.lines[r0 : r1 + 1]), blackhole=bh)
+            del buf.lines[r0 : r1 + 1]
+            if not buf.lines:
+                buf.lines = [""]
+            buf.cursor_row = min(r0, buf.line_count - 1)
+            buf.cursor_col = 0
+        else:
+            bounds = self._selection_bounds()
+            if bounds is None:
+                return
+            r0, c0, r1, c1 = bounds
+            bh = cfg.get("editor", "blackhole_delete", False)
+            if r0 == r1:
+                line = buf.lines[r0]
+                self._doYank([line[c0 : c1 + 1]], blackhole=bh)
+                buf.lines[r0] = line[:c0] + line[c1 + 1:]
+                buf.cursor_col = c0
+            else:
+                self._doYank(
+                    [buf.lines[r0][c0:]]
+                    + list(buf.lines[r0 + 1 : r1])
+                    + [buf.lines[r1][: c1 + 1]],
+                    blackhole=bh,
+                )
+                buf.lines[r0] = buf.lines[r0][:c0] + buf.lines[r1][c1 + 1:]
+                del buf.lines[r0 + 1 : r1 + 1]
+                buf.cursor_row = r0
+                buf.cursor_col = c0
+        buf.modified = True
+        self._action_enter_normal()
