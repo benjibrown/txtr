@@ -189,6 +189,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         yield StatusBar(self.buffer, self.msm, self)
 
     def on_mount(self):
+        self._registerCommands()
         warn = getStartupWarning()
         if warn:
             self.notify(warn, severity="warning", timeout=6)
