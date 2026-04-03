@@ -266,3 +266,180 @@ class ActionsMixin:
         buf.cursor_col = len(indent)
         buf.modified = True
 
+    # pairs for auto-close - opener: closer
+    _PAIRS   = {"{": "}", "(": ")", "[": "]", '"': '"', "`": "`"}
+    _CLOSERS = set("})]\"`")
+
+    def _insertWithAutoPairs(self, ch):
+        from texitor.core.config import config as cfg
+        buf = self.buffer
+        if not cfg.get("editor", "auto_pairs", True):
+            buf.insert(ch)
+            return
+        nextCh = buf.current_line[buf.cursor_col:buf.cursor_col + 1]
+        if ch in self._CLOSERS and nextCh == ch:
+            buf.cursor_col += 1
+            return
+        buf.insert(ch)
+        if ch in self._PAIRS:
+            closer = self._PAIRS[ch]
+            col = buf.cursor_col
+            line = buf.current_line
+            buf.lines[buf.cursor_row] = line[:col] + closer + line[col:]
+
+    # yank / paste / delete
+
+    def _doYank(self, lines, blackhole=False):
+        from texitor.ui.app import _useSystemClip
+        from texitor.core.clipboard import copyToSystem
+        if blackhole:
+            return
+        self._yank = lines
+        if _useSystemClip():
+            copyToSystem("\n".join(lines))
+
+    def _getPaste(self):
+        from texitor.ui.app import _useSystemClip
+        from texitor.core.clipboard import pasteFromSystem
+        if _useSystemClip():
+            text = pasteFromSystem()
+            return text.split("\n") if text else []
+        return self._yank
+
+    def _action_yank_line(self):
+        self._doYank([self.buffer.current_line])
+        self.notify("1 line yanked")
+
+    def _action_delete_line(self):
+        from texitor.core.config import config as cfg
+        self.buffer.checkpoint()
+        bh = cfg.get("editor", "blackhole_delete", False)
+        deleted = self.buffer.delete_line()
+        self._doYank(deleted, blackhole=bh)
+        n = len(deleted)
+        self.notify(f"{n} line{'s' if n != 1 else ''} deleted")
+
+    def _action_blackhole_delete_line(self):
+        self.buffer.checkpoint()
+        deleted = self.buffer.delete_line()
+        self._doYank(deleted, blackhole=True)
+        n = len(deleted)
+        self.notify(f"{n} line{'s' if n != 1 else ''} deleted")
+
+    def _action_paste_after(self):
+        lines = self._getPaste()
+        if not lines:
+            return
+        self.buffer.checkpoint()
+        buf = self.buffer
+        for i, text in enumerate(lines):
+            buf.lines.insert(buf.cursor_row + 1 + i, text)
+        buf.cursor_row += 1
+        buf.cursor_col = buf.first_nonblank()
+        buf.modified = True
+
+    def _action_paste_before(self):
+        lines = self._getPaste()
+        if not lines:
+            return
+        self.buffer.checkpoint()
+        buf = self.buffer
+        for i, text in enumerate(lines):
+            buf.lines.insert(buf.cursor_row + i, text)
+        buf.cursor_col = buf.first_nonblank()
+        buf.modified = True
+
+    def _action_indent(self):
+        from texitor.ui.app import _tabStr
+        self.buffer.checkpoint()
+        buf = self.buffer
+        tab = _tabStr()
+        buf.lines[buf.cursor_row] = tab + buf.current_line
+        buf.cursor_col = min(buf.cursor_col + len(tab), len(buf.current_line))
+        buf.modified = True
+
+    def _action_dedent(self):
+        self.buffer.checkpoint()
+        buf = self.buffer
+        line = buf.current_line
+        removed = len(line) - len(line.lstrip(" "))
+        removed = min(removed, 4)
+        buf.lines[buf.cursor_row] = line[removed:]
+        buf.cursor_col = max(0, buf.cursor_col - removed)
+        buf.modified = True
+
+    def _action_delete_word_before(self):
+        self.buffer.checkpoint()
+        buf = self.buffer
+        line, col = buf.current_line, buf.cursor_col
+        while col > 0 and line[col - 1].isspace(): col -= 1
+        while col > 0 and not line[col - 1].isspace(): col -= 1
+        buf.lines[buf.cursor_row] = line[:col] + line[buf.cursor_col:]
+        buf.cursor_col = col
+        buf.modified = True
+
+    def _action_delete_to_line_start(self):
+        self.buffer.checkpoint()
+        buf = self.buffer
+        buf.lines[buf.cursor_row] = buf.current_line[buf.cursor_col:]
+        buf.cursor_col = 0
+        buf.modified = True
+
+    # replace char
+
+    def _action_replace_char(self):
+        self._awaiting_replace = True
+
+    # tab stops / snippets
+
+    def _action_insert_tab(self):
+        if self.acActive and self.acItems:
+            self.acIndex = (self.acIndex + 1) % len(self.acItems)
+            self._refreshAutocomplete()
+            return
+
+        from texitor.ui.app import _tabStr
+        buf = self.buffer
+        textBefore = buf.current_line[:buf.cursor_col]
+
+        trigger, snippet = self.snippets.findTabTrigger(textBefore)
+        if trigger and snippet:
+            self.buffer.checkpoint()
+            self.tabStops = self.snippets.expandInBuffer(trigger, snippet.get("body", ""), buf)
+            self.tabStopIdx = 0
+            self._justExpanded = True
+            self._revertCount = 1
+            if self.tabStops:
+                row, col, length = self.tabStops[0]
+                buf.move_to(row, col)
+                self._lastTabRow, self._lastTabCol, self._lastTabLength = row, col, length
+                self.tabStopIdx = 1
+            return
+
+        if self.tabStops and self.tabStopIdx < len(self.tabStops):
+            self._justExpanded = False
+            self._revertCount = 0
+            delta = 0
+            if buf.cursor_row == self._lastTabRow:
+                baseline = self._lastTabCol + self._lastTabLength
+                delta = buf.cursor_col - baseline
+            if delta != 0:
+                self.tabStops = [
+                    (r, c + delta if r == self._lastTabRow else c, l)
+                    for r, c, l in self.tabStops
+                ]
+            row, col, length = self.tabStops[self.tabStopIdx]
+            self.tabStopIdx += 1
+            if self.tabStopIdx >= len(self.tabStops):
+                self.tabStops = []
+                self.tabStopIdx = 0
+            self._lastTabRow, self._lastTabCol, self._lastTabLength = row, col, length
+            self.buffer.move_to(row, col)
+            return
+
+        self._justExpanded = False
+        before = buf.current_line[:buf.cursor_col]
+        if not before.strip():
+            buf.checkpoint()
+            buf.insert(_tabStr())
+
