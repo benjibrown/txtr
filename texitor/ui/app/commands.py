@@ -14,7 +14,7 @@ class CommandsMixin:
         from texitor.ui.buildpanel import BuildPanel 
         from texitor.ui.editor import EditorWidget 
 
-        cmd = self.cmd_cmd_input.strip()
+        cmd = self.cmd_input.strip()
         self._action_enter_normal()
 
         if cmd == "w":
@@ -234,9 +234,9 @@ class CommandsMixin:
         self.buildOpen = True 
     
     def _cmd_buildstop(self):
-        if self._buildtask and not self._buildTask.done():
+        if self._buildTask and not self._buildTask.done():
             self._buildTask.cancel()
-            self.notify(:"build cancelled")
+            self.notify("build cancelled")
         else:
             self.notify("no build running", severity="warning")
 
