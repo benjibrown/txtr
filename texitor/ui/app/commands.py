@@ -98,7 +98,7 @@ class CommandsMixin:
             return 
         value = _coerceValue(rawVal) 
         cfg.set(section, key, value)
-        selrf.notify(f"config: {secton}.{key} = {value}")
+        self.notify(f"config: {section}.{key} = {value}")
 
     def _cmd_configGet(self, dotKey):
         from texitor.ui.app import _resolveConfigKey 
@@ -124,7 +124,7 @@ class CommandsMixin:
         self.buffer.save()
         self.notify(f"saved {self.buffer.path}")
         mode = cfg.get("compiler", "autocompile", "save")
-        if mod is True:
+        if mode is True:
             mode = "save"
         elif mode is False:
             mode = "off"
