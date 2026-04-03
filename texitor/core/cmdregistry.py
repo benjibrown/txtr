@@ -1,17 +1,24 @@
 # command registry - central place where all : commands register themselves
 # the help menu reads from here so it always reflects reality
-# plugins use the same api - no need to touch helpmenu.py
+# plugins use the same api to add commands - no changes to main code needed. - plugins are still a big TODO but this is one piece of the puzzle
 #
-# usage:
+# dispatch model:
+#   each command has one or more "triggers" - exact strings or prefix patterns.
+#   a trigger ending in " <...>" is a prefix trigger: matches anything starting
+#   with the part before " <". plain triggers match exact strings only.
+#
+# plugin usage [wip]
 #   from texitor.core.cmdregistry import registry
-#   registry.register("w", "save file", section="File")
-#   registry.register("build <engine>", "build with specific engine", section="Compiler", aliases=["compile", "b"])
+#   registry.register("mycommand", "does x", section="MyPlugin",
+#                     aliases=["mc"], handler=lambda app, args: app.notify(args))
+## this is how it will work eventually - plugins are not implemented yet but some of the stuff is there :)
 #
-# the registry stores entries in insertion order within each section
-# sections appear in the order they first receive an entry
+# built-in commands are registered at module level with handler=None.
+# handlers are bound to the app instance at runtime via bindHandlers(app).
 
 from __future__ import annotations
 from collections import OrderedDict
+from typing import Callable, Optional
 
 
 class CommandRegistry:
