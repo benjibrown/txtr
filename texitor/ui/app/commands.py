@@ -141,7 +141,7 @@ class CommandsMixin:
 
     def _cmd_build(self, engine=None): 
         from texitor.ui.buildpanel import BuildPanel 
-        from texitor.ui.statusbar import statusbar
+        from texitor.ui.statusbar import StatusBar
 
         if not self.buffer.path:
             self.notify("save the file first before building", severity="warning")
