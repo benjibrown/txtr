@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import asyncio
+import re  
 import shutil
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -132,3 +134,14 @@ def cleanAuxDir(filePath, auxConfig=".aux"):
             count += 1
     return count
 
+# parsing logs - very peak!
+
+@dataclass 
+class LogEntry:
+    level: str 
+    message: str 
+    file: str = ""
+    line: int | None = None 
+
+
+# put regex stuff here later
