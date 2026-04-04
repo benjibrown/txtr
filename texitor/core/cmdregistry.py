@@ -24,78 +24,127 @@ from typing import Callable, Optional
 class CommandRegistry:
 
     def __init__(self):
-        # sections: OrderedDict of section_name -> list of (syntax, description)
-        self._sections = OrderedDict()
+        self._sections: OrderedDict[str, list] = OrderedDict()
+        self._dispatch: dict[str, "_CmdEntry"] = {}
 
-    def register(self, syntax, description, section="General", aliases=None):
-        # register a command with optional aliases shown as "cmd / alias1 / alias2"
+    def register(self, syntax: str, description: str, section: str = "General",
+                 aliases: list[str] | None = None, handler: Callable | None = None):
+        # syntax - form shown in help, e.g. ":build <engine>"
+        # description - one-line description for help menu
+        # section - section grouping in help menu
+        # aliases - list of alternative trigger strings
+        # handler - callable(app, args: str) or None (bound later via bindHandlers)
+        # args is everything typed after the trigger word(s)
         if section not in self._sections:
             self._sections[section] = []
-        if aliases:
-            display = syntax + "  /  " + "  /  ".join(aliases)
-        else:
-            display = syntax
-        self._sections[section].append((display, description))
 
-    def registerSection(self, section, entries):
-        # bulk register a list of (syntax, description) tuples under a section
-        # entries: list of (syntax, description) or (syntax, description, [aliases])
+        triggers = [_stripLeadingColon(syntax)]
+        if aliases:
+            triggers += [_stripLeadingColon(a) for a in aliases]
+
+        entry = _CmdEntry(syntax, description, triggers, handler)
+        self._sections[section].append(entry)
+
+        for t in triggers:
+            key = t.split(" <")[0].strip()
+            self._dispatch[key] = entry
+
+    def registerSection(self, section: str, entries):
+        # bulk-register from a list of tuples:
+        # (syntax, desc) or (syntax, desc, aliases) or (syntax, desc, aliases, handler)
         for entry in entries:
-            if len(entry) == 3:
-                syntax, description, aliases = entry
-            else:
-                syntax, description = entry
-                aliases = None
-            self.register(syntax, description, section=section, aliases=aliases)
+            syntax = entry[0]
+            description = entry[1]
+            aliases = entry[2] if len(entry) > 2 else None
+            handler = entry[3] if len(entry) > 3 else None
+            self.register(syntax, description, section=section, aliases=aliases, handler=handler)
+
+    def bindHandlers(self, app):
+        # called once on app mount - wires up handlers to bound app methods
+        for entry in self._allEntries():
+            if entry.handler is None and entry._method_name:
+                m = getattr(app, entry._method_name, None)
+                if m:
+                    entry.handler = m
+
+    def dispatch(self, app, raw: str) -> bool:
+        # parse raw typed command and call the matching handler.
+        # returns True if handled, False if unknown.
+        raw = raw.strip()
+        parts = raw.split()
+        for length in range(len(parts), 0, -1):
+            key = " ".join(parts[:length])
+            entry = self._dispatch.get(key)
+            if entry and entry.handler:
+                args = raw[len(key):].strip()
+                entry.handler(app, args)
+                return True
+        return False
 
     def sections(self):
-        # returns list of (section_name, [(syntax, description), ...])
-        return list(self._sections.items())
-
-    def allCommands(self):
-        # flat list of (syntax, description) across all sections
+        # returns list of (section_name, [(display_syntax, description), ...]) for the help menu
         out = []
-        for entries in self._sections.values():
-            out.extend(entries)
+        for name, entries in self._sections.items():
+            out.append((name, [(e.display, e.description) for e in entries]))
         return out
 
+    def allCommands(self):
+        # flat list of (display_syntax, description) across all sections
+        return [(e.display, e.description) for e in self._allEntries()]
 
-# singleton - import this everywhere
+    def _allEntries(self):
+        for entries in self._sections.values():
+            yield from entries
+
+
+class _CmdEntry:
+    __slots__ = ("syntax", "description", "triggers", "handler", "display", "_method_name")
+
+    def __init__(self, syntax, description, triggers, handler):
+        self.syntax = syntax
+        self.description = description
+        self.triggers = triggers
+        self.handler = handler
+        self._method_name: str | None = None
+        self.display = "  /  ".join(
+            (":" if not t.startswith(":") else "") + t for t in triggers
+        )
+
+
+def _stripLeadingColon(s: str) -> str:
+    return s.lstrip(":")
+
+
+_cmd_counter = 0  # incremented each time @command is applied, preserves definition order
+
+
+def command(syntax: str, description: str, section: str = "General",
+            aliases: list[str] | None = None):
+    # decorator for _cmd_* methods on CommandsMixin.
+    # marks the method with metadata so _registerCommands() can wire it up at mount.
+    # decorated method signature: def _cmd_foo(self, app, args: str)
+    #
+    # example:
+    #   @command(":build", "build with configured engine",
+    #            section="Compiler", aliases=[":compile", ":b"])
+    #   def _cmd_build(self, app, args):
+    #       engine = args or None
+    #       ...
+    def decorator(fn):
+        global _cmd_counter
+        _cmd_counter += 1
+        fn._cmd_meta = {
+            "syntax": syntax,
+            "description": description,
+            "section": section,
+            "aliases": aliases or [],
+            "order": _cmd_counter,
+        }
+        return fn
+    return decorator
+
+
+# singleton
 registry = CommandRegistry()
-
-
-# register all built-in commands up front so the registry is populated at import time
-# order within each section = order they appear in help menu
-
-registry.registerSection("File", [
-    (":w",                  "save file"),
-    (":w <file>",           "save as file"),
-    (":wq",                 "save and quit",            [":x"]),
-    (":q",                  "quit (fails if unsaved)"),
-    (":q!",                 "force quit"),
-    (":e <file>",           "open file"),
-])
-
-registry.registerSection("View", [
-    (":help",               "open help menu",           [":h"]),
-    (":snippets",           "open snippets tab",        [":snips"]),
-    (":config",             "open config panel",        [":config show"]),
-    (":set wrap",           "enable soft line wrapping"),
-    (":set nowrap",         "disable soft line wrapping"),
-])
-
-registry.registerSection("Config", [
-    (":config set <section.key> <value>", "set a config value"),
-    (":config get <section.key>",         "print a config value"),
-])
-
-registry.registerSection("Compiler", [
-    (":build",          "build with configured engine",          [":compile", ":b"]),
-    (":build <engine>", "build with specific engine (overrides config)"),
-    (":clean",          "delete aux dir contents (.log, .aux, etc.)"),
-    (":buildlog",       "reopen last build output panel"),
-    (":buildstop",      "cancel running build"),
-    (":engines",        "list available engines and current setting", [":compilers"]),
-])
 
 
