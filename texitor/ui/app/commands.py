@@ -1,123 +1,62 @@
-# the commands mixing - methdos + tab stop actions!! 
+# commands mixin - all : command handlers for TxtrApp
+# each handler is decorated with @command so the registry can wire it up at mount
+# _action_execute_command is a pure registry dispatch - no if/elif chains
+# plugins follow the same pattern: decorate a function and call registry.register()
 
-from __future__ import annotations 
-import asyncio 
+from __future__ import annotations
+import asyncio
 
-import texitor.core.compiler as _compiler 
-from texitor.core.config import config as cfg 
+import texitor.core.compiler as _compiler
+from texitor.core.config import config as cfg
+from texitor.core.cmdregistry import registry, command
+
 
 class CommandsMixin:
-    # TODO - inegrate this into cmd registry so its not a massive if statement
-    def _action_execute_command(self):
-        from texitor.ui.helpmenu import HelpMenu 
-        from texitor.ui.configpanel import ConfigPanel 
-        from texitor.ui.buildpanel import BuildPanel 
-        from texitor.ui.editor import EditorWidget 
 
+    def _action_execute_command(self):
         cmd = self.cmd_input.strip()
         self._action_enter_normal()
-
-        if cmd == "w":
-            self._cmd_write()
-        elif cmd == "q":
-            self._cmd_quit()
-        elif cmd in ("wq", "x"):
-            self._cmd_write()
-            self.exit()
-        elif cmd == "q!":
-            self.exit()
-        elif cmd in ("help", "h"):
-            self._action_open_help()
-        elif cmd in ("snippets", "snips"):
-            self.helpOpen = True 
-            menu = self.query_one(HelpMenu)
-            menu.open()
-            menu.nextTab()
-        elif cmd.startswith("e "):
-            path = cmd[2:].strip()
-            if path:
-                self.buffer.load(path)
-                self._refresh_all()
-        elif cmd.startswith("w "):
-            path = cmd[2:].strip()
-            if path:
-                self.buffer.save(path)
-        elif cmd in ("config show", "config", "cfg"):
-            self._cmd_configShow()
-        elif cmd in ("config set", "config get", "cfg set", "cfg get"):
-            self.notify(
-                f":{cmd} <section.key> <value>" if cmd == "config set" else f":{cmd} <section.key>",
-                severity="warning",
-            )
-        elif cmd.startswith("config set"):
-            self._cmd_configSet(cmd[len("config set"):].strip())
-        elif cmd.startswith("config get"):
-            self._cmd_configGet(cmd[len("config get"):].strip())
-        elif cmd in ("build", "compile", "b"):
-            self._cmd_build()
-        elif cmd.startswith("build ") or cmd.startswith("compile "):
-            engine = cmd.split(None, 1)[1].strip()
-            self._cmd_build(engine=engine)
-        elif cmd == "clean":
-            self._cmd_clean()
-        elif cmd in ("buildlog", "buildpanel"):
-            self._cmd_buildlog()
-        elif cmd in ("buildstop", "killbuild"):
-            self._cmd_buildstop()
-        elif cmd in ("engines", "compilers"):
-            self._cmd_listEngines()
-        elif cmd == "set wrap":
-            cfg.set("editor", "wrap", True)
-            self.query_one(EditorWidget).rebuildVisualLines()
-            self._refresh_all()
-            self.notify("wrap on")
-        elif cmd == "set nowrap":
-            cfg.set("editor", "wrap", False)
-            self.query_one(EditorWidget).rebuildVisualLines()
-            self._refresh_all()
-            self.notify("wrap off")
-        else:
+        if not registry.dispatch(self, cmd):
             self.notify(f"unknown command: {cmd}", severity="warning")
 
+    # wires all @command-decorated methods into the registry at app mount.
+    # methods are sorted by section order then definition order so the help menu is consistent.
+    _SECTION_ORDER = ["File", "View", "Config", "Compiler"]
 
-    def _cmd_configShow(self):
-        from texitor.ui.configpanel import ConfigPanel  
-        self.configOpen = True 
-        self.query_one(ConfigPanel).open()
+    def _registerCommands(self):
+        methods = [
+            (name, getattr(self.__class__, name))
+            for name in dir(self.__class__)
+            if hasattr(getattr(self.__class__, name, None), "_cmd_meta")
+        ]
 
-    def _cmd_configSet(self, args):
-        from texitor.ui.app import _coerceValue, _resolveConfigKey
-        parts = args.split(None, 1)
-        if len(parts) != 2:
-            self.notify(":config set <section.key> <value>", severity="warning")
+        def _key(item):
+            meta = item[1]._cmd_meta
+            idx = self._SECTION_ORDER.index(meta["section"]) if meta["section"] in self._SECTION_ORDER else 99
+            return (idx, meta.get("order", 0))
+
+        methods.sort(key=_key)
+        for name, method in methods:
+            meta = method._cmd_meta
+            # method is unbound - pass self (the app) as first arg
+            bound = lambda app, args, m=method: m(app, args)
+            registry.register(
+                meta["syntax"],
+                meta["description"],
+                section=meta["section"],
+                aliases=meta["aliases"] or None,
+                handler=bound,
+            )
+
+        
+    # file commands
+
+    @command(":w", "save file", section="File")
+    def _cmd_write(self, args):
+        if args:
+            self.buffer.save(args)
+            self.notify(f"saved {args}")
             return
-        dotKey, rawVal = parts 
-        section, key = _resolveConfigKey(dotKey)
-        if section is None:
-            self.notify(f"config: unknown key: '{dotKey}'", severity="warning")
-            return 
-        value = _coerceValue(rawVal) 
-        cfg.set(section, key, value)
-        self.notify(f"config: {section}.{key} = {value}")
-
-    def _cmd_configGet(self, dotKey):
-        from texitor.ui.app import _resolveConfigKey 
-        if not dotKey:
-            self.notify(":config get <section.key>", severity="warning")
-            return
-        section, key = _resolveConfigKey(dotKey)
-        if section is None:
-            self.notify(f"config: unknown key: '{dotKey}'", severity="warning")
-            return
-        val = cfg.get(section, key)
-        if val is None:
-            self.notify(f"config: {section}.{key} not set", severity="warning")
-        else:
-            self.notify(f"{section}.{key} = {val}")
-
-    # file cmds 
-
-    def _cmd_write(self):
         if not self.buffer.path:
             self.notify("no file name - use :w <filename>", severity="warning")
             return
@@ -129,19 +68,110 @@ class CommandsMixin:
         elif mode is False:
             mode = "off"
         if mode == "always" or (mode == "save" and self._buildPrimed):
-            self._cmd_build()
+            self._cmd_build("")
 
-    def _cmd_quit(self):
-        if self.buffer.modified:
-            self.notify("unsaved changes - use :q! to force quit", severity="warning")
-            return 
+    @command(":wq", "save and quit", section="File", aliases=[":x"])
+    def _cmd_wq(self, args):
+        self._cmd_write("")
         self.exit()
 
-    # build cmds 
+    @command(":q", "quit (warns if unsaved)", section="File")
+    def _cmd_quit(self, args):
+        if self.buffer.modified:
+            self.notify("unsaved changes - use :q! to force quit", severity="warning")
+            return
+        self.exit()
 
-    def _cmd_build(self, engine=None): 
-        from texitor.ui.buildpanel import BuildPanel 
+    @command(":q!", "force quit without saving", section="File")
+    def _cmd_forceQuit(self, args):
+        self.exit()
+
+    @command(":e <file>", "open file", section="File")
+    def _cmd_edit(self, args):
+        if args:
+            self.buffer.load(args)
+            self._refresh_all()
+        else:
+            self.notify(":e <filename>", severity="warning")
+
+    # view commands
+
+    @command(":help", "open help menu", section="View", aliases=[":h"])
+    def _cmd_help(self, args):
+        self._action_open_help()
+
+    @command(":snippets", "open snippets tab", section="View", aliases=[":snips"])
+    def _cmd_snippets(self, args):
+        from texitor.ui.helpmenu import HelpMenu
+        self.helpOpen = True
+        menu = self.query_one(HelpMenu)
+        menu.open()
+        menu.nextTab()
+
+    @command(":config", "open config panel", section="View", aliases=[":config show"])
+    def _cmd_configShow(self, args):
+        from texitor.ui.configpanel import ConfigPanel
+        self.configOpen = True
+        self.query_one(ConfigPanel).open()
+
+    @command(":set wrap", "enable soft line wrapping", section="View")
+    def _cmd_setWrap(self, args):
+        from texitor.ui.editor import EditorWidget
+        cfg.set("editor", "wrap", True)
+        self.query_one(EditorWidget).rebuildVisualLines()
+        self._refresh_all()
+        self.notify("wrap on")
+
+    @command(":set nowrap", "disable soft line wrapping", section="View")
+    def _cmd_setNowrap(self, args):
+        from texitor.ui.editor import EditorWidget
+        cfg.set("editor", "wrap", False)
+        self.query_one(EditorWidget).rebuildVisualLines()
+        self._refresh_all()
+        self.notify("wrap off")
+
+    # config commands
+
+    @command(":config set <section.key> <value>", "set a config value", section="Config")
+    def _cmd_configSet(self, args):
+        from texitor.ui.app import _coerceValue, _resolveConfigKey
+        parts = args.split(None, 1)
+        if len(parts) != 2:
+            self.notify(":config set <section.key> <value>", severity="warning")
+            return
+        dotKey, rawVal = parts
+        section, key = _resolveConfigKey(dotKey)
+        if section is None:
+            self.notify(f"config: unknown key '{dotKey}'", severity="warning")
+            return
+        value = _coerceValue(rawVal)
+        cfg.set(section, key, value)
+        self.notify(f"config: {section}.{key} = {value}")
+
+    @command(":config get <section.key>", "get a config value", section="Config")
+    def _cmd_configGet(self, args):
+        from texitor.ui.app import _resolveConfigKey
+        if not args:
+            self.notify(":config get <section.key>", severity="warning")
+            return
+        section, key = _resolveConfigKey(args)
+        if section is None:
+            self.notify(f"config: unknown key '{args}'", severity="warning")
+            return
+        val = cfg.get(section, key)
+        if val is None:
+            self.notify(f"config: {section}.{key} not set", severity="warning")
+        else:
+            self.notify(f"{section}.{key} = {val}")
+
+    # build commands
+
+    @command(":build", "build with configured engine", section="Compiler", aliases=[":compile", ":b"])
+    def _cmd_build(self, args):
+        from texitor.ui.buildpanel import BuildPanel
         from texitor.ui.statusbar import StatusBar
+
+        engine = args or None
 
         if not self.buffer.path:
             self.notify("save the file first before building", severity="warning")
@@ -149,11 +179,10 @@ class CommandsMixin:
 
         if self._buildTask and not self._buildTask.done():
             self._buildTask.cancel()
-            self.notify("canceling previous build...", severity="warning")
-            return 
+            self.notify("cancelling previous build...", severity="warning")
+            return
 
         self.buffer.save()
-
 
         engine = engine or cfg.get("compiler", "engine", "latexmk")
         auxDir = cfg.get("compiler", "aux_dir", ".aux")
@@ -177,7 +206,6 @@ class CommandsMixin:
         async def _run():
             def onLine(line, isErr):
                 panel.appendLine(line, isErr)
-
             try:
                 rc, _ = await _compiler.compile(
                     self.buffer.path,
@@ -187,6 +215,11 @@ class CommandsMixin:
                     onLine=onLine,
                 )
                 panel.setDone(rc)
+
+                # parse log for errors / warnings
+                lp = _compiler.logPath(self.buffer.path, engine, auxDir)
+                panel.setErrors(_compiler.parse_log(lp))
+
                 if rc == 0:
                     self._buildPrimed = True
                     self._buildStatus = "built"
@@ -212,41 +245,43 @@ class CommandsMixin:
 
         self._buildTask = asyncio.create_task(_run())
 
-
-    def _cmd_clean(self):
+    @command(":clean", "remove aux dir files", section="Compiler")
+    def _cmd_clean(self, args):
         if not self.buffer.path:
-            self.notify("no file open", severity="warning") 
-            return 
+            self.notify("no file open", severity="warning")
+            return
         auxDir = cfg.get("compiler", "aux_dir", ".aux")
         try:
             count = _compiler.cleanAuxDir(self.buffer.path, auxDir)
             self.notify(f"cleaned {count} file{'s' if count != 1 else ''} from {auxDir}")
         except Exception as e:
-            self.notify(f"error during clean: {e}", severity="error")
+            self.notify(f"clean failed: {e}", severity="error")
 
-    def _cmd_buildlog(self):
-        from texitor.ui.buildpanel import BuildPanel 
+    @command(":buildlog", "reopen last build panel", section="Compiler", aliases=[":buildpanel"])
+    def _cmd_buildlog(self, args):
+        from texitor.ui.buildpanel import BuildPanel
         panel = self.query_one(BuildPanel)
         if not panel._lines:
             self.notify("no build output yet - run :build first", severity="warning")
             return
-        panel.display = True 
-        self.buildOpen = True 
-    
-    def _cmd_buildstop(self):
+        panel.display = True
+        self.buildOpen = True
+
+    @command(":buildstop", "cancel running build", section="Compiler", aliases=[":killbuild"])
+    def _cmd_buildstop(self, args):
         if self._buildTask and not self._buildTask.done():
             self._buildTask.cancel()
             self.notify("build cancelled")
         else:
             self.notify("no build running", severity="warning")
 
-    def _cmd_listEngines(self):
-        from texitor.ui.buildpanel import BuildPanel 
+    @command(":engines", "list available engines", section="Compiler", aliases=[":compilers"])
+    def _cmd_listEngines(self, args):
+        from texitor.ui.buildpanel import BuildPanel
         panel = self.query_one(BuildPanel)
         panel.reset("engines", "available engines")
         for name, desc in _compiler.ENGINE_DESCRIPTIONS.items():
             panel.appendLine(f"  {name:<14} {desc}", autoScroll=False)
-
         current = cfg.get("compiler", "engine", "latexmk")
         customCmd = cfg.get("compiler", "custom_cmd", "")
         panel.appendLine("", autoScroll=False)
