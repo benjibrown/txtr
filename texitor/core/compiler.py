@@ -145,3 +145,11 @@ class LogEntry:
 
 
 # put regex stuff here later
+# matches a file being opened by Tex; (./path.file.tex) 
+_RE_FILE_OPEN =  re.compile(r'\(\./?([\w./\-]+\.(?:tex|cls|sty|def|cfg|fd|clo))\b')
+
+# matches 1.NN at start of line (error line number)
+_RE_LNUM = re.compile(r'^l\.(\d+)\b')
+
+# matches latex / pkg / class warnings 
+_RE_WARN = re.compile(r'(?:LaTeX|Package \w[\w@]*|Class \w[\w@]*) Warning:\s*(.*)')
