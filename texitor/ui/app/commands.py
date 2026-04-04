@@ -70,7 +70,7 @@ class CommandsMixin:
         if mode == "always" or (mode == "save" and self._buildPrimed):
             self._cmd_build("")
 
-    @command(":wq", "save and quit", section="File", aliases=[":x"])
+    @command(":wq", "save and quit", section="File", aliases=[":x", "imstuckintxtrpleasehelpme"])
     def _cmd_wq(self, args):
         self._cmd_write("")
         self.exit()
