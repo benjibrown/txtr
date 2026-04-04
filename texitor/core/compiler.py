@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import asyncio
-import re  
+import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -134,22 +134,64 @@ def cleanAuxDir(filePath, auxConfig=".aux"):
             count += 1
     return count
 
-# parsing logs - very peak!
 
-@dataclass 
+# parsing all the logs - very peak
+
+@dataclass
 class LogEntry:
-    level: str 
-    message: str 
+    level: str          # "error" , "warning"
+    message: str
     file: str = ""
-    line: int | None = None 
+    line: int | None = None
 
 
-# put regex stuff here later
-# matches a file being opened by Tex; (./path.file.tex) 
-_RE_FILE_OPEN =  re.compile(r'\(\./?([\w./\-]+\.(?:tex|cls|sty|def|cfg|fd|clo))\b')
-
-# matches 1.NN at start of line (error line number)
+# matches a file being opened by TeX: (./path/file.tex
+_RE_FILE_OPEN = re.compile(r'\(\./?([\w./\-]+\.(?:tex|cls|sty|def|cfg|fd|clo))\b')
+# matches l.NN  at start of line (error line number)
 _RE_LNUM = re.compile(r'^l\.(\d+)\b')
-
-# matches latex / pkg / class warnings 
+# matches LaTeX / Package / Class warnings
+# TODO - these 4 are still kinda buggy, they work sometimes :(
 _RE_WARN = re.compile(r'(?:LaTeX|Package \w[\w@]*|Class \w[\w@]*) Warning:\s*(.*)')
+# overfull / underfull boxes
+_RE_BOX = re.compile(r'((?:Over|Under)full \\[hv]box.*?) at lines? (\d+)')
+_RE_BOX_PARA = re.compile(r'((?:Over|Under)full \\[hv]box.*?) in paragraph at lines? (\d+)')
+# "on input line N" suffix in warning messages
+_RE_INPUT_LINE = re.compile(r'on input line (\d+)')
+
+
+def logPath(filePath: str, engine: str, auxConfig: str = ".aux"):
+    p   = Path(filePath).resolve()
+    stem = p.stem
+    if engine == "tectonic":
+        return p.parent / f"{stem}.log"
+    auxDir = resolveAuxDir(filePath, auxConfig)
+    return auxDir / f"{stem}.log"
+
+
+def parse_log(path: str | Path):
+    # parse log file for stuff
+    p = Path(path)
+    if not p.exists():
+        return []
+    try:
+        text = p.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+
+    raw_lines = text.splitlines()
+    # TeX wraps long lines at ~80 chars; unwrap them for pattern matching.
+    # Guard: never merge lines that start with structural markers.
+    _NO_MERGE = ("!", "l.", "Overfull", "Underfull", "LaTeX", "Package", "Class", "(", ")")
+    lines: list[str] = []
+    for ln in raw_lines:
+        if (lines and len(lines[-1]) >= 79
+                and not ln.startswith(_NO_MERGE)
+                and not lines[-1].startswith("!")):
+            lines[-1] += ln
+        else:
+            lines.append(ln)
+
+    entries: list[LogEntry] = []
+    # simple file stack: push on '(' with a .tex/.sty path, pop on ')'
+    file_stack: list[str] = []
+
