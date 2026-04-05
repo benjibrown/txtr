@@ -1,3 +1,13 @@
+# astro docs 
+docs/_build/ 
+docs/node_modules/ 
+docs/dist 
+docs/.astro/
+
+# js 
+node_modules/
+
+
 # txtr stuff  
 # hide .aux cos then i dont need to keep deleting ts
 .aux
