@@ -27,7 +27,7 @@ _SEC     = Style(color=_t.accent2, bold=True)
 _FG_SEL  = Style(color=_t.fg, bgcolor=_t.bg_sel, bold=True)
 _ACC_SEL = Style(color=_t.accent, bgcolor=_t.bg_sel, bold=True)
 
-_LOGO_A = []
+_LOGO_A = [
     "  █████                 █████             ",
     " ░░███                 ░░███              ",
     " ███████   █████ █████ ███████   ████████ ",
@@ -38,7 +38,7 @@ _LOGO_A = []
     "   ░░░░░  ░░░░░ ░░░░░    ░░░░░  ░░░░░    ",
 ]
 
-_LOGO_B = []
+_LOGO_B = [
     " _            _      ",
     "| |___  __  _| |_ _ _",
     "| __\\ \\/ /| | __| '_|",
@@ -46,7 +46,7 @@ _LOGO_B = []
     "   /_/\\_\\             ",
 ]
 
-_LOGO_C = []
+_LOGO_C = [
     "                                                                                    ",
     "                                                                                    ",
     "         tttt                                      tttt                             ",
@@ -68,7 +68,7 @@ _LOGO_C = []
     "                                                                                    ",
 ]
 
-_LOGO_D = []
+_LOGO_D = [
     "     s                      s                 ",
     "    :8                     :8                 ",
     "   .88       uL   ..      .88       .u    .   ",
@@ -85,7 +85,7 @@ _LOGOS = [_LOGO_A, _LOGO_B, _LOGO_C, _LOGO_D]
 _VERSION = "v1.9.8"
 _TAGLINE = "LaTeX, fast."
 
-_TICKER_ITEMS = []
+_TICKER_ITEMS = [
     r"\frac{a}{b}",
     r"\int_0^\infty f(x)\,dx",
     r"\alpha + \beta = \gamma",
@@ -113,7 +113,7 @@ def _build_ticker():
 _TICKER_PLAIN = _build_ticker()
 _TICKER_LEN = len(_TICKER_PLAIN) // 3  # one full cycle length
 
-_HINTS = []
+_HINTS = [
     ("j/k", "navigate"),
     ("enter", "open"),
     ("e", "new file"),
@@ -121,4 +121,7 @@ _HINTS = []
     ("q", "quit"),
 ]
 
+
+def _mk_strip(text, width):
+    return Strip(list(text.render(_CONSOLE))).adjust_cell_length(width)
 
