@@ -3,6 +3,7 @@ title: Introduction
 description: What txtr is and why it exists.
 ---
 
+
 txtr is a Vim-style LaTeX editor that runs entirely in the terminal. It is built in Python on top of [Textual](https://textual.textualize.io/), and is designed for one thing: writing LaTeX fast. 
 
 Most LaTeX editors are either heavyweight GUI applications or plain text editors bolted onto a terminal. txtr sits in the middle - a purpose-built TUI that understands LaTeX structure, provides a rich snippet engine, and gets out of your way so you can focus on writing. 
