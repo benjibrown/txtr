@@ -10,9 +10,7 @@ export default defineConfig({
     starlight({
       title: "txtr",
       description: "A Vim-style LaTeX editor for the terminal. LaTeX, fast.",
-      favicon: {
-        svg: "/favicon.svg",
-      },
+      favicon: "/favicon.svg",
       head: [
         { tag: "meta", attrs: { property: "og:type", content: "website" } },
         { tag: "meta", attrs: { property: "og:url", content: "https://txtr.benji.mom" } },
