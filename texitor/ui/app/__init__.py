@@ -257,21 +257,36 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
                 return
 
         if self.buildOpen:
+            panel = self.query_one(BuildPanel)
             if key in ("q", "escape"):
                 self.buildOpen = False
-                self.query_one(BuildPanel).display = False
+                panel.display = False
                 return
             elif key in ("j", "down"):
-                self.query_one(BuildPanel).scrollDown()
+                panel.scrollDown()
                 return
             elif key in ("k", "up"):
-                self.query_one(BuildPanel).scrollUp()
+                panel.scrollUp()
                 return
             elif key == "ctrl+d":
-                self.query_one(BuildPanel).scrollDown(8)
+                panel.scrollDown(8)
                 return
             elif key == "ctrl+u":
-                self.query_one(BuildPanel).scrollUp(8)
+                panel.scrollUp(8)
+                return
+            elif key == "e":
+                panel.showErrors()
+                return
+            elif key == "b":
+                panel.showLog()
+                return
+            elif key == "enter":
+                entry = panel.selectedError()
+                if entry and entry.line is not None:
+                    self.buffer.cursor_row = max(0, min(entry.line - 1, len(self.buffer.lines) - 1))
+                    self.buffer.cursor_col = 0
+                    self._refresh_all()
+                    self.notify(f"jumped to l.{entry.line}", timeout=2)
                 return
             else:
                 return
