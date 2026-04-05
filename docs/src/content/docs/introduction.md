@@ -11,5 +11,16 @@ Of course, snippet engines can be installed to many editors, but txtr's has them
 
 ## Why txtr?
 
-- Vim Keybinds. Normal, Insert, Visual, Command and Search modes. If you use Vim, you know how to use txtr. If you don't, we have plenty of documentation to get you going.
+- **Vim Keybinds.** Normal, Insert, Visual, Command and Search modes. If you use Vim, you know how to use txtr. If you don't, we have plenty of documentation to get you going.
+- **Snippet engine.** Auto-expand triggers for greek letters, fractions, environemnts and more. Tab stops let you fill in the blanks and keep your hands on the keyboard. Plenty built in, plenty of room for your own.
+- **LaTeX autocomplete.** Start typing `\` and a popup offers matching commands.
+- **Auto Pairs.** Automatically insert closing braces, brackets, parentheses and quotes. Skip over them when you type the closing character. 
+- **Themes** - Ships with Catppuccin Mocha and Gruvbox Dark. Custom themes easily configured with a simple TOML file. 
+- **Compilitation.** Compile your document without even leaving the editor. Baked-in support for `pdflatex`, `xelatex`, `lualatex`, `latexmk` and `tectonic`. Custom compilation commands also supported. Parse errors and jump straight to the offending line.
 
+
+## Status
+
+txtr is under active development. Core editing is stable. Features are still being actively built, refined and documented. Look out for a plugin system in the future, spell checking, more themes and citation management.
+
+Contributions always welcome - check out the [repo](https://github.com/benjibrown/txtr)
