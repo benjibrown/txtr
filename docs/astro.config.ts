@@ -4,8 +4,7 @@ import hcStarlight from "hc-starlight";
 import react from "@astrojs/react";
 
 export default defineConfig({
-  site: "https://benjibrown.github.io",
-  base: "/txtr",
+  site: "https://txtr.benji.mom",
   integrations: [
     react(),
     starlight({
