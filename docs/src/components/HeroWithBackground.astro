@@ -1,0 +1,28 @@
+---
+import type { Props } from '@astrojs/starlight/props';
+import DefaultHero from '@astrojs/starlight/components/Hero.astro';
+import Balatro from './Balatro';
+---
+
+<div class="balatro-bg">
+  <Balatro
+    client:only="react"
+    isRotate={false}
+    mouseInteraction={true}
+    pixelFilter={745}
+    color1="#DE443B"
+    color2="#006BB4"
+    color3="#162325"
+  />
+</div>
+<DefaultHero {...Astro.props} />
+
+<style>
+  .balatro-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.35;
+    pointer-events: none;
+  }
+</style>
