@@ -10,9 +10,20 @@ export default defineConfig({
     starlight({
       title: "txtr",
       description: "A Vim-style LaTeX editor for the terminal. LaTeX, fast.",
-      editLink: {
-        baseUrl: "https://github.com/benjibrown/txtr/edit/main/docs/",
+      favicon: {
+        svg: "/favicon.svg",
       },
+      head: [
+        { tag: "meta", attrs: { property: "og:type", content: "website" } },
+        { tag: "meta", attrs: { property: "og:url", content: "https://txtr.benji.mom" } },
+        { tag: "meta", attrs: { property: "og:title", content: "txtr" } },
+        { tag: "meta", attrs: { property: "og:description", content: "A Vim-style LaTeX editor for the terminal. LaTeX, fast." } },
+        { tag: "meta", attrs: { property: "og:image", content: "https://txtr.benji.mom/og.png" } },
+        { tag: "meta", attrs: { name: "twitter:card", content: "summary_large_image" } },
+        { tag: "meta", attrs: { name: "twitter:title", content: "txtr" } },
+        { tag: "meta", attrs: { name: "twitter:description", content: "A Vim-style LaTeX editor for the terminal. LaTeX, fast." } },
+        { tag: "meta", attrs: { name: "twitter:image", content: "https://txtr.benji.mom/og.png" } },
+      ],
       components: {
         Hero: "./src/components/HeroWithBackground.astro",
       },
