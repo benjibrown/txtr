@@ -195,3 +195,72 @@ def parse_log(path: str | Path):
     # simple file stack: push on '(' with a .tex/.sty path, pop on ')'
     file_stack: list[str] = []
 
+    def current_file() -> str:
+        return file_stack[-1] if file_stack else ""
+
+    i = 0 
+    while i < len(lines):
+        ln = lines[i]
+
+        # file open / close tracking 
+        # skip stack tracking on overfull/underfull lines 
+        # stull like (5.12pt too wide) would corrupt 
+        if not ln.startswith("Overfull") and not ln.startswith("Underfull"):
+            for m in _RE_FILE_OPEN.finditer(ln):
+                file_stack.append(m.group(1))
+            opens = ln.count("(")
+            closes = ln.count(")")
+            net = closes - opens 
+            for _ in range(net):
+                if file_stack:
+                    file_stack.pop() # stacks are so peak 
+
+        # errors - lines that begin with ! 
+        if ln.startswith("!"):
+            msg = ln[1:].strip()
+            lnum = None 
+            # scan fwd for 1.NN (line number)
+            j = i + 1 
+            while j < len(lines):
+                nxt = lines[j] 
+                m = _RE_LNUM.match(nxt)
+                if m:
+                    lnum = int(m.group(1))
+                    j += 1
+                    break 
+                if nxt.startswith("!") or nxt.startswith("("):
+                    break 
+                # append non blank cont 
+                if nxt.strip and not nxt.startswith("1."):
+                    msg += " " + nxt.strip()
+                j += 1 
+            entries.append(LogEntry("error", msg, current_file(), lnum))
+            i = j 
+            continue 
+
+        # latex pkg warnings 
+        m = _RE_WARN.search(ln)
+        if m:
+            msg = m.group(1).rstrip(".")
+            # multi line warnings 
+            j = i + 1
+            while j < len(lines) and lines[j].startswith(" ") and lines[j].strip():
+                msg += " " + lines[j].strip()
+                j += 1 
+            lnum_m = _RE_INPUT_LINE.search(msg)
+            lnum = int(lnum_m.group(1)) if lnum_m else None 
+            entries.append(LogEntry("warning",msg, current_file(), lnum))
+            i = j 
+            continue 
+
+        # overfull / underful boxes 
+        for pat in (_RE_BOX_PARA, _RE_BOX):
+            bm = pat.search(ln)
+            if bm:
+                entries.append(LogEntry("warning", bm.group(1).strip(), current_file(), int(bm.group(2))))
+                break 
+        i += 1
+    return entries
+
+
+
