@@ -10,15 +10,15 @@ from rich.console import Console
 
 from texitor.core.theme import theme as _theme
 
-_BG       = _theme.bg_alt
-_BG_HEAD  = _theme.bg_alt
-_FG       = _theme.fg
-_FG_DIM   = _theme.fg_dim
-_GREEN    = _theme.green
-_RED      = _theme.red
-_YELLOW   = _theme.yellow
-_ACCENT   = _theme.accent
-_BORDER   = _theme.border
+_BG = _theme.bg_alt
+_BG_HEAD = _theme.bg_alt
+_FG = _theme.fg
+_FG_DIM = _theme.fg_dim
+_GREEN = _theme.green
+_RED = _theme.red
+_YELLOW = _theme.yellow
+_ACCENT = _theme.accent
+_BORDER = _theme.border
 
 _CONSOLE = Console(width=500, no_color=False, highlight=False, markup=False, emoji=False)
 
@@ -40,17 +40,19 @@ class BuildPanel(Widget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._lines = []
+        self._errors = []   # list[LogEntry] from parse_log
         self._scroll = 0
         self._status = "idle"   # idle | running | success | error
         self._engine = ""
         self._file = ""
 
     def reset(self, engine, filePath):
-        self._lines = []
+        self._lines  = []
+        self._errors = []
         self._scroll = 0
         self._status = "running"
         self._engine = engine
-        self._file = filePath
+        self._file   = filePath
         self.refresh()
 
     def appendLine(self, text, isErr=False, autoScroll=True):
@@ -62,6 +64,15 @@ class BuildPanel(Widget):
     def setDone(self, returncode):
         self._status = "success" if returncode == 0 else "error"
         self.refresh()
+
+    def setErrors(self, entries):
+        # stores parsed log entries
+        self._errors = entries
+        self.refresh()
+
+    @property
+    def errors(self):
+        return self._errors
 
     def scrollUp(self, n=3):
         self._scroll = max(0, self._scroll - n)
@@ -133,12 +144,27 @@ class BuildPanel(Widget):
         total = len(self._lines)
         shown = min(self._scroll + self._innerHeight(), total)
         lineInfo = f" {self._scroll + 1}-{shown}/{total} " if total else " 0 lines "
-        mid = max(0, w - 2 - len(hint) - len(lineInfo))
+
+        # error/warning summary from parsed log
+        errs  = sum(1 for e in self._errors if e.level == "error")
+        warns = sum(1 for e in self._errors if e.level == "warning")
+        if errs or warns:
+            parts = []
+            if errs:  parts.append(f"{errs}E")
+            if warns: parts.append(f"{warns}W")
+            errInfo = "  " + " ".join(parts) + " "
+        else:
+            errInfo = ""
+
+        mid = max(0, w - 2 - len(hint) - len(lineInfo) - len(errInfo))
 
         t = Text(no_wrap=True)
         t.append(_BL, style=Style(color=_BORDER, bgcolor=_BG_HEAD))
         t.append(hint, style=Style(color=_FG_DIM, bgcolor=_BG_HEAD))
         t.append(_H * mid, style=Style(color=_BORDER, bgcolor=_BG_HEAD))
+        if errInfo:
+            ec = _RED if errs else _YELLOW
+            t.append(errInfo, style=Style(color=ec, bgcolor=_BG_HEAD, bold=True))
         t.append(lineInfo, style=Style(color=_FG_DIM, bgcolor=_BG_HEAD))
         t.append(_BR, style=Style(color=_BORDER, bgcolor=_BG_HEAD))
         return _strip(t, w)
