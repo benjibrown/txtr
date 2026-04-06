@@ -319,7 +319,7 @@ class SplashWidget(Widget):
         return tx
 
     def _render_logo_glitch(self, line_text):
-        settled = self_frame >= _GLITCH_FRAME
+        settled = self.frame >= _GLITCH_FRAME
         if settled:
             tx = Text()
             tx.append(line_text, style=_ACCENT)
