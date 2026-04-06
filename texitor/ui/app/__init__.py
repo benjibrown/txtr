@@ -20,19 +20,22 @@ from texitor.ui.autocomplete import AutocompleteWidget
 from texitor.ui.helpmenu import HelpMenu
 from texitor.ui.configpanel import ConfigPanel
 from texitor.ui.buildpanel import BuildPanel
+from texitor.ui.splash import SplashWidget
 import texitor.core.compiler as _compiler
+import texitor.core.recents as _recents
 from texitor.latex.snippets import SnippetManager
 from texitor.latex.completer import LatexCompleter
 
 from texitor.ui.app.actions import ActionsMixin
 from texitor.ui.app.commands import CommandsMixin
 
-
 # helpers!!
 def _buildAppCss(t):
     return f"""
     Screen {{
         layers: base overlay;
+        overflow: hidden hidden;
+        scrollbar-size: 0 0;
     }}
 
     ToastRack {{
@@ -74,7 +77,6 @@ def _buildAppCss(t):
         display: none;
     }}
 
-# ---------------------------------------------------------------------------
     ConfigPanel {{
         layer: overlay;
         display: none;
@@ -88,8 +90,13 @@ def _buildAppCss(t):
         offset-x: 10%;
         offset-y: 20%;
     }}
-    """
 
+    SplashWidget {{
+        layer: overlay;
+        display: none;
+        overflow: hidden hidden;
+    }}
+    """
 
 def _coerceValue(raw):
     if raw.lower() == "true":
@@ -162,6 +169,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         self.acActive = False
         self.acPrefix = ""
 
+        self.splashOpen = (filename is None)
         self.helpOpen   = False
         self.configOpen = False
         self.buildOpen  = False
@@ -179,6 +187,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
 
         if filename:
             self.buffer.load(filename)
+            _recents.push(filename)
 
     def compose(self) -> ComposeResult: # peak
         yield EditorWidget(self.buffer, self.msm, self)
@@ -186,6 +195,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         yield HelpMenu(self)
         yield ConfigPanel()
         yield BuildPanel()
+        yield SplashWidget(self)
         yield StatusBar(self.buffer, self.msm, self)
 
     def on_mount(self):
@@ -193,7 +203,21 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         warn = getStartupWarning()
         if warn:
             self.notify(warn, severity="warning", timeout=6)
-        
+        if self.splashOpen:
+            splash = self.query_one(SplashWidget)
+            splash.refresh_recents()
+            splash.reposition()
+            splash.display = True
+
+    def _dismissSplash(self):
+        self.splashOpen = False
+        self.query_one(SplashWidget).display = False
+        self._refresh_all()
+
+    def on_resize(self, event):
+        if self.splashOpen:
+            self.query_one(SplashWidget).reposition()
+
     # key dispatch stuff
     def on_key(self, event: Key):
         event.stop()
