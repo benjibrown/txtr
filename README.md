@@ -1,6 +1,6 @@
 <div align="center">
 
-# txtr
+<img src="https://txtr.benji.mom/_astro/logo.D7KM1bTr_Z1HYzg2.svg" alt="txtr screenshot" width="360"/>
 
 **A Vim-style LaTeX editor for the terminal.**
 
