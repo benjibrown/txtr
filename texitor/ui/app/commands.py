@@ -90,6 +90,8 @@ class CommandsMixin:
     def _cmd_edit(self, args):
         if args:
             self.buffer.load(args)
+            import texitor.core.recents as _recents
+            _recents.push(args)
             self._refresh_all()
         else:
             self.notify(":e <filename>", severity="warning")

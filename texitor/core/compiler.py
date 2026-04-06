@@ -144,7 +144,7 @@ class LogEntry:
     file: str = ""
     line: int | None = None
 
-
+# TODO more regex - latex font warning
 # matches a file being opened by TeX: (./path/file.tex
 _RE_FILE_OPEN = re.compile(r'\(\./?([\w./\-]+\.(?:tex|cls|sty|def|cfg|fd|clo))\b')
 # matches l.NN  at start of line (error line number)
