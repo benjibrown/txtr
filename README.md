@@ -4,10 +4,11 @@
 
 **A Vim-style LaTeX editor for the terminal.**
 
+
 <!-- screenshot -->
 <img src="https://txtr.benji.mom/ss.png" alt="txtr screenshot" width="800"/>
 
-
+<a href="https://txtr.benji.mom">Documentation</a> | <a href="https://pypi.org/project/texitor/">PyPI</a>
 </div>
 
 ---
