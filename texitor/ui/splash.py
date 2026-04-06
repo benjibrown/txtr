@@ -82,8 +82,17 @@ _LOGO_D = [
     "   'Y\"    ` \"Y   Y\"       'Y\"        \"Y\"      ",
 ]
 _LOGOS = [_LOGO_A, _LOGO_B, _LOGO_C, _LOGO_D]
-_VERSION = "v1.9.8"
+_VERSION = "v1.9.8" # TODO - fetch from package metadata
 _TAGLINE = "LaTeX, fast."
+# this is so incredibly peak
+# animation modes — picked randomly on launch
+_ANIM_STATIC = "static"
+_ANIM_TYPEWRITER = "typewriter"
+_ANIM_GLITCH = "glitch"
+
+_TYPEWRITER_CPS = 4    # chars revealed per tick (tick = 0.07s)
+_GLITCH_CHARS   = "▓░▒▌▐╬╪┼╫▄▀■□▪▫"
+_GLITCH_FRAMES  = 42   # frames before glitch settles (~3s)
 
 _TICKER_ITEMS = [
     r"\frac{a}{b}",
@@ -144,7 +153,12 @@ class SplashWidget(Widget):
         self._recents = []
         self._cursor = 0
         self._logo = random.choice(_LOGOS)
+        self._anim_mode = random.choice([_ANIM_STATIC, _ANIM_TYPEWRITER, _ANIM_GLITCH])
         self._frame = 0
+        # typewriter: total chars in logo, pre-computed
+        self._tw_total = sum(len(line) for line in self._logo)
+        # glitch: seeded RNG per frame so glitch is consistent within a frame
+        self._glitch_rng = random.Random()
 
     def on_mount(self):
         self._recents = _recents.load()
@@ -211,3 +225,28 @@ class SplashWidget(Widget):
     def get_content_height(self, container, viewport, width):
         return len(self._content_lines())
 
+    def get_content_width(self, container, viewport):
+        return self.size.width if self.size.width else 60
+
+    def _render_row(self, kind, data, width):
+        def center(tx):
+            raw = len(tx.plain)
+            lpad = max(0, (width - raw) // 2)
+            full = Text()
+            full.append(" " * lpad)
+            full.append_text(tx)
+            return full
+
+        if kind == "blank" or kind == "blank_small":
+            return Text()
+
+        if kind == "logo":
+            line_text = data[0]
+            if self._anim_mode == _ANIM_TYPEWRITER:
+                tx = self._render_logo_typewriter(line_text)
+            elif self._anim_mode == _ANIM_GLITCH:
+                tx = self._render_logo_glitch(line_text)
+            else:
+                tx = Text()
+                tx.append(line_text, style=_ACCENT)
+            return center(tx)
