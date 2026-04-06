@@ -29,6 +29,7 @@ from texitor.latex.completer import LatexCompleter
 from texitor.ui.app.actions import ActionsMixin
 from texitor.ui.app.commands import CommandsMixin
 
+
 # helpers!!
 def _buildAppCss(t):
     return f"""
@@ -97,6 +98,7 @@ def _buildAppCss(t):
         overflow: hidden hidden;
     }}
     """
+
 
 def _coerceValue(raw):
     if raw.lower() == "true":
@@ -224,6 +226,34 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         event.prevent_default()
 
         key = event.key
+
+        # splash screen swallows all keys
+        if self.splashOpen:
+            splash = self.query_one(SplashWidget)
+            if key in ("j", "down"):
+                splash.cursor_down()
+            elif key in ("k", "up"):
+                splash.cursor_up()
+            elif key == "enter":
+                path = splash.selected_recent()
+                if path:
+                    self._dismissSplash()
+                    self.buffer.load(path)
+                    _recents.push(path)
+                    self._refresh_all()
+                else:
+                    self._dismissSplash()
+            elif key == "q":
+                self.exit()
+            elif key == "e":
+                self._dismissSplash()
+            elif key == "colon" or event.character == ":":
+                self._dismissSplash()
+                self._action_enter_command()
+                self._refresh_all()
+            else:
+                self._dismissSplash()
+            return
 
         # overlays swallow keys while open
         if self.helpOpen:
