@@ -125,3 +125,89 @@ _HINTS = [
 def _mk_strip(text, width):
     return Strip(list(text.render(_CONSOLE))).adjust_cell_length(width)
 
+
+class SplashWidget(Widget):
+
+    SCROLLABLE = False
+
+    DEFAULT_CSS = """
+    SplashWidget {
+        layer: overlay;
+        display: none;
+        overflow: hidden hidden;
+    }
+    """
+
+    def __init__(self, app_ref):
+        super().__init__()
+        self._app_ref = app_ref
+        self._recents = []
+        self._cursor = 0
+        self._logo = random.choice(_LOGOS)
+        self._frame = 0
+
+    def on_mount(self):
+        self._recents = _recents.load()
+        self.set_interval(0.07, self._tick)
+
+    def _tick(self):
+        if self.display:
+            self._frame = (self._frame + 1) % _TICKER_LEN
+            self.refresh()
+
+    def refresh_recents(self):
+        self._recents = _recents.load()
+        self._cursor = 0
+        self.refresh()
+
+    def reposition(self):
+        rows = self._content_lines()
+        h = len(rows)
+        w = max(len(line) for logo in _LOGOS for line in logo) + 4
+        screenW = self.app.size.width
+        screenH = self.app.size.height
+        x = max(0, (screenW - w) // 2)
+        y = max(0, (screenH - h) // 2)
+        self.styles.width = w
+        self.styles.height = h
+        self.styles.offset = (x, y)
+
+    def cursor_up(self):
+        if self._recents:
+            self._cursor = max(0, self._cursor - 1)
+            self.refresh()
+
+    def cursor_down(self):
+        if self._recents:
+            self._cursor = min(len(self._recents) - 1, self._cursor + 1)
+            self.refresh()
+
+    def selected_recent(self):
+        if self._recents and 0 <= self._cursor < len(self._recents):
+            return self._recents[self._cursor]
+        return None
+
+    def _content_lines(self):
+        rows = []
+        for line in self._logo:
+            rows.append(("logo", line))
+        rows.append(("blank",))
+        rows.append(("tagline",))
+        rows.append(("version",))
+        rows.append(("blank",))
+        rows.append(("rec_header",))
+        rows.append(("blank_small",))
+        if self._recents:
+            for i, path in enumerate(self._recents):
+                rows.append(("recent", i, path))
+        else:
+            rows.append(("no_recents",))
+        rows.append(("blank",))
+        rows.append(("hints",))
+        rows.append(("blank_small",))
+        rows.append(("ticker",))
+        return rows
+
+    def get_content_height(self, container, viewport, width):
+        return len(self._content_lines())
+
