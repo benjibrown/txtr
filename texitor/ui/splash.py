@@ -47,8 +47,6 @@ _LOGO_B = [
 ]
 
 _LOGO_C = [
-    "                                                                                    ",
-    "                                                                                    ",
     "         tttt                                      tttt                             ",
     "      ttt:::t                                   ttt:::t                             ",
     "      t:::::t                                   t:::::t                             ",
@@ -328,7 +326,7 @@ class SplashWidget(Widget):
         self._glitch_rng.seed(self._frame * 7919)
         tx = Text() 
         glitch_prop = 0.18 * (1 - self._frame / _GLITCH_FRAMES)  
-        for ch in line_tex:
+        for ch in line_text:
             if ch != " " and self._glitch_rng.random() < glitch_prop:
                 gl_ch = self._glitch_rng.choice(_GLITCH_CHARS)
                 tx.append(gl_ch, style=_ACCENT)
