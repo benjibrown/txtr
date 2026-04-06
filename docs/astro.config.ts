@@ -8,6 +8,10 @@ export default defineConfig({
   integrations: [
     react(),
     starlight({
+      logo: {
+          src: './src/assets/logo.svg',
+        replacesTitle: true,
+      },
       title: "txtr",
       description: "A Vim-style LaTeX editor for the terminal. LaTeX, fast.",
       favicon: "/favicon.svg",
