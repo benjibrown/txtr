@@ -250,3 +250,122 @@ class SplashWidget(Widget):
                 tx = Text()
                 tx.append(line_text, style=_ACCENT)
             return center(tx)
+
+        if kind == "tagline":
+            tx = Text()
+            tx.append(_TAGLINE, style=_SUB)
+            return center(tx)
+
+        if kind == "version":
+            tx = Text()
+            tx.append(_VERSION, style=_DIM)
+            return center(tx)
+
+        if kind == "rec_header":
+            sep_width = min(50, width - 4)
+            label = "  Recent Files  "
+            dashes = max(0, sep_width - len(label))
+            left_d = dashes // 2
+            right_d = dashes - left_d
+            tx = Text()
+            tx.append("─" * left_d, style=_DIM)
+            tx.append(label, style=_SEC)
+            tx.append("─" * right_d, style=_DIM)
+            return center(tx)
+
+        if kind == "recent":
+            idx, filepath = data[0], data[1]
+            display = _recents.display_path(filepath)
+            is_sel = (idx == self._cursor)
+            if is_sel:
+                tx = Text()
+                tx.append(f" ❯ {idx + 1}  ", style=_ACC_SEL)
+                tx.append(display, style=_FG_SEL)
+            else:
+                tx = Text()
+                tx.append(f"   {idx + 1}  ", style=_DIM)
+                tx.append(display, style=_SUB)
+            return center(tx)
+
+        if kind == "no_recents":
+            tx = Text()
+            tx.append("no recent files", style=_DIM)
+            return center(tx)
+
+        if kind == "hints":
+            tx = Text()
+            for i, (key, action) in enumerate(_HINTS):
+                if i > 0:
+                    tx.append("   ·   ", style=_DIM)
+                tx.append(key, style=_ACCENT)
+                tx.append(f"  {action}", style=_DIM)
+            return center(tx)
+
+        if kind == "ticker":
+            return self._render_ticker(width)
+
+        return Text()
+
+    def _render_logo_typewriter(self, line_text):
+        # figure out how many total chars across all lines have been revealed
+        chars_shown = min(self._frame * _TYPEWRITER_CPS, self._tw_total)
+        # count how many chars precede this line in the logo
+        line_idx = self._logo.index(line_text)
+        chars_before = sum(len(self._logo[i]) for i in range(line_idx))
+        chars_this_line = max(0, min(len(line_text), chars_shown - chars_before))
+        visible = line_text[:chars_this_line]
+        tx = Text()
+        tx.append(visible, style=_ACCENT)
+        return tx
+
+    def _render_logo_glitch(self, line_text):
+        settled = self_frame >= _GLITCH_FRAME
+        if settled:
+            tx = Text()
+            tx.append(line_text, style=_ACCENT)
+            return tx
+        # seed per frame 
+        self._glitch_rng.seed(self._frame * 7919)
+        tx = Text() 
+        glitch_prop = 0.18 * (1 - self._frame / _GLITCH_FRAMES)  
+        for ch in line_tex:
+            if ch != " " and self._glitch_rng.random() < glitch_prop:
+                gl_ch = self._glitch_rng.choice(_GLITCH_CHARS)
+                tx.append(gl_ch, style=_ACCENT)
+            else:
+                tx.append(ch, style=_ACCENT)
+        return tx 
+
+    def _render_ticker(self, width):
+        offset = self._frame % _TICKER_LEN
+        src = _TICKER_PLAIN 
+        if offset + width <= len(src):
+            visible = src[offset:offset+width]
+        else:
+            visible = src[offset:] + src[:width - (len(src) - offset)]
+
+        tx = Text()
+        in_cmd = False 
+        for ch in visible:
+            if ch == "\\":
+                in_cmd = True
+                tx.append(ch, style=_ACCENT)
+            elif in_cmd and not (ch.isalpha() or ch in "_{}[]^*"):
+                in_cmd = False
+            
+            if in_cmd or ch == "\\":
+                tx.append(ch, style=_SUB)
+            else:
+                tx.append(ch, style=_DIM)
+        return tx
+
+    def render_line(self, y):
+        width = self.size.width 
+        if width == 0:
+            return Strip([])
+        rows = self._content_lines() 
+        if y>=len(rows):
+            return Strip([])
+        kind = rows[y][0] 
+        data = rows[y][1:] 
+        return _mk_strip(self._render_row(kind, data, width), width)
