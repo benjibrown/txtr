@@ -5,7 +5,8 @@
 **A Vim-style LaTeX editor for the terminal.**
 
 <!-- screenshot -->
-<img src="https://iili.io/BJmkCzB.png" alt="txtr screenshot" width="800"/>
+<img src="https://txtr.benji.mom/ss.png" alt="txtr screenshot" width="800"/>
+
 
 </div>
 
