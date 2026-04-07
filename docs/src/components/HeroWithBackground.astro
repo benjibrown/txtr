@@ -1,46 +1,31 @@
 ---
 import type { Props } from '@astrojs/starlight/props';
 import DefaultHero from '@astrojs/starlight/components/Hero.astro';
-import Balatro from './Balatro';
 ---
-
-<div class="balatro-bg">
-  <Balatro
-    client:only="react"
-    isRotate={true}
-    mouseInteraction={true}
-    pixelFilter={745}
-    color1="#DE443B"
-    color2="#006BB4"
-    color3="#162325"
-  />
-</div>
 
 <DefaultHero {...Astro.props} />
 
 <style>
-  .balatro-bg {
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    opacity: 0.8;
-    pointer-events: none;
+  :global(body) {
+    background-image:
+      linear-gradient(var(--sl-color-gray-6) 1px, transparent 1px),
+      linear-gradient(90deg, var(--sl-color-gray-6) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: center center;
   }
 
-  /* force single-column, image on top, everything centered */
   :global(.hero) {
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     text-align: center !important;
-
+    gap: 1.5rem !important;
   }
 
   :global(.hero > img),
   :global(.hero > .hero-html) {
     order: -1 !important;
-      width: min(150%, 360px) !important;
-
+    width: min(100%, 360px) !important;
   }
 
   :global(.hero .stack) {
