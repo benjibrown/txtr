@@ -33,10 +33,13 @@ _DEFAULTS = {
         "name":        "catppuccin",
         "custom_path": "",
     },
+
     "statusbar": {
-        "show_wordcount": False, # not implemented yet - might do as demo plugin so this might get removed to be put under plugin config
         "show_col":       True,
         "show_mode":      True,
+    },
+    "citations": {
+            "bib_files": [],
     },
 }
 
