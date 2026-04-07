@@ -45,6 +45,7 @@ export default defineConfig({
           label: "Getting Started",
           items: [
             { label: "Introduction", slug: "introduction" },
+            {label: "Installation", slug: "installation" },
           ],
         },
       ],
