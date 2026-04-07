@@ -3,15 +3,19 @@ import type { Props } from '@astrojs/starlight/props';
 import DefaultHero from '@astrojs/starlight/components/Hero.astro';
 ---
 
+<div class="splash-grid" aria-hidden="true"></div>
 <DefaultHero {...Astro.props} />
 
 <style>
-  :global(body) {
+  .splash-grid {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
     background-image:
       linear-gradient(var(--sl-color-gray-6) 1px, transparent 1px),
       linear-gradient(90deg, var(--sl-color-gray-6) 1px, transparent 1px);
     background-size: 32px 32px;
-    background-position: center center;
   }
 
   :global(.hero) {
