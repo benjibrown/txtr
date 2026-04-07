@@ -92,3 +92,9 @@ show_col = true
 show_mode = true
 
 
+
+
+[citations]
+# extra .bib file paths or directories to scan (in addition to current file's directory)
+# bib_files = ["/path/to/refs.bib"]
+bib_files = []
