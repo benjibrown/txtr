@@ -117,8 +117,8 @@ interface BalatraProps {
 }
 
 export default function Balatro({
-  spinRotation = -2.0,
-  spinSpeed = 7.0,
+  spinRotation = -99.0,
+  spinSpeed = 3.0,
   offset = [0.0, 0.0],
   color1 = '#DE443B',
   color2 = '#006BB4',
