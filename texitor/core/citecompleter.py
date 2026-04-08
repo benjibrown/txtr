@@ -43,3 +43,19 @@ class CiteCompleter:
                     seen.add(p)
                     self._entries.extend(_bib.parse(p))
             elif p.is_dir():
+                dirs_to_scan.append(p)
+
+        for d in dirs_to_scan:
+            for bib_file in sorted(d.glob("*.bib")):
+                if bib_file not in seen:
+                    seen.add(bib_file)
+                    self._entries.extend(_bib.parse(bib_file))
+
+    def getCompletions(self, prefix):
+        pl = prefix.lower()
+        exact, starts, contains = [], [], []
+        for e in self._entries:
+            kl = e["key"].lower()
+            desc = _entry_desc(e)
+            if kl == pl:
+                exact.append((e["key"], desc))
