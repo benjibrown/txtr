@@ -28,6 +28,7 @@ _DEFAULTS = {
         "autocompile":      "off", # 3 modes - always/off/save - always doesnt require initialising, off will never autocompile and save will autocompile when the file is saved but only if user initialises the compiler once first
         "build_log_autohide":   False,
         "build_log_autoclose":  False,
+        "watch_interval":       5, # interval that the compiler watches for file changes (if build watch enabled)
     },
     "theme": {
         "name":        "catppuccin",
