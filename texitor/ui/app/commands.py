@@ -103,7 +103,8 @@ class CommandsMixin:
         if not path:
             self.notify("no file open", severity="warning")
             return
-        self._loadBibsForFile(path)
+        self._loadBibsForFile(path, fromcmd=True)
+
 
     # view commands
 
