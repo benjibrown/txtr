@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "texitor"
-version = "1.10.8"
+version = "1.10.0"
 description = "A Vim-style LaTeX TUI editor."
 readme = "README.md"
 requires-python = ">=3.11"
