@@ -51,8 +51,10 @@ autocompile = "off"
 build_log_autohide = false
  
 # automatically close the build log in the event that the compilation is successful
-build_log_autoclose = false 
+build_log_autoclose = false
 
+# interval for build watch to check your file for changes (in seconds) and recompile - lower time = more responsive compilation but higher resource usage 
+watch_interval = 5
 
 [theme]
 # built-in themes: catppuccin, gruvbox

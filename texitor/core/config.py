@@ -76,6 +76,18 @@ class ConfigManager:
         self._data[section][key] = value
         self._save()
 
+    def append(self, section, key, value):
+        # append a value to a list config entry (creates list if scalar/missing)
+        if section not in self._data:
+            self._data[section] = {}
+        existing = self._data[section].get(key, [])
+        if not isinstance(existing, list):
+            existing = [existing] if existing else []
+        if value not in existing:
+            existing.append(value)
+        self._data[section][key] = existing
+        self._save()
+
     def getSection(self, section):
         # get all keys in a section as a dict
         return dict(self._data.get(section, {}))
