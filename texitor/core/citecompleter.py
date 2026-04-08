@@ -59,3 +59,14 @@ class CiteCompleter:
             desc = _entry_desc(e)
             if kl == pl:
                 exact.append((e["key"], desc))
+            elif kl.startswith(pl):
+                starts.append((e["key"], desc))
+            elif pl and pl in kl:
+                contains.append((e["key"], desc))
+        return exact + starts + contains
+
+    def isEmpty(self):
+        return not self._entries
+
+    def entryCount(self):
+        return len(self._entries)
