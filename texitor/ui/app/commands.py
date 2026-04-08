@@ -223,6 +223,49 @@ class CommandsMixin:
         sb = self.query(StatusBar).first(None)
         if sb:
             sb.refresh()
+
+        async def _run():
+            def onLine(line, isErr):
+                panel.appendLine(line, isErr)
+            try:
+                rc, _ = await _compiler.compile(
+                    self.buffer.path,
+                    engine=engine,
+                    auxConfig=auxDir,
+                    customCmd=customCmd,
+                    onLine=onLine,
+                )
+                panel.setDone(rc)
+                lp = _compiler.logPath(self.buffer.path, engine, auxDir)
+                panel.setErrors(_compiler.parse_log(lp))
+
+                if rc == 0:
+                    self._buildPrimed = True
+                    self.notify(f"build succeeded ({engine})", timeout=3)
+                else:
+                    # on error, open the panel so user can see what went wrong
+                    panel.display = True
+                    self.buildOpen = True
+                    self.notify(f"build failed (exit {rc})", severity="error", timeout=5)
+            except asyncio.CancelledError:
+                panel.appendLine("build cancelled", True)
+                panel.setDone(1)
+            except Exception as e:
+                panel.appendLine(f"error: {e}", True)
+                panel.setDone(1)
+
+            if self._watchActive:
+                self._buildStatus = "watching"
+            else:
+                self._buildStatus = "built" if (self._buildPrimed) else "failed"
+
+            sb2 = self.query(StatusBar).first(None)
+            if sb2:
+                sb2.refresh()
+
+        self._buildTask = asyncio.create_task(_run())
+
+
     @command(":build", "build with configured engine", section="Compiler", aliases=[":compile", ":b"])
     def _cmd_build(self, args):
         from texitor.ui.buildpanel import BuildPanel
@@ -296,6 +339,10 @@ class CommandsMixin:
                 panel.setDone(1)
                 self._buildStatus = "error"
 
+            # if watch is still active, restore watching status
+            if self._watchActive:
+                self._buildStatus = "watching"
+
             sb = self.query(StatusBar).first(None)
             if sb:
                 sb.refresh()
@@ -331,6 +378,35 @@ class CommandsMixin:
             self.notify("build cancelled")
         else:
             self.notify("no build running", severity="warning")
+
+    @command(":buildwatch", "toggle continuous build on every edit", section="Compiler", aliases=[":bw"])
+    def _cmd_buildwatch(self, args):
+        from texitor.ui.statusbar import StatusBar
+
+        if self._watchActive:
+            self._watchActive = False
+            if self._watchTask and not self._watchTask.done():
+                self._watchTask.cancel()
+                self._watchTask = None
+            self._buildStatus = ""
+            sb = self.query(StatusBar).first(None)
+            if sb:
+                sb.refresh()
+            self.notify("buildwatch stopped")
+            return
+
+        if not self.buffer.path:
+            self.notify("save the file first", severity="warning")
+            return
+
+        self._watchActive = True
+        self._buildStatus = "watching"
+        sb = self.query(StatusBar).first(None)
+        if sb:
+            sb.refresh()
+        delay = cfg.get("compiler", "watch_interval", 1.5)
+        self._startWatchLoop()
+        self.notify(f"buildwatch active - builds {delay}s after each edit - :bw to stop")
 
     @command(":engines", "list available engines", section="Compiler", aliases=[":compilers"])
     def _cmd_listEngines(self, args):
