@@ -182,6 +182,9 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         self._buildTask = None
         self._buildPrimed = False
         self._buildStatus = ""
+        self._watchTask = None
+        self._watchActive = False
+        self._watchEvent = None
 
         self.snippets  = SnippetManager()
         self.completer = LatexCompleter()
@@ -216,6 +219,33 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
             splash.refresh_recents()
             splash.reposition()
             splash.display = True
+
+    def on_unmount(self):
+        self._watchActive = False
+        if self._watchTask and not self._watchTask.done():
+            self._watchTask.cancel()
+
+    def _watchKick(self):
+        # signal the debounce loop that content changed
+        self._watchEvent.set()
+
+    def _startWatchLoop(self):
+        import asyncio as _aio
+        delay = cfg.get("compiler", "watch_interval", 1.5)
+        self._watchEvent = _aio.Event()
+
+        async def _loop():
+            while self._watchActive:
+                await self._watchEvent.wait()
+                self._watchEvent.clear()
+                # debounce — wait for typing to pause
+                await _aio.sleep(delay)
+                # drain any further events that arrived during sleep
+                self._watchEvent.clear()
+                if self._watchActive:
+                    self._cmd_buildSilent()
+
+        self._watchTask = _aio.create_task(_loop())
 
     def _dismissSplash(self):
         self.splashOpen = False
@@ -318,9 +348,15 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
 
         if self.buildOpen:
             panel = self.query_one(BuildPanel)
-            if key in ("q", "escape"):
+            if self.msm.is_command():
+                pass
+            elif key in ("q", "escape"):
                 self.buildOpen = False
                 panel.display = False
+                return
+            elif key == "colon" or event.character == ":":
+                self._action_enter_command()
+                self._refresh_all()
                 return
             elif key in ("j", "down"):
                 panel.scrollDown()
@@ -457,6 +493,8 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         self.query_one(StatusBar).refresh()
         if self.acActive:
             self._refreshAutocomplete()
+        if self._watchActive and self.buffer.modified:
+            self._watchKick()
 
 
     # bib helpers
