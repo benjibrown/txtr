@@ -160,6 +160,23 @@ class CommandsMixin:
         cfg.set(section, key, value)
         self.notify(f"config: {section}.{key} = {value}")
 
+    @command(":config append <section.key> <value>", "append a value to a list config entry", section="Config")
+    def _cmd_configAppend(self, args):
+        from texitor.ui.app import _coerceValue, _resolveConfigKey
+        parts = args.split(None, 1)
+        if len(parts) != 2:
+            self.notify(":config append <section.key> <value>", severity="warning")
+            return
+        dotKey, rawVal = parts
+        section, key = _resolveConfigKey(dotKey)
+        if section is None:
+            self.notify(f"config: unknown key '{dotKey}'", severity="warning")
+            return
+        value = _coerceValue(rawVal)
+        cfg.append(section, key, value)
+        current = cfg.get(section, key)
+        self.notify(f"config: {section}.{key} = {current}")
+
     @command(":config get <section.key>", "get a config value", section="Config")
     def _cmd_configGet(self, args):
         from texitor.ui.app import _resolveConfigKey
@@ -178,6 +195,34 @@ class CommandsMixin:
 
     # build commands
 
+    def _cmd_buildSilent(self, engine=None):
+        # like _cmd_build but never opens the build panel (used by buildwatch)
+        from texitor.ui.buildpanel import BuildPanel
+        from texitor.ui.statusbar import StatusBar
+
+        if not self.buffer.path:
+            return
+        if self._buildTask and not self._buildTask.done():
+            return  # previous build still running, skip
+
+        self.buffer.save()
+
+        engine = engine or cfg.get("compiler", "engine", "latexmk")
+        auxDir = cfg.get("compiler", "aux_dir", ".aux")
+        customCmd = cfg.get("compiler", "custom_cmd", "") or None
+
+        if not customCmd and engine not in _compiler.PRESETS:
+            self.notify(f"unknown engine '{engine}'", severity="warning")
+            return
+
+        panel = self.query_one(BuildPanel)
+        panel.reset(engine, self.buffer.path)
+        # never show panel in silent mode
+
+        self._buildStatus = "building ..."
+        sb = self.query(StatusBar).first(None)
+        if sb:
+            sb.refresh()
     @command(":build", "build with configured engine", section="Compiler", aliases=[":compile", ":b"])
     def _cmd_build(self, args):
         from texitor.ui.buildpanel import BuildPanel
