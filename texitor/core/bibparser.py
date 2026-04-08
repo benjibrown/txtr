@@ -1,5 +1,6 @@
 # minimal .bib parser - extracts key, type, title, author, year from bibtex files
 # handles nested braces in field values, both {val} and "val" syntax
+# this is so peak - bit buggy but it works lol 
 
 import re
 from pathlib import Path
@@ -50,5 +51,6 @@ def parse(path):
             "author": fields.get("author", ""),
             "year": fields.get("year", ""),
         })
+        # TODO - limit numer of entries per file?? - configurable ig
 
     return entries
