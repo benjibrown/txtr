@@ -25,6 +25,10 @@ import texitor.core.compiler as _compiler
 import texitor.core.recents as _recents
 from texitor.latex.snippets import SnippetManager
 from texitor.latex.completer import LatexCompleter
+from texitor.core.citecompleter import CiteCompleter
+
+import re
+_CITE_PAT = re.compile(r'\\cite[a-z*]*\{([^}]*)$')}')
 
 from texitor.ui.app.actions import ActionsMixin
 from texitor.ui.app.commands import CommandsMixin
@@ -181,6 +185,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
 
         self.snippets  = SnippetManager()
         self.completer = LatexCompleter()
+        self.citeCompleter = CiteCompleter()
 
         ensureUserConfig()
         cfg.load()
@@ -190,6 +195,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         if filename:
             self.buffer.load(filename)
             _recents.push(filename)
+            self._loadBibsForFile(filename)
 
     def compose(self) -> ComposeResult: # peak
         yield EditorWidget(self.buffer, self.msm, self)
@@ -453,9 +459,38 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
             self._refreshAutocomplete()
 
 
+    # bib helpers
+    def _loadBibsForFile(self, filepath):
+        from pathlib import Path
+        p = Path(filepath).expanduser().resolve()
+        extra = cfg.get("citations", "bib_files", [])
+        self.citeCompleter.loadDir(p.parent, extra_paths=extra)
+        n = self.citeCompleter.entryCount()
+        if n:
+            self.notify(f"loaded {n} bib entr{'y' if n == 1 else 'ies'}", severity="information")
+
     # autocomplete stuff
     def _updateAutocomplete(self):
         textBefore = self.buffer.current_line[:self.buffer.cursor_col]
+
+        # cite context: \cite{, \citep{, \citet{, etc.}}}
+        cm = _CITE_PAT.search(textBefore)
+        if cm:
+            prefix = cm.group(1)
+            items = self.citeCompleter.getCompletions(prefix)
+            if items:
+                self.acItems = items
+                self.acIndex = 0
+                self.acPrefix = prefix
+                self.acActive = True
+                ac = self.query_one(AutocompleteWidget)
+                ac.resetScroll()
+                self._positionAutocomplete(wide=True)
+                ac.display = True
+                return
+            self._dismissAutocomplete()
+            return
+
         idx = len(textBefore) - 1
         while idx >= 0 and (textBefore[idx].isalpha() or textBefore[idx] == "\\"):
             if textBefore[idx] == "\\":
@@ -475,7 +510,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
             idx -= 1
         self._dismissAutocomplete()
 
-    def _positionAutocomplete(self):
+    def _positionAutocomplete(self, wide=False):
         editor = self.query_one(EditorWidget)
         buf = self.buffer
         ac = self.query_one(AutocompleteWidget)
@@ -491,6 +526,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
             row = max(0, screenRow - popupHeight)
         col = max(0, screenCol)
 
+        ac.styles.width = 58 if wide else 36
         ac.styles.offset = (col, row)
 
     def _refreshAutocomplete(self):

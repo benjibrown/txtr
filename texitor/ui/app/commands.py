@@ -92,9 +92,18 @@ class CommandsMixin:
             self.buffer.load(args)
             import texitor.core.recents as _recents
             _recents.push(args)
+            self._loadBibsForFile(args)
             self._refresh_all()
         else:
             self.notify(":e <filename>", severity="warning")
+
+    @command(":bib", "reload .bib files from current file's directory", section="File")
+    def _cmd_bib(self, args):
+        path = self.buffer.path
+        if not path:
+            self.notify("no file open", severity="warning")
+            return
+        self._loadBibsForFile(path)
 
     # view commands
 
