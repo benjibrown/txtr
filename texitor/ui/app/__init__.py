@@ -28,11 +28,11 @@ from texitor.latex.completer import LatexCompleter
 from texitor.core.citecompleter import CiteCompleter
 
 import re
-_CITE_PAT = re.compile(r'\\cite[a-z*]*\{([^}]*)$')}')
+_CITE_PAT = re.compile(r'\\cite[a-z*]*\{([^}]*)$')
 
 from texitor.ui.app.actions import ActionsMixin
 from texitor.ui.app.commands import CommandsMixin
-
+# TODO - no bib file? send noti
 
 # helpers!!
 def _buildAppCss(t):
@@ -460,7 +460,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
 
 
     # bib helpers
-    def _loadBibsForFile(self, filepath):
+    def _loadBibsForFile(self, filepath, fromcmd=False):
         from pathlib import Path
         p = Path(filepath).expanduser().resolve()
         extra = cfg.get("citations", "bib_files", [])
@@ -468,6 +468,8 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         n = self.citeCompleter.entryCount()
         if n:
             self.notify(f"loaded {n} bib entr{'y' if n == 1 else 'ies'}", severity="information")
+        elif fromcmd: # only send noti if this was triggered by a command so we dont notigy every time a file is loaded
+            self.notify("no bib entries found", severity="warning")
 
     # autocomplete stuff
     def _updateAutocomplete(self):
@@ -516,8 +518,8 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         ac = self.query_one(AutocompleteWidget)
 
         gutterWidth = max(len(str(buf.line_count)), 2) + 3
-        screenRow   = buf.cursor_row - editor._scroll_top
-        screenCol   = gutterWidth + buf.cursor_col - len(self.acPrefix)
+        screenRow = buf.cursor_row - editor._scroll_top
+        screenCol = gutterWidth + buf.cursor_col - len(self.acPrefix)
 
         editorHeight = editor.size.height
         popupHeight  = min(len(self.acItems), 8)
