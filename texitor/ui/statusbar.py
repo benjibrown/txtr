@@ -94,7 +94,14 @@ class StatusBar(Widget):
         used = (len(label) + 2) + (len(name) + 2) + len(pos) + statusLen
         text.append(" " * max(0, width - used), style=Style(bgcolor=_BAR_BG))
         if buildStatus:
-            statusColor = _theme.red if buildStatus.startswith("e") or buildStatus.startswith("f") else (_theme.yellow if buildStatus == "building ..." else _theme.green)
+            if buildStatus == "watching":
+                statusColor = _theme.accent
+            elif buildStatus.startswith("e") or buildStatus.startswith("f"):
+                statusColor = _theme.red
+            elif buildStatus == "building ...":
+                statusColor = _theme.yellow
+            else:
+                statusColor = _theme.green
             text.append(f"  {buildStatus}   ", style=Style(color=statusColor, bgcolor=_BAR_BG, bold=True))
         text.append(pos, style=Style(color=_BAR_FG, bgcolor=_POS_BG, bold=True))
 
