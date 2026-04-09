@@ -57,7 +57,7 @@ description: Full keybind reference for all modes.
 
 | Key | Action |
 |---|---|
-| `Escape` / `Ctrl+[` | Return to Normal |]`
+| `Escape` / `Ctrl+[` | Return to Normal |
 | `Tab` | Expand snippet or insert tab / jump to next tab stop |
 | `Shift+Tab` | Clear remaining tab stops |
 | `Ctrl+Space` | Accept autocomplete suggestion |
@@ -75,5 +75,8 @@ description: Full keybind reference for all modes.
 | `d` | Delete selection |
 | `>` | Indent selection |
 | `<` | Dedent selection |
+| Arrow keys | Extend selection |
 
+## Customising keybinds
 
+Custom keybind support is planned but not yet implemented. Watch this space.

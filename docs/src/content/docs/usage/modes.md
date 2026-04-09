@@ -9,7 +9,7 @@ txtr is modal. Every keypress means something different depending on the active 
 
 The default mode. Used for navigation, deletion, yanking, and entering other modes. You cannot type text directly in Normal mode.
 
-Enter with `Escape` or `Ctrl+[` from any other mode.]`
+Enter with `Escape` or `Ctrl+[` from any other mode.
 
 ## Insert mode
 
@@ -49,4 +49,3 @@ Help and config popups stay open while in Command mode — you can read them whi
 Forward search. Press `/` from Normal mode, type a pattern, press `Enter`.
 
 Press `n` / `N` in Normal mode to jump between matches. Matches are highlighted in the editor.
-
