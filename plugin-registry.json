@@ -1,0 +1,8 @@
+{
+  "_readme": "txtr plugin registry - each entry maps a plugin name to its metadata",
+  "_types": {
+    "single": "url points to a raw .py file",
+    "git":    "url is a git repo - txtr clones it into the plugin dir (preferred for packages)",
+    "package": "url points to a .zip of the plugin folder (fallback if git unavailable)"
+  },
+}

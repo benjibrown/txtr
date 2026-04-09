@@ -38,6 +38,7 @@
 #
 # hooks available (all optional):
 #   on_load(app)              - called once when plugin is enabled
+
 #   on_unload(app)            - called when plugin is disabled or app exits
 #   on_save(app, path)        - called after every file save
 #   on_cursor_move(app)       - called after cursor position changes
@@ -67,7 +68,7 @@ except ImportError:
 
 
 PLUGIN_DIR = Path.home() / ".config" / "txtr" / "plugins"
-REGISTRY_URL = "https://raw.githubusercontent.com/benjaminpaine/txtr/main/plugin-registry.json"
+REGISTRY_URL = "https://raw.githubusercontent.com/benjibrown/txtr/main/plugin-registry.json"
 
 _ENTRY_POINTS = ("__init__.py", "plugin.py", "main.py")
 
@@ -135,4 +136,50 @@ class PluginLoader:
             return False
 
         instance = cls()
+
+        # manifest fields always win over class attributes
+        if manifest:
+            for k in ("name", "description", "version", "author"):
+              if k in manifest and manifest[k]:
+                    setattr(instance, k, manifest[k])
+
+        # canonical name: manifest/class `name`, falling back to filesystem name
+        canonical = instance.name or name
+
+        # already loaded under its canonical name (e.g. dir name differs from manifest name)
+        if canonical in self._loaded:
+            return True
+
+        try:
+            instance.on_load(app)
+        except Exception as e:
+            if notify_error:
+                app.notify(f"plugin '{canonical}' on_load error: {e}", severity="error")
+            return False
+
+        self._loaded[canonical] = instance
+        return True
+
+    def unload(self, app, name: str):
+        # accepts either canonical name or filesystem name
+        instance = self._loaded.pop(name, None)
+        if instance is None:
+            # try matching by filesystem name against stored canonical names
+            canonical = next((k for k, v in self._loaded.items() if k == name), None)
+            if canonical:
+                instance = self._loaded.pop(canonical)
+            else:
+                return False
+        try:
+            instance.on_unload(app)
+        except Exception:
+            pass
+        return True
+
+    def unloadAll(self, app):
+        for name in list(self._loaded.keys()):
+            self.unload(app, name)
+
+    def isLoaded(self, name: str) -> bool:
+        return name in self._loaded
 
