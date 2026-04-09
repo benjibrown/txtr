@@ -54,6 +54,7 @@ export default defineConfig({
           items: [
             { label: "Modes", slug: "usage/modes" },
             { label: "Keybinds", slug: "usage/keybinds" },
+            {label: "Commands", slug: "usage/commands" },
           ],
         },
       ],
