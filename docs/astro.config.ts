@@ -49,6 +49,13 @@ export default defineConfig({
             {label: "Quick Start", slug: "quickstart" },
           ],
         },
+        {
+          label: "Usage",
+          items: [
+            { label: "Modes", slug: "usage/modes" },
+            { label: "Keybinds", slug: "usage/keybinds" },
+          ],
+        },
       ],
     }),
   ],
