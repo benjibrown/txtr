@@ -53,15 +53,18 @@ class CommandsMixin:
 
     @command(":w", "save file", section="File")
     def _cmd_write(self, args):
+        from texitor.core.plugins import pluginLoader
         if args:
             self.buffer.save(args)
             self.notify(f"saved {args}")
+            pluginLoader.fireSave(self, args)
             return
         if not self.buffer.path:
             self.notify("no file name - use :w <filename>", severity="warning")
             return
         self.buffer.save()
         self.notify(f"saved {self.buffer.path}")
+        pluginLoader.fireSave(self, self.buffer.path)
         mode = cfg.get("compiler", "autocompile", "save")
         if mode is True:
             mode = "save"
@@ -199,11 +202,12 @@ class CommandsMixin:
         # like _cmd_build but never opens the build panel (used by buildwatch)
         from texitor.ui.buildpanel import BuildPanel
         from texitor.ui.statusbar import StatusBar
+        from texitor.core.plugins import pluginLoader
 
         if not self.buffer.path:
             return
         if self._buildTask and not self._buildTask.done():
-            return  # previous build still running, skip
+            retur
 
         self.buffer.save()
 
