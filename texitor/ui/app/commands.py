@@ -207,7 +207,7 @@ class CommandsMixin:
         if not self.buffer.path:
             return
         if self._buildTask and not self._buildTask.done():
-            retur
+            return
 
         self.buffer.save()
 
@@ -221,7 +221,6 @@ class CommandsMixin:
 
         panel = self.query_one(BuildPanel)
         panel.reset(engine, self.buffer.path)
-        # never show panel in silent mode
 
         self._buildStatus = "building ..."
         sb = self.query(StatusBar).first(None)
@@ -229,6 +228,7 @@ class CommandsMixin:
             sb.refresh()
 
         async def _run():
+            rc = 1
             def onLine(line, isErr):
                 panel.appendLine(line, isErr)
             try:
@@ -247,7 +247,6 @@ class CommandsMixin:
                     self._buildPrimed = True
                     self.notify(f"build succeeded ({engine})", timeout=3)
                 else:
-                    # on error, open the panel so user can see what went wrong
                     panel.display = True
                     self.buildOpen = True
                     self.notify(f"build failed (exit {rc})", severity="error", timeout=5)
@@ -258,10 +257,12 @@ class CommandsMixin:
                 panel.appendLine(f"error: {e}", True)
                 panel.setDone(1)
 
+            pluginLoader.fireBuildDone(self, rc)
+
             if self._watchActive:
                 self._buildStatus = "watching"
             else:
-                self._buildStatus = "built" if (self._buildPrimed) else "failed"
+                self._buildStatus = "built" if self._buildPrimed else "failed"
 
             sb2 = self.query(StatusBar).first(None)
             if sb2:
@@ -274,6 +275,7 @@ class CommandsMixin:
     def _cmd_build(self, args):
         from texitor.ui.buildpanel import BuildPanel
         from texitor.ui.statusbar import StatusBar
+        from texitor.core.plugins import pluginLoader
 
         engine = args or None
 
@@ -308,6 +310,7 @@ class CommandsMixin:
         self.query_one(StatusBar).refresh()
 
         async def _run():
+            rc = 1
             def onLine(line, isErr):
                 panel.appendLine(line, isErr)
             try:
@@ -320,7 +323,6 @@ class CommandsMixin:
                 )
                 panel.setDone(rc)
 
-                # parse log for errors / warnings
                 lp = _compiler.logPath(self.buffer.path, engine, auxDir)
                 panel.setErrors(_compiler.parse_log(lp))
 
@@ -343,9 +345,10 @@ class CommandsMixin:
                 panel.setDone(1)
                 self._buildStatus = "error"
 
-            # if watch is still active, restore watching status
             if self._watchActive:
                 self._buildStatus = "watching"
+
+            pluginLoader.fireBuildDone(self, rc)
 
             sb = self.query(StatusBar).first(None)
             if sb:
@@ -432,3 +435,44 @@ class CommandsMixin:
         panel.setDone(0)
         panel.display = True
         self.buildOpen = True
+
+    @command(":plugin", "manage plugins - list / info / enable / disable / install", section="Plugins")
+    def _cmd_plugin(self, args):
+        from texitor.ui.buildpanel import BuildPanel
+        from texitor.core.plugins import pluginLoader, PLUGIN_DIR, REGISTRY_URL
+
+        sub = (args or "").strip()
+        parts = sub.split(None, 1)
+        action = parts[0].lower() if parts else "list"
+        arg = parts[1].strip() if len(parts) > 1 else ""
+
+        if action == "list":
+            panel = self.query_one(BuildPanel)
+            panel.reset("plugins", "installed plugins")
+            loaded = set(pluginLoader.loaded())
+            available = set(pluginLoader.availableOnDisk())
+
+            panel.appendLine("  loaded:", autoScroll=False)
+            if loaded:
+                for n in sorted(loaded):
+                    inst = pluginLoader.get(n)
+                    desc = inst.description if inst else ""
+                    ver = inst.version if inst else ""
+                    panel.appendLine(f"    {n:<16} {ver:<10} {desc}", autoScroll=False)
+            else:
+                panel.appendLine("    (none)", autoScroll=False)
+
+            not_loaded = available - loaded
+            if not_loaded:
+                panel.appendLine("", autoScroll=False)
+                panel.appendLine("  available (not loaded):", autoScroll=False)
+                for n in sorted(not_loaded):
+                    panel.appendLine(f"    {n}", autoScroll=False)
+
+            panel.appendLine("", autoScroll=False)
+            panel.appendLine(f"  plugin dir: {PLUGIN_DIR}", autoScroll=False)
+            panel._scroll = 0
+            panel.setDone(0)
+            panel.display = True
+            self.buildOpen = True
+
