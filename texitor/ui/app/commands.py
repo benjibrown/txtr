@@ -476,3 +476,180 @@ class CommandsMixin:
             panel.display = True
             self.buildOpen = True
 
+        elif action == "info":
+            if not arg:
+                self.notify("usage: :plugin info <name>", severity="warning")
+                return
+            panel = self.query_one(BuildPanel)
+            panel.reset("plugin info", arg)
+
+            from texitor.core.plugins import pluginLoader, readMetadata, _resolvePlugin, _builtinDir
+
+            inst = pluginLoader.get(arg)
+            loaded = inst is not None
+
+            # get metadata from live instance if loaded, else read from disk
+            if inst:
+                meta = {
+                    "name": inst.name or arg,
+                    "description": inst.description or "",
+                    "version": inst.version or "",
+                    "author": inst.author or "",
+                }
+                _, is_pkg = _resolvePlugin(arg, [PLUGIN_DIR, _builtinDir()])
+                meta["type"] = "package" if is_pkg else "single file"
+                meta["path"] = ""
+                path, is_pkg2 = _resolvePlugin(arg, [PLUGIN_DIR, _builtinDir()])
+                if path:
+                    meta["path"] = str(path)
+            else:
+                meta = readMetadata(arg)
+
+            canonical = meta.get("name") or arg
+
+            panel.appendLine(f"  name:        {canonical}", autoScroll=False)
+            panel.appendLine(f"  version:     {meta.get('version') or '(unknown)'}", autoScroll=False)
+            panel.appendLine(f"  author:      {meta.get('author') or '(unknown)'}", autoScroll=False)
+            panel.appendLine(f"  description: {meta.get('description') or '(none)'}", autoScroll=False)
+            panel.appendLine(f"  type:        {meta.get('type', 'single file')}", autoScroll=False)
+            panel.appendLine(f"  status:      {'loaded' if loaded else 'not loaded'}", autoScroll=False)
+            if meta.get("path"):
+                panel.appendLine(f"  path:        {meta['path']}", autoScroll=False)
+            else:
+                panel.appendLine("  path:        not found on disk", autoScroll=False)
+
+            if loaded:
+                from texitor.core.cmdregistry import registry as _reg
+                plugin_cmds = [
+                    (cmd, desc)
+                    for section, cmds in _reg.sections()
+                    if section.lower().startswith("plugin")
+                    for cmd, desc in cmds
+                ]
+                if plugin_cmds:
+                    panel.appendLine("", autoScroll=False)
+                    panel.appendLine("  registered commands:", autoScroll=False)
+                    for cmd, desc in plugin_cmds:
+                        panel.appendLine(f"    {cmd:<20} {desc}", autoScroll=False)
+
+            panel._scroll = 0
+            panel.setDone(0)
+            panel.display = True
+            self.buildOpen = True
+
+        elif action == "enable":
+            if not arg:
+                self.notify("usage: :plugin enable <name>", severity="warning")
+                return
+            ok = pluginLoader.load(self, arg, notify_error=True)
+            if ok:
+                cfg.append("plugins", "enabled", arg)
+                self.notify(f"plugin '{arg}' enabled")
+
+        elif action == "disable":
+            if not arg:
+                self.notify("usage: :plugin disable <name>", severity="warning")
+                return
+            ok = pluginLoader.unload(self, arg)
+            if ok:
+                enabled = cfg.get("plugins", "enabled", [])
+                if arg in enabled:
+                    enabled.remove(arg)
+                    cfg.set("plugins", "enabled", enabled)
+                self.notify(f"plugin '{arg}' disabled")
+            else:
+                self.notify(f"plugin '{arg}' is not loaded", severity="warning")
+
+        elif action == "install":
+            if not arg:
+                self.notify("usage: :plugin install <name>", severity="warning")
+                return
+            self.notify("fetching registry...")
+            asyncio.create_task(self._plugin_install(arg, REGISTRY_URL, PLUGIN_DIR))
+
+        else:
+            self.notify(f"unknown plugin action '{action}' - use list/info/enable/disable/install", severity="warning")
+
+    async def _plugin_install(self, name: str, registry_url: str, plugin_dir):
+        import urllib.request
+        import json
+        from texitor.core.plugins import pluginLoader
+
+        try:
+            with urllib.request.urlopen(registry_url, timeout=10) as r:
+                data = json.loads(r.read())
+        except Exception as e:
+            self.notify(f"could not fetch registry: {e}", severity="error")
+            return
+
+        entry = data.get(name)
+        if not entry:
+            self.notify(f"'{name}' not found in registry", severity="warning")
+            return
+
+        url = entry.get("url", "")
+        if not url:
+            self.notify(f"registry entry for '{name}' has no url", severity="error")
+            return
+
+        pkg_type = entry.get("type", "single")
+
+        if pkg_type == "git":
+            dest = plugin_dir / name
+            if dest.exists():
+                # already cloned - pull instead
+                self.notify(f"updating '{name}' (git pull)...")
+                proc = await asyncio.create_subprocess_exec(
+                    "git", "-C", str(dest), "pull",
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+                _, stderr = await proc.communicate()
+                if proc.returncode != 0:
+                    self.notify(f"git pull failed: {stderr.decode()[:120]}", severity="error")
+                    return
+            else:
+                self.notify(f"cloning '{name}'...")
+                proc = await asyncio.create_subprocess_exec(
+                    "git", "clone", "--depth=1", url, str(dest),
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+                _, stderr = await proc.communicate()
+                if proc.returncode != 0:
+                    self.notify(f"git clone failed: {stderr.decode()[:120]}", severity="error")
+                    return
+
+        elif pkg_type == "package":
+            # zip containing the plugin directory
+            import zipfile, io, urllib.request
+            try:
+                with urllib.request.urlopen(url, timeout=15) as r:
+                    raw = r.read()
+            except Exception as e:
+                self.notify(f"download failed: {e}", severity="error")
+                return
+            try:
+                with zipfile.ZipFile(io.BytesIO(raw)) as zf:
+                    members = [m for m in zf.namelist() if not m.startswith("__MACOSX")]
+                    zf.extractall(plugin_dir, members=members)
+            except Exception as e:
+                self.notify(f"failed to extract package: {e}", severity="error")
+                return
+
+        else:
+            # single .py file
+            import urllib.request
+            try:
+                with urllib.request.urlopen(url, timeout=15) as r:
+                    raw = r.read()
+            except Exception as e:
+                self.notify(f"download failed: {e}", severity="error")
+                return
+            dest = plugin_dir / f"{name}.py"
+            dest.write_bytes(raw)
+
+        ok = pluginLoader.load(self, name, notify_error=True)
+        if ok:
+            cfg.append("plugins", "enabled", name)
+            self.notify(f"plugin '{name}' installed and enabled")
