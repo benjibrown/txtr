@@ -29,6 +29,7 @@ _TRANSITIONS = {
 class ModeStateMachine:
     def __init__(self):
         self._mode = Mode.NORMAL
+        self.on_change = None  # optional callback(new_mode) set by app
 
     @property
     def mode(self):
@@ -37,8 +38,13 @@ class ModeStateMachine:
     def transition(self, target):
         allowed = _TRANSITIONS.get(self._mode, set())
         if target not in allowed:
-            raise ValueError(f"Invalid transition: {self._mode} → {target}")
+            raise ValueError(f"Invalid transition: {self._mode} -> {target}")
         self._mode = target
+        if self.on_change:
+            try:
+                self.on_change(target)
+            except Exception:
+                pass
 
     def is_normal(self): return self._mode is Mode.NORMAL
     def is_insert(self): return self._mode is Mode.INSERT
