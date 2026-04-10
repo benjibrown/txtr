@@ -13,6 +13,7 @@ from textual.widget import Widget
 from texitor.core.buffer import Buffer
 from texitor.core.modes import Mode, ModeStateMachine
 from texitor.core.theme import theme as _theme
+from texitor.core.plugins import pluginLoader
 
 if TYPE_CHECKING:
     from texitor.ui.app import TxtrApp
@@ -89,10 +90,14 @@ class StatusBar(Widget):
         text.append(f"  {name}", style=Style(color=_BAR_FG, bgcolor=_BAR_BG))
         
         buildStatus = getattr(self._app, "_buildStatus", "")
+        pluginSegs = pluginLoader.statusbarSegments(self._app)
         pos = f" {buf.cursor_row + 1}:{buf.cursor_col + 1} "
-        statusLen = (len(f"  {buildStatus}  ") if buildStatus else 0)
+        segText = "".join(f"  {t}  " for t, _ in pluginSegs)
+        statusLen = (len(f"  {buildStatus}  ") if buildStatus else 0) + len(segText)
         used = (len(label) + 2) + (len(name) + 2) + len(pos) + statusLen
         text.append(" " * max(0, width - used), style=Style(bgcolor=_BAR_BG))
+        for seg_text, seg_color in pluginSegs:
+            text.append(f"  {seg_text}  ", style=Style(color=seg_color or _BAR_FG, bgcolor=_BAR_BG, bold=True))
         if buildStatus:
             if buildStatus == "watching":
                 statusColor = _theme.accent
