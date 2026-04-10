@@ -26,6 +26,7 @@ import texitor.core.recents as _recents
 from texitor.latex.snippets import SnippetManager
 from texitor.latex.completer import LatexCompleter
 from texitor.core.citecompleter import CiteCompleter
+from texitor.core.plugins import pluginLoader
 
 import re
 _CITE_PAT = re.compile(r'\\cite[a-z*]*\{([^}]*)$')
@@ -211,6 +212,10 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
 
     def on_mount(self):
         self._registerCommands()
+        self.msm.on_change = lambda mode: pluginLoader.fireModeChange(self, mode)
+        enabled = cfg.get("plugins", "enabled", [])
+        if enabled:
+            pluginLoader.loadAll(self, enabled)
         warn = getStartupWarning()
         if warn:
             self.notify(warn, severity="warning", timeout=6)
@@ -224,6 +229,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         self._watchActive = False
         if self._watchTask and not self._watchTask.done():
             self._watchTask.cancel()
+        pluginLoader.unloadAll(self)
 
     def _watchKick(self):
         # signal the debounce loop that content changed
@@ -262,6 +268,12 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         event.prevent_default()
 
         key = event.key
+        char = event.character or ""
+
+        # give plugins first crack at the key (only when not in splash/command mode)
+        if not self.splashOpen and not self.msm.is_command():
+            if pluginLoader.fireKey(self, key, char):
+                return
 
         # splash screen swallows all keys
         if self.splashOpen:
@@ -405,7 +417,6 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
             return
 
         mode = self.msm.mode
-        char = event.character or ""
         candidate = (self._pending_key + " " + key).strip()
 
         char_candidate = (self._pending_key + " " + char).strip() if char else ""
@@ -495,6 +506,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
             self._refreshAutocomplete()
         if self._watchActive and self.buffer.modified:
             self._watchKick()
+        pluginLoader.fireCursorMove(self)
 
 
     # bib helpers
