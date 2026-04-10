@@ -100,3 +100,10 @@ show_mode = true
 # extra .bib file paths or directories to scan (in addition to current file's directory)
 # bib_files = ["/path/to/refs.bib"]
 bib_files = []
+
+[plugins]
+# plugins to load on startup (list of plugin names)
+# builtin plugins live in texitor/core/builtins/
+# user plugins live in ~/.config/txtr/plugins/
+# example: enabled = ["wordcount"]
+enabled = []
