@@ -104,7 +104,46 @@ def _commandRows():
         rows.append(("header", section))
         for cmd, desc in cmds:
             rows.append(("row", cmd, desc))
-        rows.append(("gap",))   # blank line between sections
+        rows.append(("gap",))
+    return rows
+
+
+def _pluginRows():
+    from texitor.core.plugins import pluginLoader, PLUGIN_DIR
+    rows = []
+
+    loaded = pluginLoader.loaded()
+    if loaded:
+        rows.append(("header", "Loaded plugins"))
+        for name in sorted(loaded):
+            inst = pluginLoader.get(name)
+            ver = getattr(inst, "version", "") or ""
+            author = getattr(inst, "author", "") or ""
+            desc = getattr(inst, "description", "") or ""
+            right = f"v{ver}" + (f"  by {author}" if author else "") + (f"  - {desc}" if desc else "")
+            rows.append(("row", name, right))
+    else:
+        rows.append(("header", "Loaded plugins"))
+        rows.append(("row", "(none)", "use :plugin enable <name> to load a plugin"))
+
+    rows.append(("gap",))
+
+    available = set(pluginLoader.availableOnDisk()) - set(loaded)
+    if available:
+        rows.append(("header", "Available (not loaded)"))
+        for name in sorted(available):
+            rows.append(("row", name, ":plugin enable " + name))
+        rows.append(("gap",))
+
+    rows.append(("header", "Commands"))
+    rows.append(("row", ":plugin list", "show plugins in build panel"))
+    rows.append(("row", ":plugin info <n>", "show full plugin info"))
+    rows.append(("row", ":plugin enable <n>", "load a plugin + save to config"))
+    rows.append(("row", ":plugin disable <n>", "unload a plugin + remove from config"))
+    rows.append(("row", ":plugin install <n>", "download from registry and enable"))
+    rows.append(("gap",))
+    rows.append(("header", "Plugin directory"))
+    rows.append(("row", str(PLUGIN_DIR), "drop .py files or git-cloned dirs here"))
     return rows
 
 
@@ -126,6 +165,7 @@ class HelpMenu(Widget):
             ("Keybinds", lambda: _keybindRows(self._app.keybinds)),
             ("Snippets", lambda: _snippetRows(self._app.snippets)),
             ("Commands", _commandRows),
+            ("Plugins", _pluginRows),
         ]
         self._sections.extend(_PLUGIN_SECTIONS)
         self._activeTab = 0
