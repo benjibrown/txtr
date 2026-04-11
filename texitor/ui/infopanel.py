@@ -89,4 +89,59 @@ class InfoPanel(Widget):
                 self.refresh()
                 return
 
+    def cursorUp(self):
+        if self._cursor < 0:
+            self.scrollUp()
+            return
+        for idx in range(self._cursor - 1, -1, -1):
+            if self._isSelectable(idx):
+                self._cursor = idx
+                self._revealCursor()
+                self.refresh()
+                return
+
+    def activate(self):
+        if self._cursor < 0 or self._cursor >= len(self._rows):
+            return None
+        row = self._rows[self._cursor]
+        if len(row) >= 4:
+            return row[3]
+        return None
+
+    def _firstSelectable(self):
+        for idx in range(len(self._rows)):
+            if self._isSelectable(idx):
+                return idx
+        return -1
+
+    def _isSelectable(self, idx):
+        row = self._rows[idx]
+        return row[0] == "row" and len(row) >= 4 and row[3] is not None
+
+    def _revealCursor(self):
+        contentH = _H_SIZE - 4
+        if self._cursor < self._scrollTop:
+            self._scrollTop = self._cursor
+        elif self._cursor >= self._scrollTop + contentH:
+            self._scrollTop = self._cursor - contentH + 1
+
+    def on_mouse_scroll_down(self, event):
+        self.scrollDown(3)
+
+    def on_mouse_scroll_up(self, event):
+        self.scrollUp(3)
+
+    def _center(self):
+        screenW = self.app.size.width
+        screenH = self.app.size.height
+        x = max(0, (screenW - _W) // 2)
+        y = max(0, (screenH - _H_SIZE) // 2)
+        self.styles.offset = (x, y)
+
+    def on_resize(self, event):
+        if self.display:
+            self._center()
+
+    def get_content_height(self, container, viewport, width):
+        return _H_SIZE
 
