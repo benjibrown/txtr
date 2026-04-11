@@ -456,38 +456,34 @@ class CommandsMixin:
             installed = pluginLoader.installedMetadata()
             loaded = set(pluginLoader.loaded())
 
-        rows.append(("header", "Loaded plugins"))
+            rows.append(("header", "Loaded plugins"))
             if loaded:
-                for n in sorted(loaded):
-                    inst = pluginLoader.get(n)
-                    desc = inst.description if inst else ""
-                    ver = inst.version if inst else ""
-                    panel.appendLine(f"    {n:<16} {ver:<10} {desc}", autoScroll=False)
+                for meta in installed:
+                    if meta["name"] not in loaded:
+                        continue
+                    right = f"v{meta.get('version') or '?'}"
+                    if meta.get("author"):
+                        right += f"  by {meta['author']}"
+                    rows.append(("row", meta["name"], right, ("plugin-info", meta["name"])))
             else:
-                panel.appendLine("    (none)", autoScroll=False)
+                rows.append(("row", "(none)", "use :plugin enable <name> to load one"))
 
-            not_loaded = available - loaded
+            not_loaded = [meta for meta in installed if meta["name"] not in loaded]
             if not_loaded:
-                panel.appendLine("", autoScroll=False)
-                panel.appendLine("  available (not loaded):", autoScroll=False)
-                for n in sorted(not_loaded):
-                    panel.appendLine(f"    {n}", autoScroll=False)
+                rows.append(("gap",))
+                rows.append(("header", "Installed but not loaded"))
+                for meta in not_loaded:
+                    rows.append(("row", meta["name"], meta.get("type", "plugin"), ("plugin-info", meta["name"])))
 
-            panel.appendLine("", autoScroll=False)
-            panel.appendLine(f"  plugin dir: {PLUGIN_DIR}", autoScroll=False)
-            panel._scroll = 0
-            panel.setDone(0)
-            panel.display = True
-            self.buildOpen = True
+            rows.append(("gap",))
+            rows.append(("header", "Plugin directory"))
+            rows.append(("text", str(PLUGIN_DIR)))
+            self._openInfoPanel("plugins", rows)
 
         elif action == "info":
             if not arg:
                 self.notify("usage: :plugin info <name>", severity="warning")
                 return
-            panel = self.query_one(BuildPanel)
-            panel.reset("plugin info", arg)
-
-            from texitor.core.plugins import pluginLoader, readMetadata, _resolvePlugin, _builtinDir
 
             inst = pluginLoader.get(arg)
             loaded = inst is not None
@@ -499,28 +495,30 @@ class CommandsMixin:
                     "description": inst.description or "",
                     "version": inst.version or "",
                     "author": inst.author or "",
+                    "type": "package" if getattr(inst, "_txtr_is_package", False) else "single file",
+                    "path": getattr(inst, "_txtr_source_path", ""),
                 }
-                _, is_pkg = _resolvePlugin(arg, [PLUGIN_DIR, _builtinDir()])
-                meta["type"] = "package" if is_pkg else "single file"
-                meta["path"] = ""
-                path, is_pkg2 = _resolvePlugin(arg, [PLUGIN_DIR, _builtinDir()])
-                if path:
-                    meta["path"] = str(path)
             else:
                 meta = readMetadata(arg)
 
             canonical = meta.get("name") or arg
+            rows = []
+                ("row", "name", canonical),
+                ("row", "version", meta.get("version") or "(unknown)"),
+                ("row", "author", meta.get("author") or "(unknown)"),
+                ("row", "description", meta.get("description") or "(none)"),
+                ("row", "type", meta.get("type", "single file")),
+                ("row", "status", "loaded" if loaded else "not loaded"),
+                ("row", "path", meta.get("path") or "not found on disk"),
+            ]
 
-            panel.appendLine(f"  name:        {canonical}", autoScroll=False)
-            panel.appendLine(f"  version:     {meta.get('version') or '(unknown)'}", autoScroll=False)
-            panel.appendLine(f"  author:      {meta.get('author') or '(unknown)'}", autoScroll=False)
-            panel.appendLine(f"  description: {meta.get('description') or '(none)'}", autoScroll=False)
-            panel.appendLine(f"  type:        {meta.get('type', 'single file')}", autoScroll=False)
-            panel.appendLine(f"  status:      {'loaded' if loaded else 'not loaded'}", autoScroll=False)
-            if meta.get("path"):
-                panel.appendLine(f"  path:        {meta['path']}", autoScroll=False)
-            else:
-                panel.appendLine("  path:        not found on disk", autoScroll=False)
+            plugin_section = f"Plugin: {canonical}"
+            plugin_cmds = next((cmds for section, cmds in _reg.sections() if section == plugin_section), [])
+            if plugin_cmds:
+                rows.append(("gap",))
+                rows.append(("header", "Commands"))
+                for cmd, desc in plugin_cmds:
+                    rows.append(("row", cmd, desc))
 
             if loaded:
                 from texitor.core.cmdregistry import registry as _reg
