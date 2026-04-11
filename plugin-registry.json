@@ -5,4 +5,12 @@
     "git":    "url is a git repo - txtr clones it into the plugin dir (preferred for packages)",
     "package": "url points to a .zip of the plugin folder (fallback if git unavailable)"
   },
+
+  "wordcount": {
+    "description": "word count in statusbar and :wordcount command",
+    "version": "1.0.0",
+    "author": "benjibrown",
+    "type": "single",
+    "url": "https://raw.githubusercontent.com/benjibrown/txtr/main/texitor/core/builtins/wordcount.py"
+  }
 }
