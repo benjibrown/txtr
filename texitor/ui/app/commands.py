@@ -650,5 +650,7 @@ class CommandsMixin:
 
         ok = pluginLoader.load(self, name, notify_error=True)
         if ok:
-            cfg.append("plugins", "enabled", name)
-            self.notify(f"plugin '{name}' installed and enabled")
+            inst = pluginLoader.get(name)
+            canonical = inst.name if inst and inst.name else name
+            cfg.append("plugins", "enabled", canonical)
+            self.notify(f"plugin '{canonical}' installed and enabled")
