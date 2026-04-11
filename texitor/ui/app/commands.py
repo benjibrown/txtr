@@ -21,7 +21,7 @@ class CommandsMixin:
 
     # wires all @command-decorated methods into the registry at app mount.
     # methods are sorted by section order then definition order so the help menu is consistent.
-    _SECTION_ORDER = ["File", "View", "Config", "Compiler"]
+    _SECTION_ORDER = ["File", "View", "Config", "Compiler", "Plugins"]
 
     def _registerCommands(self):
         methods = [
@@ -47,6 +47,11 @@ class CommandsMixin:
                 aliases=meta["aliases"] or None,
                 handler=bound,
             )
+
+    def _openInfoPanel(self, title, rows, footer=None):
+        from texitor.ui.infopanel import InfoPanel
+        self.infoOpen = True
+        self.query_one(InfoPanel).open(title, rows, footer=footer)
 
         
     # file commands
@@ -438,8 +443,8 @@ class CommandsMixin:
 
     @command(":plugin", "manage plugins - list / info / enable / disable / install", section="Plugins")
     def _cmd_plugin(self, args):
-        from texitor.ui.buildpanel import BuildPanel
-        from texitor.core.plugins import pluginLoader, PLUGIN_DIR, REGISTRY_URL
+        from texitor.core.plugins import pluginLoader, PLUGIN_DIR, REGISTRY_URL, readMetadata
+        from texitor.core.cmdregistry import registry as _reg
 
         sub = (args or "").strip()
         parts = sub.split(None, 1)
@@ -447,12 +452,11 @@ class CommandsMixin:
         arg = parts[1].strip() if len(parts) > 1 else ""
 
         if action == "list":
-            panel = self.query_one(BuildPanel)
-            panel.reset("plugins", "installed plugins")
+            rows = []
+            installed = pluginLoader.installedMetadata()
             loaded = set(pluginLoader.loaded())
-            available = set(pluginLoader.availableOnDisk())
 
-            panel.appendLine("  loaded:", autoScroll=False)
+        rows.append(("header", "Loaded plugins"))
             if loaded:
                 for n in sorted(loaded):
                     inst = pluginLoader.get(n)
