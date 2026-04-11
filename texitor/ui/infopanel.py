@@ -30,14 +30,14 @@ _H_SIZE = 24
 
 class InfoPanel(Widget):
 
-    DEFAULT_CSS = """"""
-    InfoPanel {}
+    DEFAULT_CSS = """
+    InfoPanel {
         layer: overlay;
         display: none;
         width: 76;
         height: 24;
     }
-    """"""
+    """
 
     def __init__(self):
         super().__init__()
@@ -47,5 +47,46 @@ class InfoPanel(Widget):
         self._scrollTop = 0
         self._cursor = -1
 
-    
+    def open(self, title, rows, footer=None):
+        self._title = f" {title} "
+        self._rows = list(rows)
+        self._scrollTop = 0
+        self._cursor = self._firstSelectable()
+        if footer:
+            self._footer = footer
+        elif self._cursor >= 0:
+            self._footer = "  j/k move   enter open   q close"
+        else:
+            self._footer = "  j/k scroll   q close"
+        self._center()
+        self.display = True
+        self.refresh()
+
+    def close(self):
+        self.display = False
+
+    def scrollDown(self, n=1):
+        contentH = _H_SIZE - 4
+        maxScroll = max(0, len(self._rows) - contentH)
+        self._scrollTop = min(self._scrollTop + n, maxScroll)
+        self.refresh()
+
+    def scrollUp(self, n=1):
+        self._scrollTop = max(0, self._scrollTop - n)
+        self.refresh()
+
+    def hasSelection(self):
+        return self._cursor >= 0
+
+    def cursorDown(self):
+        if self._cursor < 0:
+            self.scrollDown()
+            return
+        for idx in range(self._cursor + 1, len(self._rows)):
+            if self._isSelectable(idx):
+                self._cursor = idx
+                self._revealCursor()
+                self.refresh()
+                return
+
 
