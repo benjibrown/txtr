@@ -20,7 +20,7 @@ class WordCountPlugin(PluginBase):
     author = "benji brown (txtr dev)"
 
     def on_load(self, app):
-        registry.register()
+        registry.register(
             ":wordcount",
             "show word count for current buffer",
             section="Plugins",
