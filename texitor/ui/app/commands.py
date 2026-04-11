@@ -502,7 +502,7 @@ class CommandsMixin:
                 meta = readMetadata(arg)
 
             canonical = meta.get("name") or arg
-            rows = []
+            rows = [
                 ("row", "name", canonical),
                 ("row", "version", meta.get("version") or "(unknown)"),
                 ("row", "author", meta.get("author") or "(unknown)"),
