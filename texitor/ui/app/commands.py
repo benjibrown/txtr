@@ -520,45 +520,42 @@ class CommandsMixin:
                 for cmd, desc in plugin_cmds:
                     rows.append(("row", cmd, desc))
 
-            if loaded:
-                from texitor.core.cmdregistry import registry as _reg
-                plugin_cmds = [
-                    (cmd, desc)
-                    for section, cmds in _reg.sections()
-                    if section.lower().startswith("plugin")
-                    for cmd, desc in cmds
-                ]
-                if plugin_cmds:
-                    panel.appendLine("", autoScroll=False)
-                    panel.appendLine("  registered commands:", autoScroll=False)
-                    for cmd, desc in plugin_cmds:
-                        panel.appendLine(f"    {cmd:<20} {desc}", autoScroll=False)
-
-            panel._scroll = 0
-            panel.setDone(0)
-            panel.display = True
-            self.buildOpen = True
+            self._openInfoPanel(f"plugin: {canonical}", rows)
 
         elif action == "enable":
             if not arg:
                 self.notify("usage: :plugin enable <name>", severity="warning")
                 return
+            enabled = cfg.get("plugins", "enabled", [])
+            if pluginLoader.isLoaded(arg) and arg in enabled:
+                self.notify(f"plugin '{arg}' is already enabled", severity="warning")
+                return
+            if not pluginLoader.get(arg) and arg not in pluginLoader.availableOnDisk():
+                self.notify(f"plugin '{arg}' is not installed", severity="warning")
+                return
             ok = pluginLoader.load(self, arg, notify_error=True)
             if ok:
-                cfg.append("plugins", "enabled", arg)
-                self.notify(f"plugin '{arg}' enabled")
+                inst = pluginLoader.get(arg)
+                canonical = inst.name if inst and inst.name else arg
+                cfg.append("plugins", "enabled", canonical)
+                self.notify(f"plugin '{canonical}' enabled")
 
         elif action == "disable":
             if not arg:
                 self.notify("usage: :plugin disable <name>", severity="warning")
                 return
+            enabled = cfg.get("plugins", "enabled", [])
+            inst = pluginLoader.get(arg)
+            canonical = inst.name if inst and inst.name else arg
+            if canonical not in enabled and not pluginLoader.isLoaded(arg):
+                self.notify(f"plugin '{arg}' is already disabled", severity="warning")
+                return
             ok = pluginLoader.unload(self, arg)
-            if ok:
-                enabled = cfg.get("plugins", "enabled", [])
-                if arg in enabled:
-                    enabled.remove(arg)
-                    cfg.set("plugins", "enabled", enabled)
-                self.notify(f"plugin '{arg}' disabled")
+            if canonical in enabled:
+                enabled = [name for name in enabled if name != canonical and name != arg]
+                cfg.set("plugins", "enabled", enabled)
+            if ok or canonical not in enabled:
+                self.notify(f"plugin '{canonical}' disabled")
             else:
                 self.notify(f"plugin '{arg}' is not loaded", severity="warning")
 
