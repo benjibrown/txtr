@@ -376,6 +376,46 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
             else:
                 return
 
+        if self.infoOpen:
+            panel = self.query_one(InfoPanel)
+            if self.msm.is_command():
+                pass
+            elif key in ("q", "escape"):
+                self.infoOpen = False
+                panel.close()
+                return
+            elif key == "colon" or event.character == ":":
+                self._action_enter_command()
+                self._refresh_all()
+                return
+            elif key in ("j", "down"):
+                if panel.hasSelection():
+                    panel.cursorDown()
+                else:
+                    panel.scrollDown()
+                return
+            elif key in ("k", "up"):
+                if panel.hasSelection():
+                    panel.cursorUp()
+                else:
+                    panel.scrollUp()
+                return
+            elif key == "ctrl+d":
+                panel.scrollDown(8)
+                return
+            elif key == "ctrl+u":
+                panel.scrollUp(8)
+                return
+            elif key == "enter":
+                action = panel.activate()
+                if action and action[0] == "plugin-info":
+                    self.infoOpen = False
+                    panel.close()
+                    self._cmd_plugin(f"info {action[1]}")
+                return
+            else:
+                return
+
         if self.buildOpen:
             panel = self.query_one(BuildPanel)
             if self.msm.is_command():
