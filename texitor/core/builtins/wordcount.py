@@ -1,12 +1,6 @@
 # wordcount builtin plugin
+# demo plugin
 # shows word count in the statusbar and registers :wordcount command
-#
-# enable in config:
-#   [plugins]
-#   enabled = ["wordcount"]
-#
-# or at runtime:
-#   :plugin enable wordcount
 
 from texitor.core.plugins import PluginBase
 from texitor.core.cmdregistry import registry
@@ -18,6 +12,9 @@ class WordCountPlugin(PluginBase):
     description = "word count in statusbar + :wordcount command"
     version = "1.0.0"
     author = "benji brown (txtr dev)"
+    commands = [
+        (":wordcount", "show word count for current buffer"),
+    ]
 
     def on_load(self, app):
         registry.register(
