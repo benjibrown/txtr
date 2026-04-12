@@ -23,13 +23,12 @@ class WordCountPlugin(PluginBase):
         registry.register(
             ":wordcount",
             "show word count for current buffer",
-            section="Plugins",
+            section="Plugin: wordcount",
             handler=self._cmd_wordcount,
         )
-        app.notify("wordcount plugin loaded")
 
     def on_unload(self, app):
-        pass
+        registry.unregisterSection("Plugin: wordcount")
 
     def statusbar_segment(self, app):
         try:
@@ -51,4 +50,3 @@ class WordCountPlugin(PluginBase):
 
 
 plugin = WordCountPlugin
-
