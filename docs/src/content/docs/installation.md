@@ -1,4 +1,5 @@
 --- 
+
 title: Installation 
 description: How to install txtr. 
 --- 
@@ -11,7 +12,7 @@ description: How to install txtr.
 
 ## Installation 
 
-There are two main ways to install txtr: using `pip` or installing from source. The recommended method is to use `pip` - this pulls the latest stable version from PyPI and handles depenenicies automatically. Installing from source will give you the latest development version which may not be entirely stable but will have the latest features and bug fixes.
+There are two main ways to install txtr: using `pip` or installing from source. The recommended method is to use `pip` - this pulls the latest stable version from PyPI and handles dependencies automatically. Installing from source will give you the latest development version which may not be entirely stable but will have the latest features and bug fixes.
 
 ### Install from PyPI 
 
