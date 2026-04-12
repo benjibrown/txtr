@@ -155,6 +155,8 @@ def _pluginRows():
     rows.append(("row", ":plugin enable <n>", "load a plugin + save to config"))
     rows.append(("row", ":plugin disable <n>", "unload a plugin + remove from config"))
     rows.append(("row", ":plugin install <n>", "download from registry and enable"))
+    rows.append(("row", ":plugin update [n]", "update one plugin or all installed user plugins"))
+    rows.append(("row", ":plugin uninstall <n>", "remove a user plugin from disk"))
     rows.append(("gap",))
     rows.append(("header", "Plugin directory"))
     rows.append(("row", str(PLUGIN_DIR), "drop .py files or git-cloned dirs here"))
