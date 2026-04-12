@@ -135,8 +135,22 @@ def _pluginRows():
             rows.append(("row", name, ":plugin enable " + name))
         rows.append(("gap",))
 
-    rows.append(("header", "Commands"))
-    rows.append(("row", ":plugin list", "show plugins in build panel"))
+    plugin_sections = [
+        (section, cmds)
+        for section, cmds in _cmdRegistry.sections()
+        if section.startswith("Plugin: ")
+    ]
+    if plugin_sections:
+        rows.append(("header", "Plugin commands"))
+        for section, cmds in plugin_sections:
+            rows.append(("gap",))
+            rows.append(("header", section.replace("Plugin: ", "")))
+            for cmd, desc in cmds:
+                rows.append(("row", cmd, desc))
+        rows.append(("gap",))
+
+    rows.append(("header", "Plugin management"))
+    rows.append(("row", ":plugin list", "show installed plugin overview"))
     rows.append(("row", ":plugin info <n>", "show full plugin info"))
     rows.append(("row", ":plugin enable <n>", "load a plugin + save to config"))
     rows.append(("row", ":plugin disable <n>", "unload a plugin + remove from config"))
@@ -372,4 +386,3 @@ class HelpMenu(Widget):
         t.append(_H * inner, style=borderStyle)
         t.append(_BR, style=borderStyle)
         return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
-
