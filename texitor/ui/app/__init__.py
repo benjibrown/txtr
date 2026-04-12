@@ -247,7 +247,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
 
     def _notifyNewPlugins(self):
         enabled = cfg.get("plugins", "enabled", [])
-        newPlugins = sorted()
+        newPlugins = sorted(
             meta["name"]
             for meta in pluginLoader.installedMetadata()
             if meta.get("path", "").startswith(str(PLUGIN_DIR))

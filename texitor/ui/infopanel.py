@@ -238,7 +238,7 @@ def _wrapText(text, width):
         return [""]
     lines = []
     for raw in str(text).splitlines() or [""]:
-        wrapped = textwrap.wrap()
+        wrapped = textwrap.wrap(
             raw,
             width=width,
             replace_whitespace=False,
@@ -249,6 +249,31 @@ def _wrapText(text, width):
         lines.extend(wrapped or [""])
     return lines or [""]
 
+
+def _expandRows(rows):
+    out = []
+    textWidth = _W - 4
+    valueWidth = _W - _ROW_KEY_WIDTH - 6
+    for row in rows:
+        kind = row[0]
+        if kind in ("header", "gap"):
+            out.append(row)
+            continue
+        if kind == "text":
+            for chunk in _wrapText(row[1], textWidth):
+                out.append(("text", chunk))
+            continue
+        if kind == "row":
+            key = str(row[1])
+            value = str(row[2])
+            action = row[3] if len(row) > 3 else None
+            chunks = _wrapText(value, valueWidth)
+            out.append(("row", key, chunks[0], action))
+            for chunk in chunks[1:]:
+                out.append(("cont", "", chunk, None))
+            continue
+        out.append(row)
+    return out
 
 
 def _renderTopBorder(width, inner, title):
@@ -327,7 +352,7 @@ def _renderRow(key, val, rowIdx, width, inner, selected=False, selectable=False,
     bs = Style(color=_BORDER, bgcolor=bg)
     t = Text(no_wrap=True)
     t.append(_V, style=bs)
-    prefix = "❯ " if selected els"  "
+    prefix = "❯ " if selected else "  "
     t.append(prefix, style=Style(color=_FG_KEY, bgcolor=bg, bold=selected))
     keyCol = f"{key:<{_ROW_KEY_WIDTH}}" if not continuation else " " * _ROW_KEY_WIDTH
     t.append("  ", style=Style(bgcolor=bg))
