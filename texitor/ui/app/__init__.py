@@ -4,6 +4,7 @@
 # CommandsMixin — _action_execute_command, _cmd_* methods (commands.py)
 from __future__ import annotations
 
+import asyncio
 from textual.app import App, ComposeResult
 from textual.events import Key
 # holy import hell 
@@ -27,7 +28,7 @@ import texitor.core.recents as _recents
 from texitor.latex.snippets import SnippetManager
 from texitor.latex.completer import LatexCompleter
 from texitor.core.citecompleter import CiteCompleter
-from texitor.core.plugins import pluginLoader, PLUGIN_DIR
+from texitor.core.plugins import pluginLoader, PLUGIN_DIR, readMetadata
 
 import re
 _CITE_PAT = re.compile(r'\\cite[a-z*]*\{([^}]*)$')
@@ -222,18 +223,13 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         self._registerCommands()
         self.msm.on_change = lambda mode: pluginLoader.fireModeChange(self, mode)
         enabled = cfg.get("plugins", "enabled", [])
-        if enabled:
-            pluginLoader.loadAll(self, enabled)
-        newPlugins = sorted(
-            meta["name"]
-            for meta in pluginLoader.installedMetadata()
-            if meta.get("path", "").startswith(str(PLUGIN_DIR))
-            and meta["name"] not in enabled
-        )
-        if newPlugins:
-            count = len(newPlugins)
-            suffix = "s" if count != 1 else ""
-            self.notify(f"{count} new plugin{suffix} detected - :plugin list to see them", timeout=5)
+        missing = [name for name in enabled if not readMetadata(name)]
+        if missing or cfg.get("plugins", "auto_update", False):
+            asyncio.create_task(self._startupPlugins())
+        else:
+            if enabled:
+                pluginLoader.loadAll(self, enabled)
+            self._notifyNewPlugins()
         warn = getStartupWarning()
         if warn:
             self.notify(warn, severity="warning", timeout=6)
@@ -248,6 +244,19 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         if self._watchTask and not self._watchTask.done():
             self._watchTask.cancel()
         pluginLoader.unloadAll(self)
+
+    def _notifyNewPlugins(self):
+        enabled = cfg.get("plugins", "enabled", [])
+        newPlugins = sorted()
+            meta["name"]
+            for meta in pluginLoader.installedMetadata()
+            if meta.get("path", "").startswith(str(PLUGIN_DIR))
+            and meta["name"] not in enabled
+        )
+        if newPlugins:
+            count = len(newPlugins)
+            suffix = "s" if count != 1 else ""
+            self.notify(f"{count} new plugin{suffix} detected - :plugin list to see them", timeout=5)
 
     def _watchKick(self):
         # signal the debounce loop that content changed
