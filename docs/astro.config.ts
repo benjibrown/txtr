@@ -57,6 +57,12 @@ export default defineConfig({
             {label: "Commands", slug: "usage/commands" },
           ],
         },
+        {
+          label: "Snippets",
+          items: [
+            { label: "Overview", slug: "snippets/overview" },
+          ],
+        },
       ],
     }),
   ],
