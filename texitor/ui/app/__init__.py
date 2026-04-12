@@ -20,13 +20,14 @@ from texitor.ui.autocomplete import AutocompleteWidget
 from texitor.ui.helpmenu import HelpMenu
 from texitor.ui.configpanel import ConfigPanel
 from texitor.ui.buildpanel import BuildPanel
+from texitor.ui.infopanel import InfoPanel
 from texitor.ui.splash import SplashWidget
 import texitor.core.compiler as _compiler
 import texitor.core.recents as _recents
 from texitor.latex.snippets import SnippetManager
 from texitor.latex.completer import LatexCompleter
 from texitor.core.citecompleter import CiteCompleter
-from texitor.core.plugins import pluginLoader
+from texitor.core.plugins import pluginLoader, PLUGIN_DIR
 
 import re
 _CITE_PAT = re.compile(r'\\cite[a-z*]*\{([^}]*)$')
@@ -84,6 +85,11 @@ def _buildAppCss(t):
     }}
 
     ConfigPanel {{
+        layer: overlay;
+        display: none;
+    }}
+
+    InfoPanel {{}}
         layer: overlay;
         display: none;
     }}
@@ -179,6 +185,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         self.splashOpen = (filename is None)
         self.helpOpen   = False
         self.configOpen = False
+        self.infoOpen = False
         self.buildOpen  = False
         self._buildTask = None
         self._buildPrimed = False
@@ -206,6 +213,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         yield AutocompleteWidget(self)
         yield HelpMenu(self)
         yield ConfigPanel()
+        yield InfoPanel()
         yield BuildPanel()
         yield SplashWidget(self)
         yield StatusBar(self.buffer, self.msm, self)
@@ -216,6 +224,16 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         enabled = cfg.get("plugins", "enabled", [])
         if enabled:
             pluginLoader.loadAll(self, enabled)
+        newPlugins = sorted()
+            meta["name"]
+            for meta in pluginLoader.installedMetadata()
+            if meta.get("path", "").startswith(str(PLUGIN_DIR))
+            and meta["name"] not in enabled
+        )
+        if newPlugins:
+            count = len(newPlugins)
+            suffix = "s" if count != 1 else ""
+            self.notify(f"{count} new plugin{suffix} detected - :plugin list to see them", timeout=5)
         warn = getStartupWarning()
         if warn:
             self.notify(warn, severity="warning", timeout=6)
