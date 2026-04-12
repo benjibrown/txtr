@@ -40,7 +40,11 @@ _DEFAULTS = {
         "show_mode":      True,
     },
     "citations": {
-            "bib_files": [],
+        "bib_files": [],
+    },
+    "plugins": {
+        "enabled": [],
+        "auto_update": False,
     },
 }
 
@@ -105,4 +109,3 @@ class ConfigManager:
 
 # peak config system
 config = ConfigManager()
-
