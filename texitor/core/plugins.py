@@ -108,6 +108,14 @@ class PluginLoader:
     def __init__(self):
         self._loaded: dict[str, PluginBase] = {}
 
+    def _loadedKey(self, name: str):
+        if name in self._loaded:
+            return name
+        for key, instance in self._loaded.items():
+            if getattr(instance, "_txtr_source_name", "") == name:
+                return key
+        return None
+
     def loadAll(self, app, enabled: list):
         PLUGIN_DIR.mkdir(parents=True, exist_ok=True)
         for name in enabled:
@@ -117,7 +125,7 @@ class PluginLoader:
         # name here is the filesystem name (dir name or .py stem)
         # canonical name comes from manifest.toml `name` field (package)
         # or the `name` class attribute (single file)
-        if name in self._loaded:
+        if self._loadedKey(name):
             return True
 
         path, is_pkg = _resolvePlugin(name, [PLUGIN_DIR, _builtinDir()])
@@ -144,6 +152,9 @@ class PluginLoader:
 
         # canonical name: manifest/class `name`, falling back to filesystem name
         canonical = instance.name or name
+        instance._txtr_source_name = name
+        instance._txtr_source_path = str(path)
+        instance._txtr_is_package = is_pkg
 
         # already loaded under its canonical name (e.g. dir name differs from manifest name)
         if canonical in self._loaded:
@@ -160,15 +171,10 @@ class PluginLoader:
         return True
 
     def unload(self, app, name: str):
-        # accepts either canonical name or filesystem name
-        instance = self._loaded.pop(name, None)
-        if instance is None:
-            # try matching by filesystem name against stored canonical names
-            canonical = next((k for k, v in self._loaded.items() if k == name), None)
-            if canonical:
-                instance = self._loaded.pop(canonical)
-            else:
-                return False
+        key = self._loadedKey(name)
+        if key is None:
+            return False
+        instance = self._loaded.pop(key)
         try:
             instance.on_unload(app)
         except Exception:
@@ -180,13 +186,25 @@ class PluginLoader:
             self.unload(app, name)
 
     def isLoaded(self, name: str) -> bool:
-        return name in self._loaded
+        return self._loadedKey(name) is not None
 
     def loaded(self) -> list[str]:
         return list(self._loaded.keys())
 
     def get(self, name: str):
-        return self._loaded.get(name)
+        key = self._loadedKey(name)
+        return self._loaded.get(key) if key else None
+
+    def installedMetadata(self) -> list[dict]:
+        PLUGIN_DIR.mkdir(parents=True, exist_ok=True)
+        found = {}
+        for path, is_pkg in _scanPluginCandidates(PLUGIN_DIR):
+            meta = _metadataForPath(path, is_pkg)
+            found[meta["name"]] = meta
+        for path, is_pkg in _scanPluginCandidates(_builtinDir()):
+            meta = _metadataForPath(path, is_pkg)
+            found.setdefault(meta["name"], meta)
+        return [found[name] for name in sorted(found)]
 
     # event dispatch - call each loaded plugin's hook, swallow exceptions per-plugin
 
@@ -239,18 +257,7 @@ class PluginLoader:
         return segments
 
     def availableOnDisk(self) -> list[str]:
-        PLUGIN_DIR.mkdir(parents=True, exist_ok=True)
-        names = set()
-        for p in PLUGIN_DIR.glob("*.py"):
-            if not p.name.startswith("_"):
-                names.add(p.stem)
-        for d in PLUGIN_DIR.iterdir():
-            if d.is_dir() and not d.name.startswith("_") and any(
-                (d / ep).exists() for ep in _ENTRY_POINTS
-            ):
-                names.add(d.name)
-        names.update(_builtinNames())
-        return sorted(names)
+        return [meta["name"] for meta in self.installedMetadata()]
 
 
 def _resolvePlugin(name: str, search_dirs: list):
@@ -263,6 +270,10 @@ def _resolvePlugin(name: str, search_dirs: list):
         single = d / f"{name}.py"
         if single.exists():
             return single, False
+        for path, is_pkg in _scanPluginCandidates(d):
+            meta = _metadataForPath(path, is_pkg)
+            if meta["name"] == name:
+                return path, is_pkg
     return None, False
 
 
