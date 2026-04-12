@@ -89,7 +89,7 @@ def _buildAppCss(t):
         display: none;
     }}
 
-    InfoPanel {{}}
+    InfoPanel {{
         layer: overlay;
         display: none;
     }}
@@ -224,7 +224,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         enabled = cfg.get("plugins", "enabled", [])
         if enabled:
             pluginLoader.loadAll(self, enabled)
-        newPlugins = sorted()
+        newPlugins = sorted(
             meta["name"]
             for meta in pluginLoader.installedMetadata()
             if meta.get("path", "").startswith(str(PLUGIN_DIR))
