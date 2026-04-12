@@ -29,6 +29,9 @@
 #   class MyPlugin(PluginBase):
 #       name = "myplugin"
 #       description = "does something cool"
+#       commands = []
+#           (":myplugin", "run my plugin"),
+#       ]
 #
 #       def on_load(self, app):
 #           registry.register(":myplugin", "run my plugin", section="MyPlugin",
@@ -51,8 +54,13 @@
 #   :plugin enable <name>     - enable a plugin (adds to config)
 #   :plugin disable <name>    - disable a plugin (removes from config)
 #   :plugin install <name>    - download a plugin from the registry
+#
+# metadata:
+#   set `commands = [(":cmd", "description")]` on the plugin class if you want
+#   :plugin info to show commands even when the plugin is installed but not loaded
 
 from __future__ import annotations
+import ast
 import importlib.util
 import sys
 from pathlib import Path
@@ -77,6 +85,7 @@ class PluginBase:
     description: str = ""
     version: str = "0.1.0"
     author: str = ""
+    commands: list = []
 
     def on_load(self, app):
         pass
@@ -363,19 +372,19 @@ def _metadataForPath(path: Path, is_pkg: bool) -> dict:
             "description": m.get("description", ""),
             "version": m.get("version", ""),
             "author": m.get("author", ""),
+            "commands": _parseManifestCommands(m),
             "type": "package",
             "path": str(path),
         }
 
     # single file - parse with ast to extract class attributes safely
-    import ast
     try:
         src = path.read_text(errors="replace")
         tree = ast.parse(src)
     except Exception:
-        return {"name": name, "type": "single file", "path": str(path)}
+        return {"name": name, "description": "", "version": "", "author": "", "commands": [], "type": "single file", "path": str(path)}
 
-    meta = {"name": name, "description": "", "version": "", "author": "", "type": "single file", "path": str(path)}
+    meta = {"name": name, "description": "", "version": "", "author": "", "commands": [], "type": "single file", "path": str(path)}
     for node in ast.walk(tree):
         if not isinstance(node, ast.ClassDef):
             continue
@@ -390,7 +399,31 @@ def _metadataForPath(path: Path, is_pkg: bool) -> dict:
                     if isinstance(val, ast.Constant) and isinstance(val.value, str):
                         if not meta[target.id] or target.id == "name":
                             meta[target.id] = val.value
+                elif target.id == "commands":
+                    parsed = _parseCommandList(stmt.value)
+                    if parsed:
+                        meta["commands"] = parsed
     return meta
+
+
+def _parseManifestCommands(manifest: dict) -> list:
+    commands = manifest.get("commands", [])
+    if not isinstance(commands, list):
+        return []
+    out = []
+    for item in commands:
+        if isinstance(item, dict):
+            syntax = item.get("syntax", "")
+            description = item.get("description", "")
+            if syntax and description:
+                out.append((syntax, description))
+        elif isinstance(item, (list, tuple)) and len(item) >= 2:
+            syntax = str(item[0]).strip()
+            description = str(item[1]).strip()
+            if syntax and description:
+                out.append((syntax, description))
+    return out
+
 
 
 def _builtinDir():
