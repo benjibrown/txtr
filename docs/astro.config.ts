@@ -63,7 +63,15 @@ export default defineConfig({
             { label: "Overview", slug: "snippets/overview" },
           ],
         },
+        
+        {
+          label: "Configuration",
+          items: [
+            { label: "Overview", slug: "config/overview" },
+          ],
+        },
       ],
+       
     }),
   ],
 });
