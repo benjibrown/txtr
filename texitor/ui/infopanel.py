@@ -1,7 +1,9 @@
 # info panel overlay - neutral floating popup for plugin/info style views
-# no build-specific status chrome
+# supports wrapped rows, selectable entries, and streaming text logs
 
 from __future__ import annotations
+
+import textwrap
 
 from rich.console import Console
 from rich.style import Style
@@ -26,6 +28,7 @@ _TL = "╭"; _TR = "╮"; _BL = "╰"; _BR = "╯"; _H = "─"; _V = "│"
 
 _W = 76
 _H_SIZE = 24
+_ROW_KEY_WIDTH = 16
 
 
 class InfoPanel(Widget):
@@ -43,21 +46,17 @@ class InfoPanel(Widget):
         super().__init__()
         self._title = " txtr info "
         self._footer = "  j/k scroll   q close"
+        self._sourceRows = []
         self._rows = []
         self._scrollTop = 0
         self._cursor = -1
 
     def open(self, title, rows, footer=None):
         self._title = f" {title} "
-        self._rows = list(rows)
+        self._sourceRows = list(rows)
         self._scrollTop = 0
-        self._cursor = self._firstSelectable()
-        if footer:
-            self._footer = footer
-        elif self._cursor >= 0:
-            self._footer = "  j/k move   enter open   q close"
-        else:
-            self._footer = "  j/k scroll   q close"
+        self._setFooter(footer)
+ 
         self._center()
         self.display = True
         self.refresh()
