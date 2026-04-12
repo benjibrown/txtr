@@ -228,3 +228,41 @@ def _renderBlank(width, inner):
     return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
 
 
+def _renderHeader(label, width, inner):
+    t = Text(no_wrap=True)
+    bs = Style(color=_BORDER, bgcolor=_BG)
+    t.append(_V, style=bs)
+    content = f"  {label}"
+    t.append(content, style=Style(color=_FG_SECTION, bgcolor=_BG, bold=True))
+    t.append(" " * max(0, inner - len(content)), style=Style(bgcolor=_BG))
+    t.append(_V, style=bs)
+    return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
+
+
+def _renderText(text, rowIdx, width, inner):
+    bg = _BG_ALT if rowIdx % 2 == 0 else _BG
+    bs = Style(color=_BORDER, bgcolor=bg)
+    t = Text(no_wrap=True)
+    t.append(_V, style=bs)
+    t.append("  ", style=Style(bgcolor=bg))
+    t.append(text[: max(0, inner - 2)], style=Style(color=_FG, bgcolor=bg))
+    t.append(" " * inner, style=Style(bgcolor=bg))
+    t.append(_V, style=bs)
+    return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
+
+
+def _renderRow(key, val, rowIdx, width, inner, selected=False, selectable=False):
+    bg = _theme.bg_popup if selected else (_BG_ALT if rowIdx % 2 == 0 else _BG)
+    bs = Style(color=_BORDER, bgcolor=bg)
+    t = Text(no_wrap=True)
+    t.append(_V, style=bs)
+    prefix = "❯ " if selected else ("  " if selectable else "  ")
+    t.append(prefix, style=Style(color=_FG_KEY, bgcolor=bg, bold=selected))
+    keyCol = f"{key:<16}"
+    t.append(keyCol, style=Style(color=_FG_KEY, bgcolor=bg, bold=True))
+    t.append("  ", style=Style(bgcolor=bg))
+    available = max(0, inner - len(keyCol) - len(prefix) - 4)
+    t.append(val[:available], style=Style(color=_FG, bgcolor=bg, bold=selected))
+    t.append(" " * inner, style=Style(bgcolor=bg))
+    t.append(_V, style=bs)
+    return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
