@@ -1,5 +1,6 @@
 # plugin system for txtr
-#
+
+# TODO - put this all into the docs instead of writing it here lol, ill delete this mess of comments eventually
 # two plugin formats are supported:
 #
 # SINGLE FILE  ~/.config/txtr/plugins/myplugin.py
@@ -29,7 +30,7 @@
 #   class MyPlugin(PluginBase):
 #       name = "myplugin"
 #       description = "does something cool"
-#       commands = []
+#       commands = [
 #           (":myplugin", "run my plugin"),
 #       ]
 #
@@ -424,6 +425,27 @@ def _parseManifestCommands(manifest: dict) -> list:
                 out.append((syntax, description))
     return out
 
+
+def _parseCommandList(node) -> list: 
+    try:
+        value = ast.literal_eval(node)
+    except Exception:
+        return []
+    if not isinstance(value, list):
+        return []
+    out = []
+    for item in value:
+        if isinstance(item, dict):
+            syntax = str(item.get("syntax", "")).strip()
+            description = str(item.get("description", "")).strip()
+            if syntax and description:
+                out.append((syntax, description))
+        elif isinstance(item, (list, tuple)) and len(item) >= 2:
+            syntax = str(item[0]).strip()
+            description = str(item[1]).strip()
+            if syntax and description:
+                out.append((syntax, description))
+    return out
 
 
 def _builtinDir():
