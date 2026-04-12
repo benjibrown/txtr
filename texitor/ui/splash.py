@@ -88,7 +88,7 @@ _ANIM_STATIC = "static"
 _ANIM_TYPEWRITER = "typewriter"
 _ANIM_GLITCH = "glitch"
 
-_TYPEWRITER_CPS = 4    # chars revealed per tick (tick = 0.07s)
+_TYPEWRITER_CPS = 20    # chars revealed per tick (tick = 0.07s)
 _GLITCH_CHARS   = "▓░▒▌▐╬╪┼╫▄▀■□▪▫"
 _GLITCH_FRAMES  = 42   # frames before glitch settles (~3s)
 
