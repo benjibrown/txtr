@@ -337,6 +337,24 @@ def readMetadata(name: str) -> dict:
     path, is_pkg = _resolvePlugin(name, [PLUGIN_DIR, _builtinDir()])
     if path is None:
         return {}
+    return _metadataForPath(path, is_pkg)
+
+
+def _scanPluginCandidates(base: Path):
+    if not base.exists():
+        return []
+    out = []
+    for p in base.glob("*.py"):
+        if not p.name.startswith("_"):
+            out.append((p, False))
+    for d in base.iterdir():
+        if d.is_dir() and not d.name.startswith("_") and any((d / ep).exists() for ep in _ENTRY_POINTS):
+            out.append((d, True))
+    return out
+
+
+def _metadataForPath(path: Path, is_pkg: bool) -> dict:
+    name = path.name if is_pkg else path.stem
 
     if is_pkg:
         m = _readManifest(path)
@@ -389,19 +407,7 @@ def _builtinPath(name: str):
 
 
 def _builtinNames() -> list[str]:
-    here = _builtinDir()
-    if not here.exists():
-        return []
-    names = set()
-    for p in here.glob("*.py"):
-        if not p.name.startswith("_"):
-            names.add(p.stem)
-    for d in here.iterdir():
-        if d.is_dir() and not d.name.startswith("_") and any(
-            (d / ep).exists() for ep in _ENTRY_POINTS
-        ):
-            names.add(d.name)
-    return sorted(names)
+    return [meta["name"] for meta in ( _metadataForPath(path, is_pkg) for path, is_pkg in _scanPluginCandidates(_builtinDir()) )]
 
 
 pluginLoader = PluginLoader()
