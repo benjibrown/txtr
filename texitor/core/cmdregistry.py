@@ -59,6 +59,16 @@ class CommandRegistry:
             handler = entry[3] if len(entry) > 3 else None
             self.register(syntax, description, section=section, aliases=aliases, handler=handler)
 
+    def unregisterSection(self, section: str):
+        entries = self._sections.pop(section, [])
+        if not entries:
+            return
+        for entry in entries:
+            for t in entry.triggers:
+                key = t.split(" <")[0].strip()
+                if self._dispatch.get(key) is entry:
+                    self._dispatch.pop(key, None)
+
     def bindHandlers(self, app):
         # called once on app mount - wires up handlers to bound app methods
         for entry in self._allEntries():
@@ -146,5 +156,4 @@ def command(syntax: str, description: str, section: str = "General",
 
 # singleton
 registry = CommandRegistry()
-
 
