@@ -252,8 +252,8 @@ def _wrapText(text, width):
 
 def _expandRows(rows):
     out = []
-    textWidth = _W - 4
-    valueWidth = _W - _ROW_KEY_WIDTH - 6
+    textWidth = _W - 2 - 2
+    valueWidth = _W - 2 - 2 - _ROW_KEY_WIDTH - 2
     for row in rows:
         kind = row[0]
         if kind in ("header", "gap"):
@@ -355,8 +355,10 @@ def _renderRow(key, val, rowIdx, width, inner, selected=False, selectable=False,
     prefix = "❯ " if selected else "  "
     t.append(prefix, style=Style(color=_FG_KEY, bgcolor=bg, bold=selected))
     keyCol = f"{key:<{_ROW_KEY_WIDTH}}" if not continuation else " " * _ROW_KEY_WIDTH
+    keyStyle = Style(color=_FG_KEY, bgcolor=bg, bold=selectable and not continuation)
+    t.append(keyCol, style=keyStyle)
     t.append("  ", style=Style(bgcolor=bg))
-    available = max(0, inner - len(keyCol) - len(prefix) - 4)
+    available = max(0, inner - len(prefix) - _ROW_KEY_WIDTH - 2)
     t.append(val[:available], style=Style(color=_FG, bgcolor=bg, bold=selected))
     t.append(" " * inner, style=Style(bgcolor=bg))
     t.append(_V, style=bs)
