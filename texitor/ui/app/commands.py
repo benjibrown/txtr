@@ -684,53 +684,55 @@ class CommandsMixin:
                 update_loaded=was_loaded,
                 status_label="updating",
             )
-		# TODO - finish this lol
+            if ok:
+                updated.append((canonical, meta.get("version", "?"), entry.get("version", "?")))
+
+        if updated:
+            self._appendInfoPanelText("")
+            self._appendInfoPanelText("done.")
+            for canonical, old, new in updated:
+                self._appendInfoPanelText(f"{canonical}: {old} -> {new}")
+            self.notify(f"updated {len(updated)} plugin(s)")
+
+    async def _pluginInstallFromEntry(self, name, entry, plugin_dir, load_after, update_loaded, status_label):
+        import io
+        import urllib.request
+        import zipfile
+        from texitor.core.plugins import pluginLoader, readMetadata
+
+        plugin_dir.mkdir(parents=True, exist_ok=True)
+        was_loaded = pluginLoader.isLoaded(name)
         url = entry.get("url", "")
         if not url:
-            self.notify(f"registry entry for '{name}' has no url", severity="error")
-            return
+            self._appendInfoPanelText(f"{name}: registry entry has no url")
+            return False, name
 
         pkg_type = entry.get("type", "single")
+        self._appendInfoPanelText(f"{status_label} {name} ({pkg_type})")
 
         if pkg_type == "git":
             dest = plugin_dir / name
             if dest.exists():
-                # already cloned - pull instead
-                self.notify(f"updating '{name}' (git pull)...")
-                proc = await asyncio.create_subprocess_exec(
-                    "git", "-C", str(dest), "pull",
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                )
-                _, stderr = await proc.communicate()
-                if proc.returncode != 0:
-                    self.notify(f"git pull failed: {stderr.decode()[:120]}", severity="error")
-                    return
+                rc = await self._pluginRunProcess(["git", "-C", str(dest), "pull"], cwd=None)
             else:
-                self.notify(f"cloning '{name}'...")
-                proc = await asyncio.create_subprocess_exec(
-                    "git", "clone", "--depth=1", url, str(dest),
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                )
-                _, stderr = await proc.communicate()
-                if proc.returncode != 0:
-                    self.notify(f"git clone failed: {stderr.decode()[:120]}", severity="error")
-                    return
+                rc = await self._pluginRunProcess(["git", "clone", "--depth=1", url, str(dest)], cwd=None)
+            if rc != 0:
+                self._appendInfoPanelText(f"{name}: git command failed")
+                return False, name
 
         elif pkg_type == "package":
-            # zip containing the plugin directory
-            import zipfile, io, urllib.request
+            self._appendInfoPanelText(f"downloading {url}")
             try:
                 with urllib.request.urlopen(url, timeout=15) as r:
                     raw = r.read()
             except Exception as e:
-                self.notify(f"download failed: {e}", severity="error")
-                return
+                self._appendInfoPanelText(f"download failed: {e}")
+                return False, name
             try:
                 with zipfile.ZipFile(io.BytesIO(raw)) as zf:
                     members = [m for m in zf.namelist() if not m.startswith("__MACOSX")]
                     zf.extractall(plugin_dir, members=members)
+                    self._appendInfoPanelText(f"extracted {len(members)} files")
             except Exception as e:
                 self.notify(f"failed to extract package: {e}", severity="error")
                 return
