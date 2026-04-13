@@ -734,24 +734,169 @@ class CommandsMixin:
                     zf.extractall(plugin_dir, members=members)
                     self._appendInfoPanelText(f"extracted {len(members)} files")
             except Exception as e:
-                self.notify(f"failed to extract package: {e}", severity="error")
-                return
+                self._appendInfoPanelText(f"extract failed: {e}")
+                return False, name
 
         else:
-            # single .py file
-            import urllib.request
+            self._appendInfoPanelText(f"downloading {url}")
             try:
                 with urllib.request.urlopen(url, timeout=15) as r:
                     raw = r.read()
             except Exception as e:
-                self.notify(f"download failed: {e}", severity="error")
-                return
+                self._appendInfoPanelText(f"download failed: {e}")
+                return False, name
             dest = plugin_dir / f"{name}.py"
             dest.write_bytes(raw)
+            self._appendInfoPanelText(f"wrote {dest}")
 
-        ok = pluginLoader.load(self, name, notify_error=True)
-        if ok:
-            inst = pluginLoader.get(name)
-            canonical = inst.name if inst and inst.name else name
-            cfg.append("plugins", "enabled", canonical)
-            self.notify(f"plugin '{canonical}' installed and enabled")
+        meta = readMetadata(name)
+        canonical = meta.get("name") or name
+        enabled = cfg.get("plugins", "enabled", [])
+        should_sync_config = load_after or name in enabled or canonical in enabled
+
+        if update_loaded or (load_after and was_loaded):
+            pluginLoader.unload(self, name)
+
+        if load_after:
+            ok = pluginLoader.load(self, canonical, notify_error=True)
+            if not ok:
+                self._appendInfoPanelText(f"{canonical}: failed to load after {status_label}")
+                return False, canonical
+
+        if should_sync_config:
+            self._pluginEnableName(name, canonical)
+
+        self._appendInfoPanelText(f"{canonical}: {status_label} complete")
+        return True, canonical
+
+    async def _pluginRunProcess(self, args, cwd=None):
+        self._appendInfoPanelText("$ " + " ".join(args))
+        proc = await asyncio.create_subprocess_exec(
+            *args,
+            cwd=cwd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+        )
+        while True:
+            line = await proc.stdout.readline()
+            if not line:
+                break
+            text = line.decode(errors="replace").rstrip()
+            if text:
+                self._appendInfoPanelText(text)
+        return await proc.wait()
+
+    def _pluginEnableName(self, old_name, canonical):
+        enabled = [name for name in cfg.get("plugins", "enabled", []) if name != old_name and name != canonical]
+        enabled.append(canonical)
+        cfg.set("plugins", "enabled", enabled)
+
+    def _pluginRemoveEnabledNames(self, *names):
+        enabled = [name for name in cfg.get("plugins", "enabled", []) if name not in names]
+        cfg.set("plugins", "enabled", enabled)
+
+    def _plugin_uninstall(self, name, plugin_dir):
+        import shutil
+        from pathlib import Path
+        from texitor.core.plugins import pluginLoader, readMetadata
+
+        meta = readMetadata(name)
+        if not meta:
+            self.notify(f"plugin '{name}' is not installed", severity="warning")
+            return
+
+        path = Path(meta.get("path", ""))
+        if not path.exists():
+            self.notify(f"plugin '{name}' is not installed", severity="warning")
+            return
+        if not str(path).startswith(str(plugin_dir)):
+            self.notify(f"plugin '{name}' is built-in and cannot be uninstalled", severity="warning")
+            return
+
+        canonical = meta.get("name") or name
+        pluginLoader.unload(self, canonical)
+        self._pluginRemoveEnabledNames(name, canonical)
+
+        try:
+            if path.is_dir():
+                shutil.rmtree(path)
+            else:
+                path.unlink()
+        except Exception as e:
+            self.notify(f"could not uninstall '{canonical}': {e}", severity="error")
+            return
+
+        self.notify(f"plugin '{canonical}' uninstalled")
+
+    async def _startupPlugins(self):
+        from texitor.core.plugins import pluginLoader, PLUGIN_DIR, REGISTRY_URL, readMetadata
+
+        enabled = cfg.get("plugins", "enabled", [])
+        auto_update = cfg.get("plugins", "auto_update", False)
+        missing = [name for name in enabled if not readMetadata(name)]
+        registry = None
+
+        if missing or auto_update:
+            registry = await self._pluginFetchRegistry(REGISTRY_URL)
+
+        if missing and registry:
+            self._openInfoPanel(
+                "plugin startup",
+                [("header", "Installing missing plugins"), ("text", f"{len(missing)} plugin(s) missing from disk")],
+                footer="  q close",
+            )
+            for name in missing:
+                entry = registry.get(name)
+                if not entry:
+                    self._appendInfoPanelText(f"{name}: not found in registry")
+                    continue
+                await self._pluginInstallFromEntry(
+                    name,
+                    entry,
+                    PLUGIN_DIR,
+                    load_after=False,
+                    update_loaded=False,
+                    status_label="installing",
+                )
+            self._appendInfoPanelText("startup install pass complete")
+
+        if auto_update and registry:
+            installed = [
+                meta
+                for meta in pluginLoader.installedMetadata()
+                if meta.get("path", "").startswith(str(PLUGIN_DIR))
+            ]
+            outdated = []
+            for meta in installed:
+                entry = registry.get(meta["name"])
+                if not entry:
+                    continue
+                target_version = entry.get("version", "")
+                if target_version and target_version != meta.get("version", ""):
+                    outdated.append((meta, entry))
+
+            if outdated:
+                if not self.infoOpen:
+                    self._openInfoPanel(
+                        "plugin startup",
+                        [("header", "Updating plugins"), ("text", f"{len(outdated)} plugin(s) need updates")],
+                        footer="  q close",
+                    )
+                else:
+                    self._appendInfoPanelText("")
+                    self._appendInfoPanelText(f"updating {len(outdated)} plugin(s)")
+                for meta, entry in outdated:
+                    await self._pluginInstallFromEntry(
+                        meta["name"],
+                        entry,
+                        PLUGIN_DIR,
+                        load_after=False,
+                        update_loaded=False,
+                        status_label="updating",
+                    )
+                self._appendInfoPanelText("startup update pass complete")
+
+        if enabled:
+            pluginLoader.loadAll(self, cfg.get("plugins", "enabled", []))
+
+        self._notifyNewPlugins()
