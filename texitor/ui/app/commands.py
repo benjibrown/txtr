@@ -53,6 +53,44 @@ class CommandsMixin:
         self.infoOpen = True
         self.query_one(InfoPanel).open(title, rows, footer=footer)
 
+    def _setInfoPanelRows(self, rows, footer=None):
+        from texitor.ui.infopanel import InfoPanel
+        self.infoOpen = True
+        self.query_one(InfoPanel).setRows(rows, footer=footer)
+
+    def _appendInfoPanelText(self, text, autoScroll=True):
+        from texitor.ui.infopanel import InfoPanel
+        self.infoOpen = True
+        self.query_one(InfoPanel).appendText(text, autoScroll=autoScroll)
+
+    async def _pluginFetchRegistry(self, registry_url):
+        import json
+        import urllib.request
+
+        try:
+            with urllib.request.urlopen(registry_url, timeout=10) as r:
+                return json.loads(r.read())
+        except Exception as e:
+            self.notify(f"could not fetch registry: {e}", severity="error")
+            return None
+
+    def _pluginInfoRows(self, meta, loaded, plugin_cmds):
+        rows = [
+            ("row", "name", meta.get("name") or "(unknown)"),
+            ("row", "version", meta.get("version") or "(unknown)"),
+            ("row", "author", meta.get("author") or "(unknown)"),
+            ("row", "description", meta.get("description") or "(none)"),
+            ("row", "type", meta.get("type", "single file")),
+            ("row", "status", "loaded" if loaded else "not loaded"),
+            ("row", "path", meta.get("path") or "not found on disk"),
+        ]
+        if plugin_cmds:
+            rows.append(("gap",))
+            rows.append(("header", "Commands"))
+            for cmd, desc in plugin_cmds:
+                rows.append(("row", cmd, desc))
+        return rows
+
         
     # file commands
 
@@ -441,7 +479,7 @@ class CommandsMixin:
         panel.display = True
         self.buildOpen = True
 
-    @command(":plugin", "manage plugins - list / info / enable / disable / install", section="Plugins")
+    @command(":plugin", "manage plugins - list / info / enable / disable / install / update / uninstall", section="Plugins")
     def _cmd_plugin(self, args):
         from texitor.core.plugins import pluginLoader, PLUGIN_DIR, REGISTRY_URL, readMetadata
         from texitor.core.cmdregistry import registry as _reg
@@ -497,47 +535,37 @@ class CommandsMixin:
                     "author": inst.author or "",
                     "type": "package" if getattr(inst, "_txtr_is_package", False) else "single file",
                     "path": getattr(inst, "_txtr_source_path", ""),
+                    "commands": getattr(inst, "commands", []),
                 }
             else:
                 meta = readMetadata(arg)
 
             canonical = meta.get("name") or arg
-            rows = [
-                ("row", "name", canonical),
-                ("row", "version", meta.get("version") or "(unknown)"),
-                ("row", "author", meta.get("author") or "(unknown)"),
-                ("row", "description", meta.get("description") or "(none)"),
-                ("row", "type", meta.get("type", "single file")),
-                ("row", "status", "loaded" if loaded else "not loaded"),
-                ("row", "path", meta.get("path") or "not found on disk"),
-            ]
-
             plugin_section = f"Plugin: {canonical}"
             plugin_cmds = next((cmds for section, cmds in _reg.sections() if section == plugin_section), [])
-            if plugin_cmds:
-                rows.append(("gap",))
-                rows.append(("header", "Commands"))
-                for cmd, desc in plugin_cmds:
-                    rows.append(("row", cmd, desc))
+            if not plugin_cmds:
+                plugin_cmds = meta.get("commands", [])
 
-            self._openInfoPanel(f"plugin: {canonical}", rows)
+            self._openInfoPanel(f"plugin: {canonical}", self._pluginInfoRows(meta, loaded, plugin_cmds))
 
         elif action == "enable":
             if not arg:
                 self.notify("usage: :plugin enable <name>", severity="warning")
                 return
             enabled = cfg.get("plugins", "enabled", [])
-            if pluginLoader.isLoaded(arg) and arg in enabled:
+            meta = readMetadata(arg)
+            canonical = meta.get("name") or arg
+            if pluginLoader.isLoaded(arg) and canonical in enabled:
                 self.notify(f"plugin '{arg}' is already enabled", severity="warning")
                 return
-            if not pluginLoader.get(arg) and arg not in pluginLoader.availableOnDisk():
+            if not meta and arg not in pluginLoader.availableOnDisk():
                 self.notify(f"plugin '{arg}' is not installed", severity="warning")
                 return
             ok = pluginLoader.load(self, arg, notify_error=True)
             if ok:
                 inst = pluginLoader.get(arg)
                 canonical = inst.name if inst and inst.name else arg
-                cfg.append("plugins", "enabled", canonical)
+                self._pluginEnableName(arg, canonical)
                 self.notify(f"plugin '{canonical}' enabled")
 
         elif action == "disable":
@@ -551,9 +579,7 @@ class CommandsMixin:
                 self.notify(f"plugin '{arg}' is already disabled", severity="warning")
                 return
             ok = pluginLoader.unload(self, arg)
-            if canonical in enabled:
-                enabled = [name for name in enabled if name != canonical and name != arg]
-                cfg.set("plugins", "enabled", enabled)
+            self._pluginRemoveEnabledNames(arg, canonical)
             if ok or canonical not in enabled:
                 self.notify(f"plugin '{canonical}' disabled")
             else:
@@ -563,29 +589,102 @@ class CommandsMixin:
             if not arg:
                 self.notify("usage: :plugin install <name>", severity="warning")
                 return
-            self.notify("fetching registry...")
             asyncio.create_task(self._plugin_install(arg, REGISTRY_URL, PLUGIN_DIR))
 
+        elif action == "update":
+            asyncio.create_task(self._plugin_update(arg, REGISTRY_URL, PLUGIN_DIR))
+
+        elif action == "uninstall":
+            if not arg:
+                self.notify("usage: :plugin uninstall <name>", severity="warning")
+                return
+            self._plugin_uninstall(arg, PLUGIN_DIR)
+
         else:
-            self.notify(f"unknown plugin action '{action}' - use list/info/enable/disable/install", severity="warning")
+            self.notify(f"unknown plugin action '{action}' - use list/info/enable/disable/install/update/uninstall", severity="warning")
 
     async def _plugin_install(self, name: str, registry_url: str, plugin_dir):
-        import urllib.request
-        import json
-        from texitor.core.plugins import pluginLoader
-
-        try:
-            with urllib.request.urlopen(registry_url, timeout=10) as r:
-                data = json.loads(r.read())
-        except Exception as e:
-            self.notify(f"could not fetch registry: {e}", severity="error")
+        data = await self._pluginFetchRegistry(registry_url)
+        if not data:
             return
-
         entry = data.get(name)
         if not entry:
             self.notify(f"'{name}' not found in registry", severity="warning")
             return
 
+        self._openInfoPanel(
+            f"plugin install: {name}",
+            [("header", "Installing plugin"), ("text", f"registry entry found for {name}")],
+            footer="  q close",
+        )
+        ok, canonical = await self._pluginInstallFromEntry(
+            name,
+            entry,
+            plugin_dir,
+            load_after=True,
+            update_loaded=False,
+            status_label="installing",
+        )
+        if ok:
+            self._appendInfoPanelText("")
+            self._appendInfoPanelText(f"{canonical}: installation finished")
+            self.notify(f"plugin '{canonical}' installed and enabled")
+
+    async def _plugin_update(self, name: str, registry_url: str, plugin_dir):
+        from texitor.core.plugins import pluginLoader
+
+        data = await self._pluginFetchRegistry(registry_url)
+        if not data:
+            return
+
+        installed = [
+            meta
+            for meta in pluginLoader.installedMetadata()
+            if meta.get("path", "").startswith(str(plugin_dir))
+        ]
+        if name:
+            installed = [meta for meta in installed if meta["name"] == name]
+            if not installed:
+                self.notify(f"plugin '{name}' is not installed", severity="warning")
+                return
+            if installed and not data.get(installed[0]["name"]):
+                self.notify(f"plugin '{name}' is not in the registry", severity="warning")
+                return
+        elif not installed:
+            self.notify("no installed user plugins to update", severity="warning")
+            return
+
+        outdated = []
+        for meta in installed:
+            entry = data.get(meta["name"])
+            if not entry:
+                continue
+            target_version = entry.get("version", "")
+            if target_version and target_version != meta.get("version", ""):
+                outdated.append((meta, entry))
+
+        if not outdated:
+            self.notify("plugins already up to date")
+            return
+
+        self._openInfoPanel(
+            "plugin update",
+            [("header", "Updating plugins"), ("text", f"{len(outdated)} plugin(s) need updating")],
+            footer="  q close",
+        )
+
+        updated = []
+        for meta, entry in outdated:
+            was_loaded = pluginLoader.isLoaded(meta["name"])
+            ok, canonical = await self._pluginInstallFromEntry(
+                meta["name"],
+                entry,
+                plugin_dir,
+                load_after=was_loaded,
+                update_loaded=was_loaded,
+                status_label="updating",
+            )
+		# TODO - finish this lol
         url = entry.get("url", "")
         if not url:
             self.notify(f"registry entry for '{name}' has no url", severity="error")
