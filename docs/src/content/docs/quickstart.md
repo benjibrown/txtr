@@ -46,11 +46,11 @@ From Normal mode:
 
 ## Open the help menu 
 
-Press `?` in Normal mode to open the help menu or run `:help` in command mode. The help menu has 3 key tabs:
+Press `?` in Normal mode to open the help menu or run `:help` in command mode. The help menu has 4 key tabs:
 - **Keybinds** - shows all the keybinds available in the editor. 
 - **Snippets** - shows all the snippets available in the editor. 
 - **Commands** - shows all the commands available in command mode.
-- **[WIP] Plugins** - shows all the commands available for plugins.
+- **Plugins** - shows loaded plugins, available plugins, and plugin commands.
 
 Press `Tab` to cycle through the tabs and `ESC` or `q` to close. 
 
