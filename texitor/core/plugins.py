@@ -64,7 +64,11 @@ from __future__ import annotations
 import ast
 import importlib.util
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
+
+from texitor.core.config import config as cfg
+from texitor.core.modes import Mode
 
 try:
     import tomllib
@@ -81,12 +85,27 @@ REGISTRY_URL = "https://raw.githubusercontent.com/benjibrown/txtr/main/plugin-re
 _ENTRY_POINTS = ("__init__.py", "plugin.py", "main.py")
 
 
+@dataclass
+class PluginContext:
+    file_path: str = ""
+    cursor_row: int = 0
+    cursor_col: int = 0
+    mode: str = "NORMAL"
+    modified: bool = False
+    current_line: str = ""
+    line_count: int = 0
+    selection_bounds: tuple | None = None
+    selected_lines: list[str] = field(default_factory=list)
+    selected_text: str = ""
+
+
 class PluginBase:
     name: str = ""
     description: str = ""
     version: str = "0.1.0"
     author: str = ""
     commands: list = []
+    config_section: str = ""
 
     def on_load(self, app):
         pass
@@ -111,6 +130,38 @@ class PluginBase:
 
     def statusbar_segment(self, app):
         return None
+
+    def config(self, key=None, default=None, section=None):
+        sec = section or self.config_section or self.name
+        if not sec:
+            return {} if key is None else default
+        if key is None:
+            return cfg.getSection(sec)
+        return cfg.get(sec, key, default)
+
+    def context(self, app):
+        return pluginContext(app)
+
+    def notify(self, app, message, severity="information", timeout=3):
+        app.notify(message, severity=severity, timeout=timeout)
+
+    def open_panel(self, app, title, rows, footer=None):
+        app.plugin_open_panel(title, rows, footer=footer)
+
+    def set_panel_rows(self, app, rows, footer=None):
+        app.plugin_set_panel_rows(rows, footer=footer)
+
+    def append_panel_text(self, app, text, autoScroll=True):
+        app.plugin_append_panel_text(text, autoScroll=autoScroll)
+
+    def close_panel(self, app):
+        app.plugin_close_panel()
+
+    def mount_overlay(self, app, widget):
+        return app.plugin_mount_overlay(widget)
+
+    def unmount_widget(self, app, widget):
+        return app.plugin_unmount_widget(widget)
 
 
 class PluginLoader:
@@ -350,6 +401,33 @@ def readMetadata(name: str) -> dict:
     return _metadataForPath(path, is_pkg)
 
 
+def pluginContext(app) -> PluginContext:
+    buf = app.buffer
+    bounds = app._selection_bounds() if hasattr(app, "_selection_bounds") else None
+    selected_lines = []
+    selected_text = ""
+
+    if app.msm.mode is Mode.VISUAL_LINE and app.visual_anchor is not None:
+        r0 = min(app.visual_anchor[0], buf.cursor_row)
+        r1 = max(app.visual_anchor[0], buf.cursor_row)
+        selected_lines = list(buf.lines[r0 : r1 + 1])
+        selected_text = "\n".join(selected_lines)
+    elif bounds is not None:
+        r0, c0, r1, c1 = bounds
+        if r0 == r1:
+            selected_lines = [buf.lines[r0][c0 : c1 + 1]]
+        else:
+            selected_lines = ()
+                [buf.lines[r0][c0:]]
+                + list(buf.lines[r0 + 1 : r1])
+                + [buf.lines[r1][: c1 + 1]]
+            )
+        selected_text = "\n".join(selected_lines)
+
+    return PluginContext()
+        file_path=buf.path or "",
+        cursor_row=buf.cursor_row,
+   
 def _scanPluginCandidates(base: Path):
     if not base.exists():
         return []
