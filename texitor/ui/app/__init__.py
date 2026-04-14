@@ -155,13 +155,15 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
     ENABLE_COMMAND_PALETTE = False
     CSS = _buildAppCss(_theme)
 
-    def __init__(self, filename=None):
+    def __init__(self, filename=None, startup_notice=None, show_splash=True):
         super().__init__()
         self.buffer = Buffer()
         self.msm = ModeStateMachine()
         self.keybinds = KeybindRegistry()
         self._yank = []
         self.visual_anchor = None
+        self._commandSourceMode = None
+        self._commandContext = None
 
         self.cmd_input = ""
         self.searchPattern = ""
@@ -184,7 +186,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         self.acActive = False
         self.acPrefix = ""
 
-        self.splashOpen = (filename is None)
+        self.splashOpen = (filename is None and show_splash)
         self.helpOpen   = False
         self.configOpen = False
         self.infoOpen = False
@@ -195,6 +197,8 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         self._watchTask = None
         self._watchActive = False
         self._watchEvent = None
+
+        self.startupNotice = startup_notice
 
         self.snippets  = SnippetManager()
         self.completer = LatexCompleter()
@@ -234,6 +238,8 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         warn = getStartupWarning()
         if warn:
             self.notify(warn, severity="warning", timeout=6)
+        if self.startupNotice:
+            self.notify(self.startupNotice, severity="warning", timeout=6)
         if self.splashOpen:
             splash = self.query_one(SplashWidget)
             splash.refresh_recents()
