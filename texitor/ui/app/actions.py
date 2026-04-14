@@ -19,6 +19,7 @@ class ActionsMixin:
             return
         self.msm.transition(Mode.NORMAL)
         self.visual_anchor = None
+        self._commandSourceMode = None
         self._pending_key = ""
         self.cmd_input = ""
         self.searchPattern = ""
@@ -53,6 +54,7 @@ class ActionsMixin:
         self.visual_anchor = (self.buffer.cursor_row, self.buffer.cursor_col)
 
     def _action_enter_command(self):
+        self._commandSourceMode = self.msm.mode
         self.msm.transition(Mode.COMMAND)
         self._pending_key = ""
         self.cmd_input = ""
