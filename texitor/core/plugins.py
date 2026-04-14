@@ -401,13 +401,18 @@ def readMetadata(name: str) -> dict:
     return _metadataForPath(path, is_pkg)
 
 
-def pluginContext(app) -> PluginContext:
+def pluginContext(app, mode_override=None) -> PluginContext:
+    cached = getattr(app, "_commandContext", None)
+    if cached is not None and mode_override is None:
+        return cached
+
     buf = app.buffer
+    source_mode = mode_override or getattr(app, "_commandSourceMode", None) or app.msm.mode
     bounds = app._selection_bounds() if hasattr(app, "_selection_bounds") else None
     selected_lines = []
     selected_text = ""
 
-    if app.msm.mode is Mode.VISUAL_LINE and app.visual_anchor is not None:
+    if source_mode is Mode.VISUAL_LINE and app.visual_anchor is not None:
         r0 = min(app.visual_anchor[0], buf.cursor_row)
         r1 = max(app.visual_anchor[0], buf.cursor_row)
         selected_lines = list(buf.lines[r0 : r1 + 1])
@@ -428,7 +433,7 @@ def pluginContext(app) -> PluginContext:
         file_path=buf.path or "",
         cursor_row=buf.cursor_row,
         cursor_col=buf.cursor_col,
-        mode=app.msm.mode.name,
+        mode=source_mode.name,
         modified=buf.modified,
         current_line=buf.current_line,
         line_count=buf.line_count,
