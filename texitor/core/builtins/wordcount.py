@@ -29,6 +29,8 @@ class WordCountPlugin(PluginBase):
 
     def statusbar_segment(self, app):
         try:
+            if not self.config("statusbar", True):
+                return None
             text = "\n".join(app.buffer.lines)
             count = len(text.split())
             return (f"{count}w", _theme.fg_dim)
@@ -37,13 +39,13 @@ class WordCountPlugin(PluginBase):
 
     def _cmd_wordcount(self, app, args):
         try:
-            text = "\n".join(app.buffer.lines)
+            text = "\n".join(self.context(app).selected_lines or app.buffer.lines)
             words = len(text.split())
             chars = len(text.replace("\n", ""))
-            lines = len(app.buffer.lines)
-            app.notify(f"{words} words  {chars} chars  {lines} lines", timeout=5)
+            lines = len(text.splitlines()) or 1
+            self.notify(app, f"{words} words  {chars} chars  {lines} lines", timeout=5)
         except Exception as e:
-            app.notify(f"wordcount error: {e}", severity="error")
+            self.notify(app, f"wordcount error: {e}", severity="error")
 
 
 plugin = WordCountPlugin
