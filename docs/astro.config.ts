@@ -71,6 +71,12 @@ export default defineConfig({
             { label: "Themes", slug: "config/themes" },
           ],
         },
+        {
+          label: "Plugins",
+          items: [
+            {label: "Overview", slug: "plugins/overview"},
+          ],
+        },
       ],
        
     }),
