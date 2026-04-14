@@ -281,11 +281,14 @@ class EditorWidget(Widget):
 
         # visual selection - adjst for col start
         anchor = self._app.visual_anchor
-        if msm.is_visual() and anchor is not None:
+        visual_mode = msm.mode
+        if msm.is_command() and getattr(self._app, "_commandSourceMode", None) in (Mode.VISUAL, Mode.VISUAL_LINE):
+            visual_mode = self._app._commandSourceMode
+        if visual_mode in (Mode.VISUAL, Mode.VISUAL_LINE) and anchor is not None:
             a_row, a_col = anchor
             c_row, c_col = buf.cursor_row, buf.cursor_col
 
-            if msm.mode is Mode.VISUAL_LINE:
+            if visual_mode is Mode.VISUAL_LINE:
                 r0, r1 = sorted((a_row, c_row))
                 if r0 <= logical_idx <= r1:
                     content.stylize(Style(bgcolor=_SEL_BG), 0, max(len(line_slice), 1))
