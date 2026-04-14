@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 from textual.app import App, ComposeResult
 from textual.events import Key
+from textual.widget import Widget
 # holy import hell 
 from texitor.core.buffer import Buffer
 from texitor.core.keybinds import KeybindRegistry
@@ -244,6 +245,30 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         if self._watchTask and not self._watchTask.done():
             self._watchTask.cancel()
         pluginLoader.unloadAll(self)
+
+    def plugin_open_panel(self, title, rows, footer=None):
+        self._openInfoPanel(title, rows, footer=footer)
+
+    def plugin_set_panel_rows(self, rows, footer=None):
+        self._setInfoPanelRows(rows, footer=footer)
+
+    def plugin_append_panel_text(self, text, autoScroll=True):
+        self._appendInfoPanelText(text, autoScroll=autoScroll)
+
+    def plugin_close_panel(self):
+        self.infoOpen = False
+        self.query_one(InfoPanel).close()
+
+    def plugin_mount_overlay(self, widget: Widget):
+        widget.styles.layer = "overlay"
+        self.mount(widget)
+        return widget
+
+    def plugin_unmount_widget(self, widget: Widget):
+        try:
+            widget.remove()
+        except Exception:
+            pass
 
     def _notifyNewPlugins(self):
         enabled = cfg.get("plugins", "enabled", [])
