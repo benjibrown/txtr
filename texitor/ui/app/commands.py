@@ -662,20 +662,23 @@ class CommandsMixin:
         if not data:
             return
 
-        installed = [
+        user_installed = [
             meta
             for meta in pluginLoader.installedMetadata()
             if meta.get("path", "").startswith(str(plugin_dir))
         ]
+        installed = user_installed
+        target_meta = None
         if name:
-            installed = [meta for meta in installed if meta["name"] == name]
-            if not installed:
+            target_meta = next((meta for meta in pluginLoader.installedMetadata() if meta["name"] == name), None)
+            if not target_meta:
                 self.notify(f"plugin '{name}' is not installed", severity="warning")
                 return
-            if installed and not data.get(installed[0]["name"]):
+            installed = [target_meta]
+            if not data.get(target_meta["name"]):
                 self.notify(f"plugin '{name}' is not in the registry", severity="warning")
                 return
-        elif not installed:
+        elif not user_installed:
             self.notify("no installed user plugins to update", severity="warning")
             return
 
