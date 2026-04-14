@@ -417,17 +417,27 @@ def pluginContext(app) -> PluginContext:
         if r0 == r1:
             selected_lines = [buf.lines[r0][c0 : c1 + 1]]
         else:
-            selected_lines = ()
+            selected_lines = (
                 [buf.lines[r0][c0:]]
                 + list(buf.lines[r0 + 1 : r1])
                 + [buf.lines[r1][: c1 + 1]]
             )
         selected_text = "\n".join(selected_lines)
 
-    return PluginContext()
+    return PluginContext(
         file_path=buf.path or "",
         cursor_row=buf.cursor_row,
-   
+        cursor_col=buf.cursor_col,
+        mode=app.msm.mode.name,
+        modified=buf.modified,
+        current_line=buf.current_line,
+        line_count=buf.line_count,
+        selection_bounds=bounds,
+        selected_lines=selected_lines,
+        selected_text=selected_text,
+    )
+
+
 def _scanPluginCandidates(base: Path):
     if not base.exists():
         return []
