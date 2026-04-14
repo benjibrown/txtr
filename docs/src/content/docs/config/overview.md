@@ -79,10 +79,13 @@ bib_files = []
 ```toml 
 [plugins] 
 enabled = []
-auto_update = true
+auto_update = false
 ```
 - `enabled` is a list of plugin names that you want to enable (e.g. `["wordcount"]`) - make sure to install the corresponding plugin files in `~/.config/txtr/plugins/` for them to work (unless built-in, in which case you just need to set config here to enable them)
 - `auto_update` controls whether txtr automatically checks for updates to installed plugins on startup - if set to true, txtr will check for newer versions of your enabled plugins and update them if available. If set to false, txtr will not check for plugin updates automatically.
+
+
+Go check out the [Plugins](/plugins/overview) section for more details on the plugin authoring system and its API!
 
 ## Using :config set 
 
