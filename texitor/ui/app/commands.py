@@ -14,10 +14,18 @@ from texitor.core.cmdregistry import registry, command
 class CommandsMixin:
 
     def _action_execute_command(self):
+        from texitor.core.plugins import pluginContext
+
         cmd = self.cmd_input.strip()
-        self._action_enter_normal()
-        if not registry.dispatch(self, cmd):
-            self.notify(f"unknown command: {cmd}", severity="warning")
+        source_mode = getattr(self, "_commandSourceMode", None) or self.msm.mode
+        self._commandContext = pluginContext(self, mode_override=source_mode)
+        try:
+            if not registry.dispatch(self, cmd):
+                self.notify(f"unknown command: {cmd}", severity="warning")
+        finally:
+            self._commandContext = None
+            if self.msm.is_command():
+                self._action_enter_normal()
 
     # wires all @command-decorated methods into the registry at app mount.
     # methods are sorted by section order then definition order so the help menu is consistent.
@@ -134,11 +142,18 @@ class CommandsMixin:
 
     @command(":e <file>", "open file", section="File")
     def _cmd_edit(self, args):
+        from pathlib import Path
+
         if args:
-            self.buffer.load(args)
+            target = Path(args).expanduser()
+            if target.exists() and target.is_dir():
+                self.notify(f"cannot open directory: {target}", severity="warning")
+                return
+            path = str(target)
+            self.buffer.load(path)
             import texitor.core.recents as _recents
-            _recents.push(args)
-            self._loadBibsForFile(args)
+            _recents.push(path)
+            self._loadBibsForFile(path)
             self._refresh_all()
         else:
             self.notify(":e <filename>", severity="warning")
@@ -316,6 +331,7 @@ class CommandsMixin:
 
     @command(":build", "build with configured engine", section="Compiler", aliases=[":compile", ":b"])
     def _cmd_build(self, args):
+        from pathlib import Path
         from texitor.ui.buildpanel import BuildPanel
         from texitor.ui.statusbar import StatusBar
         from texitor.core.plugins import pluginLoader
@@ -331,7 +347,12 @@ class CommandsMixin:
             self.notify("cancelling previous build...", severity="warning")
             return
 
-        self.buffer.save()
+        build_path = Path(self.buffer.path).expanduser()
+        if not build_path.exists():
+            self.notify("save the file first before building", severity="warning")
+            return
+        if self.buffer.modified:
+            self.notify("unsaved changes - building last saved version", severity="warning")
 
         engine = engine or cfg.get("compiler", "engine", "latexmk")
         auxDir = cfg.get("compiler", "aux_dir", ".aux")
@@ -344,7 +365,7 @@ class CommandsMixin:
             return
 
         panel = self.query_one(BuildPanel)
-        panel.reset(engine, self.buffer.path)
+        panel.reset(engine, str(build_path))
         if not autohide:
             panel.display = True
             self.buildOpen = True
@@ -358,7 +379,7 @@ class CommandsMixin:
                 panel.appendLine(line, isErr)
             try:
                 rc, _ = await _compiler.compile(
-                    self.buffer.path,
+                    str(build_path),
                     engine=engine,
                     auxConfig=auxDir,
                     customCmd=customCmd,
@@ -366,7 +387,7 @@ class CommandsMixin:
                 )
                 panel.setDone(rc)
 
-                lp = _compiler.logPath(self.buffer.path, engine, auxDir)
+                lp = _compiler.logPath(str(build_path), engine, auxDir)
                 panel.setErrors(_compiler.parse_log(lp))
 
                 if rc == 0:
@@ -378,6 +399,8 @@ class CommandsMixin:
                         self.buildOpen = False
                 else:
                     self._buildStatus = "failed"
+                    panel.display = True
+                    self.buildOpen = True
                     self.notify(f"build failed (exit {rc})", severity="error", timeout=5)
             except asyncio.CancelledError:
                 panel.appendLine("build cancelled", True)
@@ -387,6 +410,8 @@ class CommandsMixin:
                 panel.appendLine(f"error: {e}", True)
                 panel.setDone(1)
                 self._buildStatus = "error"
+                panel.display = True
+                self.buildOpen = True
 
             if self._watchActive:
                 self._buildStatus = "watching"

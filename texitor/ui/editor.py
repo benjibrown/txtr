@@ -343,4 +343,3 @@ class EditorWidget(Widget):
 
         return Strip(list(text.render(_CONSOLE))).adjust_cell_length(width)
 
-

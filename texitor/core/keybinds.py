@@ -71,6 +71,7 @@ _DEFAULTS = {
     },
     Mode.VISUAL: {
         "escape": "enter_normal",
+        ":":      "enter_command",
         "y":      "yank_selection",
         "d":      "delete_selection",
         ">":      "indent",
@@ -96,6 +97,7 @@ _DEFAULTS = {
     },
     Mode.VISUAL_LINE: {
         "escape": "enter_normal",
+        ":":      "enter_command",
         "y":      "yank_selection",
         "d":      "delete_selection",
         ">":      "indent",
