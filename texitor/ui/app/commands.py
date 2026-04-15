@@ -108,6 +108,7 @@ class CommandsMixin:
         if args:
             self.buffer.save(args)
             self.notify(f"saved {args}")
+            self._loadBibsForFile(args, quiet=True)
             pluginLoader.fireSave(self, args)
             return
         if not self.buffer.path:
@@ -115,6 +116,7 @@ class CommandsMixin:
             return
         self.buffer.save()
         self.notify(f"saved {self.buffer.path}")
+        self._loadBibsForFile(self.buffer.path, quiet=True)
         pluginLoader.fireSave(self, self.buffer.path)
         mode = cfg.get("compiler", "autocompile", "save")
         if mode is True:
@@ -220,6 +222,8 @@ class CommandsMixin:
         value = _coerceValue(rawVal)
         cfg.set(section, key, value)
         self.notify(f"config: {section}.{key} = {value}")
+        if section == "citations" and self.buffer.path:
+            self._loadBibsForFile(self.buffer.path, quiet=True)
 
     @command(":config append <section.key> <value>", "append a value to a list config entry", section="Config")
     def _cmd_configAppend(self, args):
@@ -237,6 +241,8 @@ class CommandsMixin:
         cfg.append(section, key, value)
         current = cfg.get(section, key)
         self.notify(f"config: {section}.{key} = {current}")
+        if section == "citations" and self.buffer.path:
+            self._loadBibsForFile(self.buffer.path, quiet=True)
 
     @command(":config get <section.key>", "get a config value", section="Config")
     def _cmd_configGet(self, args):
@@ -731,8 +737,11 @@ class CommandsMixin:
 
     async def _pluginInstallFromEntry(self, name, entry, plugin_dir, load_after, update_loaded, status_label):
         import io
+        import shutil
+        import tempfile
         import urllib.request
         import zipfile
+        from pathlib import Path
         from texitor.core.plugins import pluginLoader, readMetadata
 
         plugin_dir.mkdir(parents=True, exist_ok=True)
