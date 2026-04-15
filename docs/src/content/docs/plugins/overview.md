@@ -206,6 +206,7 @@ Plugin management commands:
 - `:plugin update [name]`
 - `:plugin uninstall <name>`
 
+
 ## Lifecycle
 
 ### Install
@@ -251,3 +252,5 @@ auto_update = true
 ```
 
 When enabled, txtr checks the registry on startup and updates installed user plugins whose version differs from the registry.
+
+Go see the [Config](/config/overview) section for more on plugin config.
