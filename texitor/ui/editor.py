@@ -273,7 +273,7 @@ class EditorWidget(Widget):
             if comment_start <= col_start:
                 content.stylize(Style(color=_HL_COMMENT, bgcolor=cur_bg), 0, max(len(line_slice), 1))
             elif comment_start < col_start + len(line_slice):
-                content.stylize()
+                content.stylize(
                     Style(color=_HL_COMMENT, bgcolor=cur_bg),
                     max(0, comment_start - col_start),
                     max(len(line_slice), 1),
