@@ -26,15 +26,68 @@ def _entry_desc(e):
     return "  ".join(parts) if parts else e["key"]
 
 
+def _entryScore(entry):
+    filled = sum(1 for field in ("author", "year", "title") if entry.get(field))
+    detail = sum(len(entry.get(field, "")) for field in ("author", "year", "title"))
+    return (filled, detail)
+
+
+def _iterBibPaths(dir_path, extra_paths=None):
+    seen = set()
+    dirs_to_scan = [Path(dir_path)]
+
+    for bib_path in (extra_paths or []):
+        p = Path(bib_path).expanduser()
+        if p.is_file():
+            try:
+                resolved = p.resolve()
+            except OSError:
+                continue
+            if resolved not in seen:
+                seen.add(resolved)
+                yield resolved
+        elif p.is_dir():
+            dirs_to_scan.append(p)
+
+    for d in dirs_to_scan:
+        try:
+            resolved_dir = d.expanduser().resolve()
+        except OSError:
+            continue
+        for bib_file in sorted(resolved_dir.glob("*.bib")):
+            try:
+                resolved = bib_file.resolve()
+            except OSError:
+                continue
+            if resolved not in seen:
+                seen.add(resolved)
+                yield resolved
+
+
 class CiteCompleter:
 
     def __init__(self):
         self._entries = []
+        self._sources = []
+        self._signature = ()
 
     def loadDir(self, dir_path, extra_paths=None):
         self._entries = []
-        seen = set()
-        dirs_to_scan = [Path(dir_path)]
+        self._sources = []
+        deduped = {}
+        for bib_file in _iterBibPaths(dir_path, extra_paths=extra_paths):
+            self._sources.append(bib_file)
+            for entry in _bib.parse(bib_file):
+                key = entry.get("key", "")
+                if not key:
+                    continue
+                dedupe_key = key.lower()
+                existing = deduped.get(dedupe_key)
+                if existing is None or _entryScore(entry) > _entryScore(existing):
+                    deduped[dedupe_key] = dict(entry)
+        self._entries = list(deduped.values())
+        self._signature = self.scanSignature(dir_path, extra_paths=extra_paths)
+        return self._entries
 
         for bib_path in (extra_paths or []):
             p = Path(bib_path).expanduser()
