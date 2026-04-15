@@ -89,20 +89,26 @@ class CiteCompleter:
         self._signature = self.scanSignature(dir_path, extra_paths=extra_paths)
         return self._entries
 
-        for bib_path in (extra_paths or []):
-            p = Path(bib_path).expanduser()
-            if p.is_file():
-                if p not in seen:
-                    seen.add(p)
-                    self._entries.extend(_bib.parse(p))
-            elif p.is_dir():
-                dirs_to_scan.append(p)
+    def clear(self):
+        self._entries = []
+        self._sources = []
+        self._signature = ()
 
-        for d in dirs_to_scan:
-            for bib_file in sorted(d.glob("*.bib")):
-                if bib_file not in seen:
-                    seen.add(bib_file)
-                    self._entries.extend(_bib.parse(bib_file))
+    def signature(self):
+        return self._signature
+
+    def sourceFiles(self):
+        return list(self._sources)
+
+    def scanSignature(self, dir_path, extra_paths=None):
+        out = []
+        for bib_file in _iterBibPaths(dir_path, extra_paths=extra_paths):
+            try:
+                stat = bib_file.stat()
+            except OSError:
+                continue
+            out.append((str(bib_file), stat.st_mtime_ns, stat.st_size))
+        return tuple(out)
 
     def getCompletions(self, prefix):
         pl = prefix.lower()
