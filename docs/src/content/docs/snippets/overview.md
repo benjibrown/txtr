@@ -69,7 +69,7 @@ The same pattern works for `ref`, `eref`, and `lab`.
 
 ### Snippet file location
 
-``` ```
+```
 ~/.config/txtr/snippets.toml
 ```
 
