@@ -41,6 +41,8 @@ _DEFAULTS = {
     },
     "citations": {
         "bib_files": [],
+        "enabled": True,
+        "autoscan": True,
     },
     "plugins": {
         "enabled": [],

@@ -101,6 +101,12 @@ show_mode = true
 # bib_files = ["/path/to/refs.bib"]
 bib_files = []
 
+# when false, citation autocomplete and bib scanning are fully disabled
+enabled = true
+
+# automatically rescan bib files when they change on disk
+autoscan = true
+
 [plugins]
 # plugins to load on startup (list of plugin names)
 # builtin plugins live in texitor/core/builtins/
