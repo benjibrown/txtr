@@ -197,6 +197,8 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         self._watchTask = None
         self._watchActive = False
         self._watchEvent = None
+        self._bibWatchTask = None
+        self._bibSignature = ()
 
         self.startupNotice = startup_notice
 
@@ -240,6 +242,8 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
             self.notify(warn, severity="warning", timeout=6)
         if self.startupNotice:
             self.notify(self.startupNotice, severity="warning", timeout=6)
+        if self.buffer.path:
+            self._ensureBibAutoscan()
         if self.splashOpen:
             splash = self.query_one(SplashWidget)
             splash.refresh_recents()
@@ -250,6 +254,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         self._watchActive = False
         if self._watchTask and not self._watchTask.done():
             self._watchTask.cancel()
+        self._stopBibAutoscan()
         pluginLoader.unloadAll(self)
 
     def plugin_open_panel(self, title, rows, footer=None):
@@ -292,6 +297,43 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
     def _watchKick(self):
         # signal the debounce loop that content changed
         self._watchEvent.set()
+
+    def _citationsEnabled(self):
+        return cfg.get("citations", "enabled", True)
+
+    def _citationsAutoscanEnabled(self):
+        return self._citationsEnabled() and cfg.get("citations", "autoscan", True)
+
+    def _stopBibAutoscan(self):
+        if self._bibWatchTask and not self._bibWatchTask.done():
+            self._bibWatchTask.cancel()
+        self._bibWatchTask = None
+
+    def _ensureBibAutoscan(self):
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return
+        if not self.buffer.path or not self._citationsAutoscanEnabled():
+            self._stopBibAutoscan()
+            return
+        if self._bibWatchTask and not self._bibWatchTask.done():
+            return
+
+        async def _loop():
+            while True:
+                await asyncio.sleep(2)
+                if not self.buffer.path or not self._citationsAutoscanEnabled():
+                    continue
+                from pathlib import Path
+                p = Path(self.buffer.path).expanduser().resolve()
+                extra = cfg.get("citations", "bib_files", [])
+                sig = self.citeCompleter.scanSignature(p.parent, extra_paths=extra)
+                if sig != self._bibSignature:
+                    prev = self.citeCompleter.entryCount()
+                    self._loadBibsForFile(str(p), autoscan=True, previous_count=prev)
+
+        self._bibWatchTask = asyncio.create_task(_loop())
 
     def _startWatchLoop(self):
         import asyncio as _aio
@@ -608,16 +650,30 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
 
 
     # bib helpers
-    def _loadBibsForFile(self, filepath, fromcmd=False):
+    def _loadBibsForFile(self, filepath, fromcmd=False, autoscan=False, quiet=False, previous_count=None):
         from pathlib import Path
         p = Path(filepath).expanduser().resolve()
+        if not self._citationsEnabled():
+            self.citeCompleter.clear()
+            self._bibSignature = ()
+            self._dismissAutocomplete()
+            self._stopBibAutoscan()
+            if fromcmd:
+                self.notify("citation loading is disabled", severity="warning")
+            return
         extra = cfg.get("citations", "bib_files", [])
+        before = self.citeCompleter.entryCount() if previous_count is None else previous_count
         self.citeCompleter.loadDir(p.parent, extra_paths=extra)
+        self._bibSignature = self.citeCompleter.signature()
         n = self.citeCompleter.entryCount()
-        if n:
+        if autoscan:
+            if n != before:
+                self.notify(f"bib entries updated ({n})", timeout=3)
+        elif n and not quiet:
             self.notify(f"loaded {n} bib entr{'y' if n == 1 else 'ies'}", severity="information")
         elif fromcmd: # only send noti if this was triggered by a command so we dont notigy every time a file is loaded
             self.notify("no bib entries found", severity="warning")
+        self._ensureBibAutoscan()
 
     # autocomplete stuff
     def _updateAutocomplete(self):
