@@ -95,6 +95,7 @@ class PluginContext:
     current_line: str = ""
     line_count: int = 0
     selection_bounds: tuple | None = None
+    selected_line_range: tuple | None = None
     selected_lines: list[str] = field(default_factory=list)
     selected_text: str = ""
 
@@ -409,16 +410,19 @@ def pluginContext(app, mode_override=None) -> PluginContext:
     buf = app.buffer
     source_mode = mode_override or getattr(app, "_commandSourceMode", None) or app.msm.mode
     bounds = app._selection_bounds() if hasattr(app, "_selection_bounds") else None
+    selected_line_range = None
     selected_lines = []
     selected_text = ""
 
     if source_mode is Mode.VISUAL_LINE and app.visual_anchor is not None:
         r0 = min(app.visual_anchor[0], buf.cursor_row)
         r1 = max(app.visual_anchor[0], buf.cursor_row)
+        selected_line_range = (r0 + 1, r1 + 1)
         selected_lines = list(buf.lines[r0 : r1 + 1])
         selected_text = "\n".join(selected_lines)
     elif bounds is not None:
         r0, c0, r1, c1 = bounds
+        selected_line_range = (r0 + 1, r1 + 1)
         if r0 == r1:
             selected_lines = [buf.lines[r0][c0 : c1 + 1]]
         else:
@@ -438,6 +442,7 @@ def pluginContext(app, mode_override=None) -> PluginContext:
         current_line=buf.current_line,
         line_count=buf.line_count,
         selection_bounds=bounds,
+        selected_line_range=selected_line_range,
         selected_lines=selected_lines,
         selected_text=selected_text,
     )
