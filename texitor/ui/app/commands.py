@@ -773,10 +773,27 @@ class CommandsMixin:
                 self._appendInfoPanelText(f"download failed: {e}")
                 return False, name
             try:
-                with zipfile.ZipFile(io.BytesIO(raw)) as zf:
-                    members = [m for m in zf.namelist() if not m.startswith("__MACOSX")]
-                    zf.extractall(plugin_dir, members=members)
-                    self._appendInfoPanelText(f"extracted {len(members)} files")
+                with tempfile.TemporaryDirectory() as td:
+                    tmp_root = Path(td)
+                    with zipfile.ZipFile(io.BytesIO(raw)) as zf:
+                        members = [m for m in zf.namelist() if not m.startswith("__MACOSX")]
+                        zf.extractall(tmp_root, members=members)
+                    subdir = (entry.get("subdir", "") or "").strip().strip("/")
+                    source = tmp_root / subdir if subdir else None
+                    if source is None or not source.exists():
+                        candidates = [
+                            p for p in tmp_root.rglob("*")
+                            if p.is_dir() and ((p / "manifest.toml").exists() or any((p / ep).exists() for ep in ("__init__.py", "plugin.py", "main.py")))
+                        ]
+                        source = candidates[0] if len(candidates) == 1 else None
+                    if source is None or not source.exists():
+                        self._appendInfoPanelText("extract failed: could not find package root in archive")
+                        return False, name
+                    dest = plugin_dir / name
+                    if dest.exists():
+                        shutil.rmtree(dest)
+                    shutil.copytree(source, dest)
+                    self._appendInfoPanelText(f"extracted package to {dest}")
             except Exception as e:
                 self._appendInfoPanelText(f"extract failed: {e}")
                 return False, name
