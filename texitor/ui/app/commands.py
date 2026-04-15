@@ -682,27 +682,31 @@ class CommandsMixin:
             self.notify("no installed user plugins to update", severity="warning")
             return
 
-        outdated = []
+        updates = []
         for meta in installed:
             entry = data.get(meta["name"])
             if not entry:
                 continue
             target_version = entry.get("version", "")
+            is_user_plugin = meta.get("path", "").startswith(str(plugin_dir))
+            if name and not is_user_plugin:
+                updates.append((meta, entry, True))
+                continue
             if target_version and target_version != meta.get("version", ""):
-                outdated.append((meta, entry))
+                updates.append((meta, entry, False))
 
-        if not outdated:
+        if not updates:
             self.notify("plugins already up to date")
             return
 
         self._openInfoPanel(
             "plugin update",
-            [("header", "Updating plugins"), ("text", f"{len(outdated)} plugin(s) need updating")],
+            [("header", "Updating plugins"), ("text", f"{len(updates)} plugin(s) need updating")],
             footer="  q close",
         )
 
         updated = []
-        for meta, entry in outdated:
+        for meta, entry, force_override in updates:
             was_loaded = pluginLoader.isLoaded(meta["name"])
             ok, canonical = await self._pluginInstallFromEntry(
                 meta["name"],
@@ -710,16 +714,19 @@ class CommandsMixin:
                 plugin_dir,
                 load_after=was_loaded,
                 update_loaded=was_loaded,
-                status_label="updating",
+                status_label="refreshing" if force_override else "updating",
             )
             if ok:
-                updated.append((canonical, meta.get("version", "?"), entry.get("version", "?")))
+                updated.append((canonical, meta.get("version", "?"), entry.get("version", "?"), force_override))
 
         if updated:
             self._appendInfoPanelText("")
             self._appendInfoPanelText("done.")
-            for canonical, old, new in updated:
-                self._appendInfoPanelText(f"{canonical}: {old} -> {new}")
+            for canonical, old, new, force_override in updated:
+                if force_override and old == new:
+                    self._appendInfoPanelText(f"{canonical}: installed registry override ({new})")
+                else:
+                    self._appendInfoPanelText(f"{canonical}: {old} -> {new}")
             self.notify(f"updated {len(updated)} plugin(s)")
 
     async def _pluginInstallFromEntry(self, name, entry, plugin_dir, load_after, update_loaded, status_label):
