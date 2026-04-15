@@ -104,7 +104,7 @@ class SnippetManager:
 
             if ch == "|": # legacy 
                 if pipeIdx < len(pipeNums):
-                    n = pipeNums(pipeIdx)
+                    n = pipeNums[pipeIdx]
                     stopPos[n] = (row, col, 0)
                     pipeIdx += 1
                 i += 1
