@@ -440,6 +440,36 @@ name = "Text in math"
 trigger = "tt"
 body = "\\text{${1}}"
 
+[commands.emph]
+name = "Emphasis"
+trigger = "em"
+body = "\\emph{${1}}"
+
+[commands.bold]
+name = "Bold text"
+trigger = "bf"
+body = "\\textbf{${1}}"
+
+[commands.label]
+name = "Label"
+trigger = "lab"
+body = "\\label{${1}}"
+
+[commands.ref]
+name = "Reference"
+trigger = "ref"
+body = "\\ref{${1}}"
+
+[commands.eqref]
+name = "Equation reference"
+trigger = "eref"
+body = "\\eqref{${1}}"
+
+[commands.cite]
+name = "Citation"
+trigger = "cite"
+body = "\\cite{${1}}"
+
 [commands.vec]
 name = "Vector"
 trigger = "vec"
@@ -561,4 +591,3 @@ body = "\\prod_{${1}}^{${2}}"
 name = "Integral"
 trigger = "int"
 body = "\\int_{${1}}^{${2}} ${3} \\, d${4}"
-
