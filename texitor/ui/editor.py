@@ -267,6 +267,18 @@ class EditorWidget(Widget):
             # no indent guides in cont rows 
             content = _highlight(line_slice, cur_bg, tab_width=tw, indent_guides=False) 
 
+        cm = re.search(r'(?<!\\)%', line)
+        if cm:
+            comment_start = cm.start()
+            if comment_start <= col_start:
+                content.stylize(Style(color=_HL_COMMENT, bgcolor=cur_bg), 0, max(len(line_slice), 1))
+            elif comment_start < col_start + len(line_slice):
+                content.stylize()
+                    Style(color=_HL_COMMENT, bgcolor=cur_bg),
+                    max(0, comment_start - col_start),
+                    max(len(line_slice), 1),
+                )
+
         # highlight search matches on this line - needs adjusting for col_start offset tho
         if self._app.searchMatches:
             for row, mc, length in self._app.searchMatches:
@@ -345,4 +357,3 @@ class EditorWidget(Widget):
                 text.append(" " * (width - used), style=Style(bgcolor=cur_bg))
 
         return Strip(list(text.render(_CONSOLE))).adjust_cell_length(width)
-
