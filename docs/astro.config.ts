@@ -25,6 +25,9 @@ export default defineConfig({
       { tag: "meta", attrs: { name: "twitter:title", content: "txtr" } },
       { tag: "meta", attrs: { name: "twitter:description", content: "A Vim-style LaTeX editor for the terminal. LaTeX, fast." } },
       { tag: "meta", attrs: { name: "twitter:image", content: "https://txtr.benji.mom/og.png" } },
+      { tag: "meta", attrs: { name: "keywords", content: "latex, editor, terminal, vim, snippets, configuration, plugins" } },
+      { tag: "meta", attrs: { name: "author", content: "Benji Brown" } },
+
     ],
     components: {
       Hero: "./src/components/HeroWithBackground.astro",
