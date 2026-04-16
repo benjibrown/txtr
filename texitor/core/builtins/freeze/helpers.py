@@ -8,7 +8,6 @@ def parseFreezeArgs(raw):
     parts = shlex.split(raw) if raw else []
     if not parts:
         return {"mode": "auto", "lines": "", "output": ""}
-
     if parts[0] == "full":
         return {"mode": "full", "lines": "", "output": parts[1] if len(parts) > 1 else ""}
     if parts[0] == "lines":

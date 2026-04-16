@@ -4,9 +4,8 @@ version = "0.1.0"
 author = "benjibrown"
 entry = "__init__.py"
 
-commands = []
+commands = [
   { syntax = ":freeze [output]", description = "capture the current file or current visual selection" },
   { syntax = ":freeze full [output]", description = "capture the whole file even if a selection is active" },
   { syntax = ":freeze lines <start,end> [output]", description = "capture an explicit line range" }
 ]
-
