@@ -72,6 +72,9 @@ export default defineConfig({
         label: "Configuration",
         items: [
           { label: "Overview", slug: "config/overview" },
+          { label: "Compiler", slug: "config/compiler" },
+          { label: "Citations", slug: "config/citations" },
+          { label: "Plugins", slug: "config/plugins" },
           { label: "Themes", slug: "config/themes" },
         ],
       },
@@ -79,6 +82,8 @@ export default defineConfig({
         label: "Plugins",
         items: [
           {label: "Overview", slug: "plugins/overview"},
+          {label: "Development", slug: "plugins/development"},
+          {label: "Freeze Example", slug: "plugins/freeze-example"},
         ],
       },
     ],
