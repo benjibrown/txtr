@@ -104,7 +104,7 @@ class FreezePlugin(PluginBase):
             self.notify(app, f"freeze executable not found: {cmd[0]}", severity="error")
             return
 
-        proc = await asyncio.create_subprocess_exec()
+        proc = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
