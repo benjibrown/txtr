@@ -61,6 +61,7 @@ export default defineConfig({
           label: "Snippets",
           items: [
             { label: "Overview", slug: "snippets/overview" },
+            { labe: "Reference", slug: "snippets/reference"}
           ],
         },
         
