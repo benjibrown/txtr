@@ -50,7 +50,7 @@ Upperc case forms are also included:
 
 ## Common writing helpers 
 
-These are [tab-triggered](snippets/overview]). 
+These are [tab-triggered](/snippets/overview). 
 
 | Trigger | Expands to |
 | --- | --- | 
@@ -75,5 +75,36 @@ These are [tab-triggered](snippets/overview]).
 | `prod` | `\prod_{...}^{...}` |
 | `int` | `\int_{...}^{...} ... \, d....` |
 
+## Environments
+
+All triggers below expand to something of the form:
+```latex
+\begin{...}
+
+\end{...} % this is placed here automatically
+```
+
+| Trigger | Expands to |
+| --- | --- | 
+| `eq` | `equation` |
+| `ali` | `align` |
+| `gat` | `gather` |
+| `mlt` | `multiline` |
+| `cas` | `cases` |
+| `mat` | `pmatrix` |
+| `itm` | `itemize` |
+| `enu` | `enumerate` |
+| `fig` | `figure` |
 
 
+
+## Templates 
+| Trigger | Expands to |
+| --- | --- | 
+| `doc` | `basic article document` |
+| `beamer` | `beamer presentation skeleton` |
+| `rep` | `report skeleton` |
+
+If you want the exact source for every bunlde snippet, look in `texitor/latex/snippets.toml` of the txtr source code, or the seeded `~/.config/txtr/snippets.toml`.
+
+Happy snipping !
