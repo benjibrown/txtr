@@ -75,7 +75,7 @@ class FreezePlugin(PluginBase):
         settings = self._settings()
 
         try:
-            cmd, output_path = buildFreezeCommand()
+            cmd, output_path = buildFreezeCommand(
                 settings,
                 file_path,
                 line_arg=line_arg,
@@ -85,10 +85,10 @@ class FreezePlugin(PluginBase):
             self.notify(app, f"freeze config error: {e}", severity="error")
             return
 
-        self.open_panel()
+        self.open_panel(
             app,
             "freeze",
-            []
+            [
                 ("header", "Freeze screenshot"),
                 ("row", "file", file_path),
                 ("row", "lines", line_arg or "full file"),
@@ -104,3 +104,27 @@ class FreezePlugin(PluginBase):
             self.notify(app, f"freeze executable not found: {cmd[0]}", severity="error")
             return
 
+        proc = await asyncio.create_subprocess_exec()
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+        )
+
+        while True:
+            line = await proc.stdout.readline()
+            if not line:
+                break
+            text = line.decode(errors="replace").rstrip()
+            if text:
+                self.append_panel_text(app, text)
+
+        rc = await proc.wait()
+        if rc == 0:
+            self.append_panel_text(app, f"\ncreated {output_path}")
+            self.notify(app, f"freeze screenshot saved to {output_path}", timeout=5)
+        else:
+            self.append_panel_text(app, f"\nfreeze failed with exit {rc}")
+            self.notify(app, f"freeze failed (exit {rc})", severity="error")
+
+
+plugin = FreezePlugin
