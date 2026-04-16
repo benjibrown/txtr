@@ -143,11 +143,14 @@ ctx.modified
 ctx.current_line
 ctx.line_count
 ctx.selection_bounds
+ctx.selected_line_range
 ctx.selected_lines
 ctx.selected_text
 ```
 
 This is the preferred way to read editor state instead of scraping random app internals (understandbly tempting especially as the current level of context is pretty decent but not guaranteed to be perfect for every plugin's needs). 
+
+`selected_line_range` is a 1-based inclusive `(start, end)` tuple, which is useful for tools like `freeze` that want a literal `--lines 12,20` style range.
 
 ## Built-in UI helpers
 
@@ -253,4 +256,8 @@ auto_update = true
 
 When enabled, txtr checks the registry on startup and updates installed user plugins whose version differs from the registry.
 
-Go see the [Config](/config/overview) section for more on plugin config.
+## Next reading
+
+- [Plugin development](/plugins/development)
+- [Freeze plugin example](/plugins/freeze-example)
+- [Plugin config](/config/plugins)
