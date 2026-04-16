@@ -12,5 +12,14 @@
     "author": "benjibrown",
     "type": "single",
     "url": "https://raw.githubusercontent.com/benjibrown/txtr/main/texitor/core/builtins/wordcount.py"
+  },
+
+  "freeze": {
+    "description": "code screenshot plugin powered by the freeze CLI",
+    "version": "0.1.0",
+    "author": "benjibrown",
+    "type": "package",
+    "url": "https://github.com/benjibrown/txtr/archive/refs/heads/main.zip",
+    "subdir": "txtr-main/texitor/core/builtins/freeze"
   }
 }
