@@ -40,7 +40,7 @@ The built-in `freeze` plugin is a package plugin and is a good reference example
 The simplest plugin command looks like this:
 
 ```python
-registry.register()
+registry.register(
     ":myplugin <args>",
     "run my plugin",
     section="Plugin: myplugin",
@@ -57,9 +57,9 @@ Prefer:
 
 ```python
 ctx = self.context(app)
-````
+```
 
-over scraping random app internals directly ( if something is missing, submit an issue or PR to add it to the context! ).
+over scraping random app internals directly.
 
 Useful fields include:
 
@@ -89,7 +89,7 @@ If your plugin is named `freeze`, the default section is `[freeze]`.
 For quick UI:
 
 ```python
-self.open_panel(app, "title", [])
+self.open_panel(app, "title", [
     ("header", "Section"),
     ("row", "key", "value"),
     ("text", "streamed output"),
@@ -131,4 +131,3 @@ See [Freeze Example](/plugins/freeze-example) for a complete package-plugin exam
 - visual selection line ranges
 - subprocess execution
 - streamed panel output
-

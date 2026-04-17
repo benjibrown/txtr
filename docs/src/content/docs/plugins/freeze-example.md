@@ -74,4 +74,3 @@ custom_command = "freeze {FILE} {CONFIG_ARG} {LINES_ARG} {OUTPUT_ARG} {EXTRA_ARG
 - `:freeze lines 10,20` captures an explicit line range
 
 If the current buffer has unsaved changes, the plugin warns that freeze is using the last saved version on disk.
-
