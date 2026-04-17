@@ -10,8 +10,11 @@ commands = [
   { syntax = ":freeze lines <start,end> [output]", description = "capture an explicit line range" }
 ]
 
-config_options = []
+config_options = [
   { key = "executable", default = "freeze", description = "freeze executable to run" },
   { key = "config", default = "", description = "freeze config preset name or JSON config file path" },
   { key = "show_line_numbers", default = true, description = "show line numbers in screenshots" },
   { key = "extra_args", default = [], description = "extra CLI args appended to the freeze command" },
+  { key = "custom_command", default = "", description = "full custom command template using placeholders like {FILE}, {LINES_ARG}, and {OUTPUT_ARG}" },
+  { key = "auto_copy", default = false, description = "copy the generated image to the system clipboard after a successful capture" }
+]

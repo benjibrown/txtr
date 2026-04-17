@@ -21,7 +21,7 @@ class FreezePlugin(PluginBase):
         (":freeze full [output]", "capture the whole file even if a selection is active"),
         (":freeze lines <start,end> [output]", "capture an explicit line range"),
     ]
-    config_options = []
+    config_options = [
         {"key": "executable", "default": "freeze", "description": "freeze executable to run"},
         {"key": "config", "default": "", "description": "freeze config preset name or JSON config file path"},
         {"key": "show_line_numbers", "default": True, "description": "show line numbers in screenshots"},
@@ -49,6 +49,7 @@ class FreezePlugin(PluginBase):
         settings.setdefault("custom_command", "")
         settings.setdefault("extra_args", [])
         settings.setdefault("show_line_numbers", True)
+        settings.setdefault("auto_copy", False)
         return settings
 
     def _cmd_freeze(self, app, args):
@@ -130,6 +131,12 @@ class FreezePlugin(PluginBase):
         rc = await proc.wait()
         if rc == 0:
             self.append_panel_text(app, f"\ncreated {output_path}")
+            if settings.get("auto_copy", False):
+                copied = copyImageToSystem(output_path)
+                if copied:
+                    self.append_panel_text(app, "copied image to clipboard")
+                else:
+                    self.append_panel_text(app, "could not copy image to clipboard")
             self.notify(app, f"freeze screenshot saved to {output_path}", timeout=5)
         else:
             self.append_panel_text(app, f"\nfreeze failed with exit {rc}")
