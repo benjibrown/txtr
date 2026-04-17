@@ -106,6 +106,7 @@ class PluginBase:
     version: str = "0.1.0"
     author: str = ""
     commands: list = []
+    config_options: list = []
     config_section: str = ""
 
     def on_load(self, app):
@@ -472,6 +473,7 @@ def _metadataForPath(path: Path, is_pkg: bool) -> dict:
             "version": m.get("version", ""),
             "author": m.get("author", ""),
             "commands": _parseManifestCommands(m),
+            "config_options": _parseManifestConfigOptions(m),
             "type": "package",
             "path": str(path),
         }
@@ -481,9 +483,9 @@ def _metadataForPath(path: Path, is_pkg: bool) -> dict:
         src = path.read_text(errors="replace")
         tree = ast.parse(src)
     except Exception:
-        return {"name": name, "description": "", "version": "", "author": "", "commands": [], "type": "single file", "path": str(path)}
+        return {"name": name, "description": "", "version": "", "author": "", "commands": [], "config_options": [], "type": "single file", "path": str(path)}
 
-    meta = {"name": name, "description": "", "version": "", "author": "", "commands": [], "type": "single file", "path": str(path)}
+    meta = {"name": name, "description": "", "version": "", "author": "", "commands": [], "config_options": [], "type": "single file", "path": str(path)}
     for node in ast.walk(tree):
         if not isinstance(node, ast.ClassDef):
             continue
@@ -502,6 +504,10 @@ def _metadataForPath(path: Path, is_pkg: bool) -> dict:
                     parsed = _parseCommandList(stmt.value)
                     if parsed:
                         meta["commands"] = parsed
+                elif target.id == "config_options":
+                    parsed = _parseConfigOptions(stmt.value)
+                    if parsed:
+                        meta["config_options"] = parsed
     return meta
 
 
@@ -524,6 +530,10 @@ def _parseManifestCommands(manifest: dict) -> list:
     return out
 
 
+def _parseManifestConfigOptions(manifest: dict) -> list:
+    return _normalizeConfigOptions(manifest.get("config_options", []))
+
+
 def _parseCommandList(node) -> list: 
     try:
         value = ast.literal_eval(node)
@@ -543,6 +553,32 @@ def _parseCommandList(node) -> list:
             description = str(item[1]).strip()
             if syntax and description:
                 out.append((syntax, description))
+    return out
+
+
+def _parseConfigOptions(node) -> list:
+    try:
+        value = ast.literal_eval(node)
+    except Exception:
+        return []
+    return _normalizeConfigOptions(value)
+
+
+def _normalizeConfigOptions(value) -> list:
+    if not isinstance(value, list):
+        return []
+    out = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        key = str(item.get("key", "")).strip()
+        if not key:
+            continue
+        out.append({
+            "key": key,
+            "default": item.get("default", ""),
+            "description": str(item.get("description", "")).strip(),
+        })
     return out
 
 
