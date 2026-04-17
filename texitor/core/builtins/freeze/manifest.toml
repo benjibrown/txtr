@@ -9,3 +9,9 @@ commands = [
   { syntax = ":freeze full [output]", description = "capture the whole file even if a selection is active" },
   { syntax = ":freeze lines <start,end> [output]", description = "capture an explicit line range" }
 ]
+
+config_options = []
+  { key = "executable", default = "freeze", description = "freeze executable to run" },
+  { key = "config", default = "", description = "freeze config preset name or JSON config file path" },
+  { key = "show_line_numbers", default = true, description = "show line numbers in screenshots" },
+  { key = "extra_args", default = [], description = "extra CLI args appended to the freeze command" },

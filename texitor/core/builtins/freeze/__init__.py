@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import shutil
 
+from texitor.core.clipboard import copyImageToSystem
 from texitor.core.plugins import PluginBase
 from texitor.core.cmdregistry import registry
 
@@ -19,6 +20,14 @@ class FreezePlugin(PluginBase):
         (":freeze [output]", "capture the current file or current visual selection"),
         (":freeze full [output]", "capture the whole file even if a selection is active"),
         (":freeze lines <start,end> [output]", "capture an explicit line range"),
+    ]
+    config_options = []
+        {"key": "executable", "default": "freeze", "description": "freeze executable to run"},
+        {"key": "config", "default": "", "description": "freeze config preset name or JSON config file path"},
+        {"key": "show_line_numbers", "default": True, "description": "show line numbers in screenshots"},
+        {"key": "extra_args", "default": [], "description": "extra CLI args appended to the freeze command"},
+        {"key": "custom_command", "default": "", "description": "full custom command template using placeholders like {FILE}, {LINES_ARG}, and {OUTPUT_ARG}"},
+        {"key": "auto_copy", "default": False, "description": "copy the generated image to the system clipboard after a successful capture"},
     ]
 
     def on_load(self, app):
