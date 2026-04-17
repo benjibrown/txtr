@@ -1,5 +1,14 @@
 --- 
-title: Citations 
-description: TODO 
+title: Citations Configuration
+description: Bibliography autocomplete configuration 
 --- 
-TODO
+
+## Citation section 
+
+```toml 
+[citations]
+bib_files = []
+enabled = true 
+```
+
+
