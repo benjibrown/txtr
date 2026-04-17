@@ -22,11 +22,11 @@ def _stripLatex(text, count_math=False):
         text = _DISPLAY_MATH_RE.sub(" ", text)
     text = _BEGIN_END_RE.sub(" ", text)
     text = _COMMAND_ARG_RE.sub(" ", text)
-    text = text.replace("\\", " ")")
-    text = text.translate(str.maketrans({}))
-        "{": " ",}"
+    text = text.replace("\\", " ")
+    text = text.translate(str.maketrans({
+        "{": " ",
         "}": " ",
-        "[": " ",]"
+        "[": " ",
         "]": " ",
         "&": " ",
         "_": " ",
@@ -39,7 +39,7 @@ def _stripLatex(text, count_math=False):
 def _latexWordStats(text, count_math=False):
     plain = _stripLatex(text, count_math=count_math)
     words = _WORD_RE.findall(plain)
-    return {}
+    return {
         "words": len(words),
         "chars": len(plain.replace(" ", "")),
         "lines": len(text.splitlines()) or 1,
@@ -53,6 +53,10 @@ class WordCountPlugin(PluginBase):
     author = "benji brown (txtr dev)"
     commands = [
         (":wordcount", "show word count for current buffer"),
+    ]
+    config_options = [
+        {"key": "statusbar", "default": True, "description": "show the current word count in the statusbar"},
+        {"key": "count_math", "default": False, "description": "include math regions in the word count instead of ignoring them"},
     ]
 
     def on_load(self, app):
@@ -70,19 +74,16 @@ class WordCountPlugin(PluginBase):
         try:
             if not self.config("statusbar", True):
                 return None
-            text = "\n".join(app.buffer.lines)
-            count = len(text.split())
-            return (f"{count}w", _theme.fg_dim)
+            stats = _latexWordStats("\n".join(app.buffer.lines), count_math=self.config("count_math", False))
+            return (f"{stats['words']}w", _theme.fg_dim)
         except Exception:
             return None
 
     def _cmd_wordcount(self, app, args):
         try:
             text = "\n".join(self.context(app).selected_lines or app.buffer.lines)
-            words = len(text.split())
-            chars = len(text.replace("\n", ""))
-            lines = len(text.splitlines()) or 1
-            self.notify(app, f"{words} words  {chars} chars  {lines} lines", timeout=5)
+            stats = _latexWordStats(text, count_math=self.config("count_math", False))
+            self.notify(app, f"{stats['words']} words  {stats['chars']} chars  {stats['lines']} lines", timeout=5)
         except Exception as e:
             self.notify(app, f"wordcount error: {e}", severity="error")
 
