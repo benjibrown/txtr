@@ -46,4 +46,3 @@ The freeze plugin also supports custom command templating. See the [Freeze Examp
 ## Built-in overrides
 
 Built-in plugins ship with txtr, but if a built-in plugin is also present in the registry you can update it into your user plugin directory. That user-installed copy becomes the override txtr uses.
-
