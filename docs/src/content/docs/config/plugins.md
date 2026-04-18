@@ -23,6 +23,7 @@ Plugins can also read their own named config sections.
 ```toml
 [wordcount]
 statusbar = true
+count_math = false
 ```
 
 ### Freeze
@@ -34,6 +35,7 @@ config = "full"
 show_line_numbers = true
 extra_args = ["--theme", "dracula"]
 custom_command = ""
+auto_copy = false
 ```
 
 `freeze.config` can be either:
@@ -42,6 +44,8 @@ custom_command = ""
 - or a real JSON config path like `~/.config/freeze/user.json`
 
 The freeze plugin also supports custom command templating. See the [Freeze Example](/plugins/freeze-example) page for the placeholder list.
+
+`wordcount.count_math = false` keeps the count focused on prose by ignoring math regions.
 
 ## Built-in overrides
 
