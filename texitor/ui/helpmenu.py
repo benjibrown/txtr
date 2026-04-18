@@ -119,8 +119,7 @@ def _pluginRows():
             inst = pluginLoader.get(name)
             ver = getattr(inst, "version", "") or ""
             author = getattr(inst, "author", "") or ""
-            desc = getattr(inst, "description", "") or ""
-            right = f"v{ver}" + (f"  by {author}" if author else "") + (f"  - {desc}" if desc else "")
+            right = f"v{ver}" + (f"  by {author}" if author else "")
             rows.append(("row", name, right))
     else:
         rows.append(("header", "Loaded plugins"))
@@ -188,6 +187,8 @@ class HelpMenu(Widget):
         self._scrollTop = 0
         self._rows = []
         self._tabRanges = []
+        self._panelWidth = 84
+        self._panelHeight = 26
 
     def registerSection(self, title, rowsFn):
         self._sections.append((title, rowsFn))
@@ -197,6 +198,7 @@ class HelpMenu(Widget):
         self._scrollTop = 0
         self._rows = self._buildRows()
         self._tabRanges = []
+        self._fitToScreen()
         self._center()
         self.display = True
         self.refresh()
@@ -205,14 +207,22 @@ class HelpMenu(Widget):
         # calculate offset to center the widget on screen
         screenW = self.app.size.width
         screenH = self.app.size.height
-        x = max(0, (screenW - 84) // 2)
-        y = max(0, (screenH - 26) // 2)
+        x = max(0, (screenW - self._panelWidth) // 2)
+        y = max(0, (screenH - self._panelHeight) // 2)
         self.styles.offset = (x, y)
+
+    def _fitToScreen(self):
+        self._panelWidth = min(84, max(28, self.app.size.width - 2))
+        self._panelHeight = min(26, max(10, self.app.size.height - 2))
+        self.styles.width = self._panelWidth
+        self.styles.height = self._panelHeight
 
     def on_resize(self, event):
         # re-center if terminal is resized while open
         if self.display:
+            self._fitToScreen()
             self._center()
+            self.refresh()
 
     def close(self):
         self.display = False
@@ -226,7 +236,7 @@ class HelpMenu(Widget):
 
     def scrollDown(self, n=1):
         # content area is height - 4 (top border + tab bar + footer + bottom border)
-        maxScroll = max(0, len(self._rows) - (self.size.height - 4))
+        maxScroll = max(0, len(self._rows) - (self.size.height - 5))
         self._scrollTop = min(self._scrollTop + n, maxScroll)
         self.refresh()
 
@@ -272,10 +282,8 @@ class HelpMenu(Widget):
         if y == 2:
             return self._renderDivider(width, inner)
         if y == height - 2:
-            return self._renderDivider(width, inner)
-        if y == height - 1:
             return self._renderFooter(width, inner)
-        if y == height:
+        if y == height - 1:
             return self._renderBottomBorder(width, inner)
 
         # content rows
