@@ -32,9 +32,9 @@ def _entryScore(entry):
     return (filled, detail)
 
 
-def _iterBibPaths(dir_path, extra_paths=None):
+def _iterBibPaths(dir_path, extra_paths=None, include_dir=True):
     seen = set()
-    dirs_to_scan = [Path(dir_path)]
+    dirs_to_scan = [Path(dir_path)] if include_dir else []
 
     for bib_path in (extra_paths or []):
         p = Path(bib_path).expanduser()
@@ -71,11 +71,11 @@ class CiteCompleter:
         self._sources = []
         self._signature = ()
 
-    def loadDir(self, dir_path, extra_paths=None):
+    def loadDir(self, dir_path, extra_paths=None, include_dir=True):
         self._entries = []
         self._sources = []
         deduped = {}
-        for bib_file in _iterBibPaths(dir_path, extra_paths=extra_paths):
+        for bib_file in _iterBibPaths(dir_path, extra_paths=extra_paths, include_dir=include_dir):
             self._sources.append(bib_file)
             for entry in _bib.parse(bib_file):
                 key = entry.get("key", "")
@@ -86,7 +86,7 @@ class CiteCompleter:
                 if existing is None or _entryScore(entry) > _entryScore(existing):
                     deduped[dedupe_key] = dict(entry)
         self._entries = list(deduped.values())
-        self._signature = self.scanSignature(dir_path, extra_paths=extra_paths)
+        self._signature = self.scanSignature(dir_path, extra_paths=extra_paths, include_dir=include_dir)
         return self._entries
 
     def clear(self):
@@ -100,9 +100,9 @@ class CiteCompleter:
     def sourceFiles(self):
         return list(self._sources)
 
-    def scanSignature(self, dir_path, extra_paths=None):
+    def scanSignature(self, dir_path, extra_paths=None, include_dir=True):
         out = []
-        for bib_file in _iterBibPaths(dir_path, extra_paths=extra_paths):
+        for bib_file in _iterBibPaths(dir_path, extra_paths=extra_paths, include_dir=include_dir):
             try:
                 stat = bib_file.stat()
             except OSError:
