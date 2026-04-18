@@ -14,7 +14,7 @@ class KeyBinding:
     value: str
 
 
-_NAMED_KEYS = {}
+_NAMED_KEYS = {
     "escape", "enter", "tab", "backspace", "up", "down", "left", "right",
     "space", "home", "end", "pageup", "pagedown", "delete", "insert",
 }
