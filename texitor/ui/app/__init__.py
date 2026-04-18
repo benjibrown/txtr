@@ -281,18 +281,35 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         except Exception:
             pass
 
+    def _closeOverlayPanels(self, except_name=None):
+        if except_name != "help" and self.helpOpen:
+            self.helpOpen = False
+            self.query_one(HelpMenu).close()
+        if except_name != "config" and self.configOpen:
+            self.configOpen = False
+            self.query_one(ConfigPanel).close()
+        if except_name != "info" and self.infoOpen:
+            self.infoOpen = False
+            self.query_one(InfoPanel).close()
+        if except_name != "build" and self.buildOpen:
+            self.buildOpen = False
+            self.query_one(BuildPanel).display = False
+
     def _notifyNewPlugins(self):
         enabled = cfg.get("plugins", "enabled", [])
+        known = set(cfg.get("plugins", "known", []))
         newPlugins = sorted(
             meta["name"]
             for meta in pluginLoader.installedMetadata()
             if meta.get("path", "").startswith(str(PLUGIN_DIR))
             and meta["name"] not in enabled
+            and meta["name"] not in known
         )
         if newPlugins:
             count = len(newPlugins)
             suffix = "s" if count != 1 else ""
             self.notify(f"{count} new plugin{suffix} detected - :plugin list to see them", timeout=5)
+            cfg.set("plugins", "known", sorted(known | set(newPlugins)))
 
     def _watchKick(self):
         # signal the debounce loop that content changed
@@ -303,6 +320,9 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
 
     def _citationsAutoscanEnabled(self):
         return self._citationsEnabled() and cfg.get("citations", "autoscan", True)
+
+    def _citationsScanLocalDir(self):
+        return cfg.get("citations", "scan_local_dir", True)
 
     def _stopBibAutoscan(self):
         if self._bibWatchTask and not self._bibWatchTask.done():
@@ -328,7 +348,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
                 from pathlib import Path
                 p = Path(self.buffer.path).expanduser().resolve()
                 extra = cfg.get("citations", "bib_files", [])
-                sig = self.citeCompleter.scanSignature(p.parent, extra_paths=extra)
+                sig = self.citeCompleter.scanSignature(p.parent, extra_paths=extra, include_dir=self._citationsScanLocalDir())
                 if sig != self._bibSignature:
                     prev = self.citeCompleter.entryCount()
                     self._loadBibsForFile(str(p), autoscan=True, previous_count=prev)
@@ -361,6 +381,15 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
     def on_resize(self, event):
         if self.splashOpen:
             self.query_one(SplashWidget).reposition()
+        if self.helpOpen:
+            self.query_one(HelpMenu).on_resize(event)
+        if self.configOpen:
+            self.query_one(ConfigPanel).on_resize(event)
+        if self.infoOpen:
+            self.query_one(InfoPanel).on_resize(event)
+        if self.buildOpen:
+            panel = self.query_one(BuildPanel)
+            panel.refresh()
 
     # key dispatch stuff
     def on_key(self, event: Key):
@@ -663,7 +692,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
             return
         extra = cfg.get("citations", "bib_files", [])
         before = self.citeCompleter.entryCount() if previous_count is None else previous_count
-        self.citeCompleter.loadDir(p.parent, extra_paths=extra)
+        self.citeCompleter.loadDir(p.parent, extra_paths=extra, include_dir=self._citationsScanLocalDir())
         self._bibSignature = self.citeCompleter.signature()
         n = self.citeCompleter.entryCount()
         if autoscan:
