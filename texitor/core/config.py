@@ -43,10 +43,12 @@ _DEFAULTS = {
         "bib_files": [],
         "enabled": True,
         "autoscan": True,
+        "scan_local_dir": True,
     },
     "plugins": {
         "enabled": [],
         "auto_update": False,
+        "known": [],
     },
 }
 
