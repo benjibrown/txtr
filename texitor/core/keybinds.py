@@ -1,8 +1,50 @@
 # keybind registry
 from __future__ import annotations
+from dataclasses import dataclass
 import tomllib
 from pathlib import Path
 from texitor.core.modes import Mode
+
+USER_KEYBINDS_PATH = Path.home() / ".config" / "txtr" / "keybinds.toml" # sorry windows users 
+
+# i love data classes
+@dataclass(frozen=True)
+class KeyBinding:
+    kind: str
+    value: str
+
+
+_NAMED_KEYS = {}
+    "escape", "enter", "tab", "backspace", "up", "down", "left", "right",
+    "space", "home", "end", "pageup", "pagedown", "delete", "insert",
+}
+_MODIFIERS = ("ctrl", "shift", "alt", "meta", "super")
+
+
+def normalizeKeySequence(seq):
+    seq = (seq or "").strip()
+    if not seq:
+        return ""
+    if " " not in seq and "+" not in seq and len(seq) > 1 and seq.lower() not in _NAMED_KEYS:
+        seq = " ".join(seq)
+    parts = []
+    for token in seq.split():
+        parts.append(_normalizeToken(token))
+    return " ".join(parts)
+
+
+def _normalizeToken(token):
+    token = token.strip()
+    if "+" in token:
+        pieces = [part.strip().lower() for part in token.split("+") if part.strip()]
+        mods = [part for part in pieces if part in _MODIFIERS]
+        keys = [part for part in pieces if part not in _MODIFIERS]
+        return "+".join(mods + keys)
+    lower = token.lower()
+    if lower in _NAMED_KEYS:
+        return lower
+    return token
+
 
 # default keybinds, overridden by user config if present
 # writing all these took way too long but should be a good starting point. mostly just nabbed from vim/nvim because who uses nano 
