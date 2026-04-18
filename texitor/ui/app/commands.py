@@ -190,6 +190,7 @@ class CommandsMixin:
     @command(":snippets", "open snippets tab", section="View", aliases=[":snips"])
     def _cmd_snippets(self, args):
         from texitor.ui.helpmenu import HelpMenu
+        self._closeOverlayPanels(except_name="help")
         self.helpOpen = True
         menu = self.query_one(HelpMenu)
         menu.open()
@@ -198,6 +199,7 @@ class CommandsMixin:
     @command(":config", "open config panel", section="View", aliases=[":config show"])
     def _cmd_configShow(self, args):
         from texitor.ui.configpanel import ConfigPanel
+        self._closeOverlayPanels(except_name="config")
         self.configOpen = True
         self.query_one(ConfigPanel).open()
 
@@ -323,6 +325,7 @@ class CommandsMixin:
                     self._buildPrimed = True
                     self.notify(f"build succeeded ({engine})", timeout=3)
                 else:
+                    self._closeOverlayPanels(except_name="build")
                     panel.display = True
                     self.buildOpen = True
                     self.notify(f"build failed (exit {rc})", severity="error", timeout=5)
@@ -385,6 +388,7 @@ class CommandsMixin:
         panel = self.query_one(BuildPanel)
         panel.reset(engine, str(build_path))
         if not autohide:
+            self._closeOverlayPanels(except_name="build")
             panel.display = True
             self.buildOpen = True
 
@@ -417,6 +421,7 @@ class CommandsMixin:
                         self.buildOpen = False
                 else:
                     self._buildStatus = "failed"
+                    self._closeOverlayPanels(except_name="build")
                     panel.display = True
                     self.buildOpen = True
                     self.notify(f"build failed (exit {rc})", severity="error", timeout=5)
@@ -428,6 +433,7 @@ class CommandsMixin:
                 panel.appendLine(f"error: {e}", True)
                 panel.setDone(1)
                 self._buildStatus = "error"
+                self._closeOverlayPanels(except_name="build")
                 panel.display = True
                 self.buildOpen = True
 
@@ -461,6 +467,7 @@ class CommandsMixin:
         if not panel._lines:
             self.notify("no build output yet - run :build first", severity="warning")
             return
+        self._closeOverlayPanels(except_name="build")
         panel.display = True
         self.buildOpen = True
 
@@ -519,6 +526,7 @@ class CommandsMixin:
             panel.appendLine("  to use custom cmd: set compiler.custom_cmd", autoScroll=False)
         panel._scroll = 0
         panel.setDone(0)
+        self._closeOverlayPanels(except_name="build")
         panel.display = True
         self.buildOpen = True
 
@@ -579,6 +587,7 @@ class CommandsMixin:
                     "type": "package" if getattr(inst, "_txtr_is_package", False) else "single file",
                     "path": getattr(inst, "_txtr_source_path", ""),
                     "commands": getattr(inst, "commands", []),
+                    "config_options": getattr(inst, "config_options", []),
                 }
             else:
                 meta = readMetadata(arg)
@@ -589,7 +598,10 @@ class CommandsMixin:
             if not plugin_cmds:
                 plugin_cmds = meta.get("commands", [])
 
-            self._openInfoPanel(f"plugin: {canonical}", self._pluginInfoRows(meta, loaded, plugin_cmds))
+            self._openInfoPanel(
+                f"plugin: {canonical}",
+                self._pluginInfoRows(meta, loaded, plugin_cmds, config_options=meta.get("config_options", [])),
+            )
 
         elif action == "enable":
             if not arg:
@@ -609,6 +621,7 @@ class CommandsMixin:
                 inst = pluginLoader.get(arg)
                 canonical = inst.name if inst and inst.name else arg
                 self._pluginEnableName(arg, canonical)
+                self._pluginRememberKnown(canonical)
                 self.notify(f"plugin '{canonical}' enabled")
 
         elif action == "disable":
@@ -623,6 +636,7 @@ class CommandsMixin:
                 return
             ok = pluginLoader.unload(self, arg)
             self._pluginRemoveEnabledNames(arg, canonical)
+            self._pluginRememberKnown(canonical)
             if ok or canonical not in enabled:
                 self.notify(f"plugin '{canonical}' disabled")
             else:
@@ -863,10 +877,18 @@ class CommandsMixin:
         enabled = [name for name in cfg.get("plugins", "enabled", []) if name != old_name and name != canonical]
         enabled.append(canonical)
         cfg.set("plugins", "enabled", enabled)
+        self._pluginRememberKnown(canonical)
 
     def _pluginRemoveEnabledNames(self, *names):
         enabled = [name for name in cfg.get("plugins", "enabled", []) if name not in names]
         cfg.set("plugins", "enabled", enabled)
+
+    def _pluginRememberKnown(self, *names):
+        known = set(cfg.get("plugins", "known", []))
+        for name in names:
+            if name:
+                known.add(name)
+        cfg.set("plugins", "known", sorted(known))
 
     def _plugin_uninstall(self, name, plugin_dir):
         import shutil
@@ -889,6 +911,8 @@ class CommandsMixin:
         canonical = meta.get("name") or name
         pluginLoader.unload(self, canonical)
         self._pluginRemoveEnabledNames(name, canonical)
+        known = [item for item in cfg.get("plugins", "known", []) if item not in (name, canonical)]
+        cfg.set("plugins", "known", known)
 
         try:
             if path.is_dir():
