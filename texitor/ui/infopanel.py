@@ -26,8 +26,8 @@ _TITLE_FG = _theme.accent2
 
 _TL = "╭"; _TR = "╮"; _BL = "╰"; _BR = "╯"; _H = "─"; _V = "│"
 
-_W = 76
-_H_SIZE = 24
+_MAX_W = 76
+_MAX_H = 24
 _ROW_KEY_WIDTH = 16
 
 
@@ -50,12 +50,15 @@ class InfoPanel(Widget):
         self._rows = []
         self._scrollTop = 0
         self._cursor = -1
+        self._panelWidth = _MAX_W
+        self._panelHeight = _MAX_H
 
     def open(self, title, rows, footer=None):
         self._title = f" {title} "
         self._sourceRows = list(rows)
         self._scrollTop = 0
         self._setFooter(footer)
+        self._fitToScreen()
         self._rebuildRows()
         self._center()
         self.display = True
@@ -67,6 +70,7 @@ class InfoPanel(Widget):
     def setRows(self, rows, footer=None):
         self._sourceRows = list(rows)
         self._setFooter(footer)
+        self._fitToScreen()
         self._rebuildRows()
         self.refresh()
 
@@ -89,7 +93,7 @@ class InfoPanel(Widget):
         self.refresh()
 
     def scrollDown(self, n=1):
-        contentH = _H_SIZE - 4
+        contentH = self._contentHeight()
         maxScroll = max(0, len(self._rows) - contentH)
         self._scrollTop = min(self._scrollTop + n, maxScroll)
         self.refresh()
@@ -146,13 +150,13 @@ class InfoPanel(Widget):
     def _center(self):
         screenW = self.app.size.width
         screenH = self.app.size.height
-        x = max(0, (screenW - _W) // 2)
-        y = max(0, (screenH - _H_SIZE) // 2)
+        x = max(0, (screenW - self._panelWidth) // 2)
+        y = max(0, (screenH - self._panelHeight) // 2)
         self.styles.offset = (x, y)
 
     def _rebuildRows(self, preserve_cursor=False):
         selected_action = self.activate() if preserve_cursor else None
-        self._rows = _expandRows(self._sourceRows)
+        self._rows = _expandRows(self._sourceRows, self.size.width or self._panelWidth)
 
         if selected_action:
             self._cursor = -1
@@ -177,18 +181,30 @@ class InfoPanel(Widget):
         return row[0] == "row" and len(row) >= 4 and row[3] is not None
 
     def _revealCursor(self):
-        contentH = _H_SIZE - 4
+        contentH = self._contentHeight()
         if self._cursor < self._scrollTop:
             self._scrollTop = self._cursor
         elif self._cursor >= self._scrollTop + contentH:
             self._scrollTop = self._cursor - contentH + 1
 
     def _scrollToBottom(self):
-        contentH = _H_SIZE - 4
+        contentH = self._contentHeight()
         self._scrollTop = max(0, len(self._rows) - contentH)
+
+    def _fitToScreen(self):
+        screenW = self.app.size.width
+        screenH = self.app.size.height
+        self._panelWidth = min(_MAX_W, max(24, screenW - 2))
+        self._panelHeight = min(_MAX_H, max(8, screenH - 2))
+        self.styles.width = self._panelWidth
+        self.styles.height = self._panelHeight
+
+    def _contentHeight(self):
+        return max(1, self.size.height - 4)
 
     def on_resize(self, event):
         if self.display:
+            self._fitToScreen()
             self._rebuildRows(preserve_cursor=True)
             self._center()
 
