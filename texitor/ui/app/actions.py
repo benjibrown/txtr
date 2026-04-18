@@ -117,6 +117,8 @@ class ActionsMixin:
     # help menu
 
     def _action_open_help(self):
+        if hasattr(self, "_closeOverlayPanels"):
+            self._closeOverlayPanels(except_name="help")
         self.helpOpen = True
         self.query_one("HelpMenu").open()
 
