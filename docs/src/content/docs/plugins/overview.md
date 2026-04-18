@@ -83,8 +83,11 @@ txtr reads these metadata fields from the plugin:
 - `version`
 - `author`
 - `commands`
+- `config_options`
 
 `commands` is optional but recommended. It lets `:plugin info <name>` show command docs even when the plugin is installed but not currently loaded.
+
+`config_options` is also optional but useful. If you provide it, `:plugin info <name>` can show the plugin's config keys, defaults, and what each setting does.
 
 ## Hooks
 

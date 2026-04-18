@@ -32,8 +32,11 @@ The built-in `freeze` plugin is a package plugin and is a good reference example
 - `version`
 - `author`
 - `commands`
+- `config_options`
 
 `commands` is worth filling out even for installed-but-not-loaded plugins because txtr can show it in `:plugin info`.
+
+`config_options` lets txtr surface your config schema in `:plugin info`.
 
 ## Command patterns
 
@@ -83,6 +86,15 @@ self.config()
 ```
 
 If your plugin is named `freeze`, the default section is `[freeze]`.
+
+If you want txtr to document your settings in the plugin info panel, expose them like this:
+
+```python
+config_options = [
+    {"key": "enabled", "default": True, "description": "turn the plugin on"},
+    {"key": "style", "default": "compact", "description": "rendering style"},
+]
+```
 
 ## UI helpers
 

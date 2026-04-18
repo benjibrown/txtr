@@ -41,9 +41,12 @@ config = "full"
 show_line_numbers = true
 extra_args = ["--theme", "dracula"]
 custom_command = ""
+auto_copy = false
 ```
 
 `config` may be a built-in freeze preset like `full` or a filesystem path like `~/.config/freeze/user.json`.
+
+If `auto_copy = true`, txtr will also try to copy the generated image to your system clipboard after a successful capture.
 
 ## Custom command placeholders
 
