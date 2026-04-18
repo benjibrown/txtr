@@ -4,6 +4,7 @@
 
 import subprocess
 import sys
+from pathlib import Path
 
 
 def _run(cmd, input=None):
@@ -64,3 +65,42 @@ def pasteFromSystem():
     if ok: return out.decode(errors="replace")
 
     return ""
+
+
+def copyImageToSystem(path):
+    p = Path(path).expanduser()
+    try:
+        data = p.read_bytes()
+    except OSError:
+        return False
+
+    ext = p.suffix.lower()
+    mime = {
+        ".png": "image/png",
+        ".webp": "image/webp",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".svg": "image/svg+xml",
+    }.get(ext, "application/octet-stream")
+
+    if sys.platform == "darwin":
+        try:
+            proc = subprocess.Popen(["pbcopy"], stdin=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            proc.stdin.write(data)
+            proc.stdin.close()
+            return True
+        except FileNotFoundError:
+            pass
+
+    for cmd in (
+        ["wl-copy", "--type", mime],
+        ["xclip", "-selection", "clipboard", "-t", mime, "-i"],
+    ):
+        try:
+            proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            proc.stdin.write(data)
+            proc.stdin.close()
+            return True
+        except FileNotFoundError:
+            continue
+    return False
