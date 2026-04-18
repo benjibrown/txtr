@@ -58,16 +58,19 @@ class CommandsMixin:
 
     def _openInfoPanel(self, title, rows, footer=None):
         from texitor.ui.infopanel import InfoPanel
+        self._closeOverlayPanels(except_name="info")
         self.infoOpen = True
         self.query_one(InfoPanel).open(title, rows, footer=footer)
 
     def _setInfoPanelRows(self, rows, footer=None):
         from texitor.ui.infopanel import InfoPanel
+        self._closeOverlayPanels(except_name="info")
         self.infoOpen = True
         self.query_one(InfoPanel).setRows(rows, footer=footer)
 
     def _appendInfoPanelText(self, text, autoScroll=True):
         from texitor.ui.infopanel import InfoPanel
+        self._closeOverlayPanels(except_name="info")
         self.infoOpen = True
         self.query_one(InfoPanel).appendText(text, autoScroll=autoScroll)
 
@@ -82,7 +85,7 @@ class CommandsMixin:
             self.notify(f"could not fetch registry: {e}", severity="error")
             return None
 
-    def _pluginInfoRows(self, meta, loaded, plugin_cmds):
+    def _pluginInfoRows(self, meta, loaded, plugin_cmds, config_options=None):
         rows = [
             ("row", "name", meta.get("name") or "(unknown)"),
             ("row", "version", meta.get("version") or "(unknown)"),
@@ -96,7 +99,16 @@ class CommandsMixin:
             rows.append(("gap",))
             rows.append(("header", "Commands"))
             for cmd, desc in plugin_cmds:
-                rows.append(("row", cmd, desc))
+                rows.append(("text", f"{cmd}  {desc}".strip()))
+        if config_options:
+            rows.append(("gap",))
+            rows.append(("header", "Config"))
+            for item in config_options:
+                label = item["key"]
+                default = item.get("default", "")
+                if default not in ("", None):
+                    label += f"  (default: {default})"
+                rows.append(("row", label, item.get("description") or "(no description)"))
         return rows
 
         
