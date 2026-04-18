@@ -207,21 +207,23 @@ class InfoPanel(Widget):
             self._fitToScreen()
             self._rebuildRows(preserve_cursor=True)
             self._center()
+            self.refresh()
 
     def get_content_height(self, container, viewport, width):
-        return _H_SIZE
+        return self.size.height or self._panelHeight
 
     def render_line(self, y):
         width = self.size.width
         inner = width - 2
+        height = self.size.height
 
         if y == 0:
             return _renderTopBorder(width, inner, self._title)
-        if y == _H_SIZE - 2:
+        if y == height - 3:
             return _renderDivider(width, inner)
-        if y == _H_SIZE - 1:
+        if y == height - 2:
             return _renderFooter(width, inner, self._footer)
-        if y == _H_SIZE:
+        if y == height - 1:
             return _renderBottomBorder(width, inner)
 
         contentY = y - 1
@@ -266,10 +268,11 @@ def _wrapText(text, width):
     return lines or [""]
 
 
-def _expandRows(rows):
+def _expandRows(rows, width):
     out = []
-    textWidth = _W - 2 - 2
-    valueWidth = _W - 2 - 2 - _ROW_KEY_WIDTH - 2
+    usable = max(24, width or _MAX_W)
+    textWidth = usable - 4
+    valueWidth = usable - 4 - _ROW_KEY_WIDTH - 2
     for row in rows:
         kind = row[0]
         if kind in ("header", "gap"):
