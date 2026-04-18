@@ -26,8 +26,8 @@ _TITLE_FG   = _theme.accent2
 
 _TL = "╭"; _TR = "╮"; _BL = "╰"; _BR = "╯"; _H = "─"; _V = "│"
 
-_W = 60   # popup width
-_H_SIZE = 24  # popup height
+_MAX_W = 60
+_MAX_H = 24
 
 
 class ConfigPanel(Widget):
@@ -45,11 +45,14 @@ class ConfigPanel(Widget):
         super().__init__()
         self._rows  = []
         self._scrollTop = 0
+        self._panelWidth = _MAX_W
+        self._panelHeight = _MAX_H
 
     def open(self):
         from texitor.core.config import config as cfg
         self._rows = _buildRows(cfg.all())
         self._scrollTop = 0
+        self._fitToScreen()
         self._center()
         self.display = True
         self.refresh()
@@ -58,7 +61,7 @@ class ConfigPanel(Widget):
         self.display = False
 
     def scrollDown(self, n=1):
-        contentH = _H_SIZE - 4
+        contentH = max(1, self.size.height - 4)
         maxScroll = max(0, len(self._rows) - contentH)
         self._scrollTop = min(self._scrollTop + n, maxScroll)
         self.refresh()
@@ -76,25 +79,36 @@ class ConfigPanel(Widget):
     def _center(self):
         screenW = self.app.size.width
         screenH = self.app.size.height
-        x = max(0, (screenW - _W) // 2)
-        y = max(0, (screenH - _H_SIZE) // 2)
+        x = max(0, (screenW - self._panelWidth) // 2)
+        y = max(0, (screenH - self._panelHeight) // 2)
         self.styles.offset = (x, y)
+
+    def _fitToScreen(self):
+        screenW = self.app.size.width
+        screenH = self.app.size.height
+        self._panelWidth = min(_MAX_W, max(24, screenW - 2))
+        self._panelHeight = min(_MAX_H, max(8, screenH - 2))
+        self.styles.width = self._panelWidth
+        self.styles.height = self._panelHeight
 
     def on_resize(self, event):
         if self.display:
+            self._fitToScreen()
             self._center()
+            self.refresh()
 
     def get_content_height(self, container, viewport, width):
-        return _H_SIZE
+        return self.size.height or self._panelHeight
 
     def render_line(self, y):
         width = self.size.width
         inner = width - 2
 
-        if y == 0:             return _renderTopBorder(width, inner)
-        if y == _H_SIZE - 2:   return _renderDivider(width, inner)
-        if y == _H_SIZE - 1:   return _renderFooter(width, inner)
-        if y == _H_SIZE:       return _renderBottomBorder(width, inner)
+        height = self.size.height
+        if y == 0:              return _renderTopBorder(width, inner)
+        if y == height - 3:     return _renderDivider(width, inner)
+        if y == height - 2:     return _renderFooter(width, inner)
+        if y == height - 1:     return _renderBottomBorder(width, inner)
 
         # content rows between border and footer
         contentY = y - 1
@@ -204,4 +218,3 @@ def _renderRow(key, val, rowIdx, width, inner):
     t.append(_V, style=Style(color=_BORDER, bgcolor=bg))
 
     return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
-
