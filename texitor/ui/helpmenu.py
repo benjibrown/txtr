@@ -64,11 +64,19 @@ def _keybindRows(keybinds):
     for i, mode in enumerate(sections):
         binds = keybinds.all_for_mode(mode)
         rows.append(("header", modeLabels[mode]))
-        for key, action in sorted(binds.items()):
-            rows.append(("row", key, action.replace("_", " ")))
+        for key, binding in sorted(binds.items()):
+            rows.append(("row", key, _describeBinding(binding)))
         if i < len(sections) - 1:
             rows.append(("gap",))
     return rows
+
+
+def _describeBinding(binding):
+    kind = getattr(binding, "kind", "action")
+    value = getattr(binding, "value", binding)
+    if kind == "command":
+        return value
+    return str(value).replace("_", " ")
 
 
 def _snippetRows(snippets):
