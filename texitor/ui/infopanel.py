@@ -427,3 +427,6 @@ def _renderConfigRow(key, default, desc, rowIdx, width, inner, continuation=Fals
     available = max(0, inner - 2 - _CONFIG_KEY_WIDTH - 2 - _CONFIG_DEFAULT_WIDTH - 2)
     trimmed = desc[:available]
     t.append(trimmed, style=Style(color=_FG, bgcolor=bg))
+    t.append(" " * max(0, available - len(trimmed)), style=Style(bgcolor=bg))
+    t.append(_V, style=bs)
+    return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
