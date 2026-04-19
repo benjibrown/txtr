@@ -502,6 +502,103 @@ class ActionsMixin:
         if bounds is None:
             return ""
         r0, c0, r1, c1 = bounds
+        if r0 == r1:
+            return buf.lines[r0][c0 : c1 + 1]
+        parts = [buf.lines[r0][c0:]] + list(buf.lines[r0 + 1 : r1]) + [buf.lines[r1][: c1 + 1]]
+        return "\n".join(parts)
+
+    def _replaceSelectionText(self, text):
+        from texitor.core.modes import Mode
+
+        buf = self.buffer
+        bounds = self._selection_bounds()
+        if self.msm.mode is Mode.VISUAL_LINE:
+            if self.visual_anchor is None:
+                return False
+            r0 = min(self.visual_anchor[0], buf.cursor_row)
+            r1 = max(self.visual_anchor[0], buf.cursor_row)
+            buf.checkpoint()
+            buf.lines[r0 : r1 + 1] = text.split("\n") or [""]
+            buf.cursor_row = r0 + len(text.split("\n")) - 1
+            buf.cursor_col = len((text.split("\n") or [""])[-1])
+            buf.modified = True
+            self._action_enter_normal()
+            return True
+
+        if bounds is None:
+            return False
+        r0, c0, r1, c1 = bounds
+        buf.checkpoint()
+        if r0 == r1:
+            line = buf.lines[r0]
+            buf.lines[r0] = line[:c0] + text + line[c1 + 1:]
+            inserted = text.split("\n")
+            if len(inserted) == 1:
+                buf.cursor_row = r0
+                buf.cursor_col = c0 + len(inserted[0])
+            else:
+                tail = line[c1 + 1:]
+                merged = (line[:c0] + text + tail).split("\n")
+                buf.lines[r0 : r0 + 1] = merged
+                buf.cursor_row = r0 + len(merged) - 1
+                buf.cursor_col = len(merged[-1]) - len(tail)
+        else:
+            start = buf.lines[r0][:c0]
+            end = buf.lines[r1][c1 + 1:]
+            merged = (start + text + end).split("\n")
+            buf.lines[r0 : r1 + 1] = merged
+            buf.cursor_row = r0 + len(merged) - 1
+            buf.cursor_col = len(merged[-1]) - len(end)
+        buf.modified = True
+        self._action_enter_normal()
+        return True
+
+    def _action_system_copy(self):
+        from texitor.core.clipboard import copyToSystem
+        from texitor.core.modes import Mode
+
+        if self.msm.mode in (Mode.VISUAL, Mode.VISUAL_LINE) and self.visual_anchor is not None:
+            text = self._selectedText()
+            if not text:
+                return
+            copyToSystem(text)
+            self.notify("selection copied")
+            return
+        if self.msm.is_command():
+            copyToSystem(self.cmd_input)
+            self.notify("command copied")
+            return
+        if self.msm.is_search():
+            copyToSystem(self.searchPattern)
+            self.notify("search copied")
+            return
+        copyToSystem(self.buffer.current_line)
+        self.notify("line copied")
+
+    def _action_system_paste(self):
+        from texitor.core.clipboard import pasteFromSystem
+        from texitor.core.modes import Mode
+
+        text = pasteFromSystem()
+        if not text:
+            return
+
+        if self.msm.is_command():
+            self.cmd_input += text
+            return
+        if self.msm.is_search():
+            self.searchPattern += text
+            return
+        if self.msm.mode in (Mode.VISUAL, Mode.VISUAL_LINE) and self.visual_anchor is not None:
+            self._replaceSelectionText(text)
+            self._dismissAutocomplete()
+            self._updateAutocomplete()
+            return
+
+        self.buffer.checkpoint()
+        self.buffer.insert(text)
+        self._dismissAutocomplete()
+        self._updateAutocomplete()
 
     def _action_yank_selection(self):
         from texitor.core.modes import Mode
