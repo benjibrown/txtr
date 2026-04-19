@@ -12,6 +12,7 @@ _CONFIG_FILES = [
     (_latexDir, "snippets.toml"),
     (_latexDir, "commands.toml"),
     (_coreDir,  "config_default.toml"),  # seeded as config.toml
+    (_coreDir,  "keybinds_default.toml"),  # seeded as keybinds.toml
 ]
 
 def ensureUserConfig():
@@ -20,7 +21,12 @@ def ensureUserConfig():
 
     for srcDir, filename in _CONFIG_FILES:
         # config_default.toml seeds as config.toml
-        destName = "config.toml" if filename == "config_default.toml" else filename
+        if filename == "config_default.toml":
+            destName = "config.toml"
+        elif filename == "keybinds_default.toml":
+            destName = "keybinds.toml"
+        else:
+            destName = filename
         dest = userDir / destName
         if not dest.exists():
             src = srcDir / filename
