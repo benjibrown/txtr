@@ -25,7 +25,7 @@ _FG_CMD      = _theme.accent
 _FG_DESC     = _theme.fg_dim
 _FG_SEL_CMD  = _theme.fg
 _FG_SEL_DESC = _theme.fg_sub
-_BORDER_COL  = _theme.fg_muted
+_BORDER_COL  = _theme.border
 
 MAX_VISIBLE = 8   # max rows shown at once
 
@@ -34,7 +34,7 @@ class AutocompleteWidget(Widget):
 
     DEFAULT_CSS = """
     AutocompleteWidget {
-        width: 36;
+        width: 44;
         height: auto;
         layer: overlay;
         display: none;
@@ -93,22 +93,18 @@ class AutocompleteWidget(Widget):
         descColor = _FG_SEL_DESC if isSelected else _FG_DESC
 
         t = Text(no_wrap=True)
-        # small left padding
-        t.append(" ", style=Style(bgcolor=bgColor))
-        t.append(cmd, style=Style(color=cmdColor, bgcolor=bgColor, bold=isSelected))
-
-        # desc right-aligned with a gap
-        gap = " "
-        available = width - len(cmd) - 1 - len(gap)
-        if available > 4:
-            trimmedDesc = desc[:available]
-            padding = available - len(trimmedDesc)
-            t.append(gap + " " * padding, style=Style(bgcolor=bgColor))
-            t.append(trimmedDesc, style=Style(color=descColor, bgcolor=bgColor, italic=True))
-        else:
-            remaining = width - len(cmd) - 1
-            if remaining > 0:
-                t.append(" " * remaining, style=Style(bgcolor=bgColor))
+        prefix = "› " if isSelected else "  "
+        cmd_width = max(10, width // 2 - 2)
+        desc_width = max(4, width - len(prefix) - cmd_width - 3)
+        trimmed_cmd = cmd[:cmd_width]
+        trimmed_desc = desc[:desc_width]
+        t.append(prefix, style=Style(color=_theme.accent2 if isSelected else _BORDER_COL, bgcolor=bgColor, bold=isSelected))
+        t.append(f"{trimmed_cmd:<{cmd_width}}", style=Style(color=cmdColor, bgcolor=bgColor, bold=isSelected))
+        t.append(" — ", style=Style(color=_BORDER_COL, bgcolor=bgColor))
+        t.append(trimmed_desc, style=Style(color=descColor, bgcolor=bgColor, italic=True))
+        remaining = width - len(prefix) - cmd_width - 3 - len(trimmed_desc)
+        if remaining > 0:
+            t.append(" " * remaining, style=Style(bgcolor=bgColor))
 
         return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
 
