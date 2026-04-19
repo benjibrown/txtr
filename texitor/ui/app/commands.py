@@ -86,30 +86,8 @@ class CommandsMixin:
             return None
 
     def _pluginInfoRows(self, meta, loaded, plugin_cmds, config_options=None):
-        rows = [
-            ("row", "name", meta.get("name") or "(unknown)"),
-            ("row", "version", meta.get("version") or "(unknown)"),
-            ("row", "author", meta.get("author") or "(unknown)"),
-            ("row", "description", meta.get("description") or "(none)"),
-            ("row", "type", meta.get("type", "single file")),
-            ("row", "status", "loaded" if loaded else "not loaded"),
-            ("row", "path", meta.get("path") or "not found on disk"),
-        ]
-        if plugin_cmds:
-            rows.append(("gap",))
-            rows.append(("header", "Commands"))
-            for cmd, desc in plugin_cmds:
-                rows.append(("text", f"{cmd}  {desc}".strip()))
-        if config_options:
-            rows.append(("gap",))
-            rows.append(("header", "Config"))
-            for item in config_options:
-                label = item["key"]
-                default = item.get("default", "")
-                if default not in ("", None):
-                    label += f"  (default: {default})"
-                rows.append(("row", label, item.get("description") or "(no description)"))
-        return rows
+        from texitor.ui.plugininfo import pluginInfoRows
+        return pluginInfoRows(meta, loaded, plugin_cmds, config_options=config_options)
 
         
     # file commands
@@ -661,6 +639,17 @@ class CommandsMixin:
             self.notify(f"unknown plugin action '{action}' - use list/info/enable/disable/install/update/uninstall", severity="warning")
 
     async def _plugin_install(self, name: str, registry_url: str, plugin_dir):
+        from texitor.core.plugins import readMetadata
+
+        meta = readMetadata(name)
+        if meta:
+            path = meta.get("path", "")
+            canonical = meta.get("name") or name
+            if path.startswith(str(plugin_dir)):
+                self.notify(f"plugin '{canonical}' is already installed - use :plugin update {canonical}", severity="warning")
+            else:
+                self.notify(f"plugin '{canonical}' is already available as a built-in plugin - use :plugin enable {canonical} or :plugin update {canonical}", severity="warning")
+            return
         data = await self._pluginFetchRegistry(registry_url)
         if not data:
             return
