@@ -116,10 +116,11 @@ class EditorWidget(Widget):
         self._msm = msm
         self._app = app
         self._scroll_top = 0
-
-
         self._visualLines = []
         self._wrapWidth = 0
+        self._mouseDownPos = None
+        self._mouseDragActive = False
+        self._suppressNextClick = False
     
     def _gutterWidth(self):
         ln_w = max(len(str(self._buf.line_count)),2)
@@ -191,23 +192,80 @@ class EditorWidget(Widget):
         self._scroll_top = max(0, self._scroll_top - 3)
         self.refresh()
 
-    def on_click(self, event):
+    def _eventBufferPos(self, event):
         buf = self._buf 
         if not self._visualLines:
             self.rebuildVisualLines()
         gw = self._gutterWidth()
         vrow = self._scroll_top + event.y 
         if vrow >= len(self._visualLines):
-            return 
+            return None
         logical_idx, col_start = self._visualLines[vrow]                       
         clickedCol = col_start + max(0, event.x - gw)
         if logical_idx >= buf.line_count:
-            return 
-        buf.cursor_row = logical_idx 
-        buf.cursor_col = min(clickedCol, max(0, len(buf.lines[logical_idx]), 1 ))
+            return None
         if self._msm.is_insert():
-            buf.cursor_col = min(clickedCol, len(buf.lines[logical_idx]))
-            self._app._refresh_all()
+            col = min(clickedCol, len(buf.lines[logical_idx]))
+        else:
+            col = min(clickedCol, max(0, len(buf.lines[logical_idx]) - 1))
+        return logical_idx, col
+
+    def _moveCursorToEvent(self, event):
+        pos = self._eventBufferPos(event)
+        if pos is None:
+            return None
+        row, col = pos
+        self._buf.cursor_row = row
+        self._buf.cursor_col = col
+        return pos
+
+    def on_mouse_down(self, event):
+        if event.button != 1:
+            return
+        pos = self._moveCursorToEvent(event)
+        if pos is None:
+            return
+        self.capture_mouse()
+        self._mouseDownPos = pos
+        self._mouseDragActive = False
+        self._app._refresh_all()
+
+    def on_mouse_move(self, event):
+        from texitor.core.modes import Mode
+
+        if self._mouseDownPos is None:
+            return
+        pos = self._moveCursorToEvent(event)
+        if pos is None:
+            return
+        if pos == self._mouseDownPos and not self._mouseDragActive:
+            return
+        if not self._mouseDragActive:
+            self._mouseDragActive = True
+            self._msm.transition(Mode.VISUAL)
+            self._app.visual_anchor = self._mouseDownPos
+        self._app._refresh_all()
+
+    def on_mouse_up(self, event):
+        if self._mouseDownPos is not None:
+            self.release_mouse()
+            if self._mouseDragActive:
+                self._moveCursorToEvent(event)
+                self._app._refresh_all()
+                self._suppressNextClick = True
+        self._mouseDownPos = None
+        self._mouseDragActive = False
+
+    def on_click(self, event):
+        if self._suppressNextClick:
+            self._suppressNextClick = False
+            return
+        pos = self._moveCursorToEvent(event)
+        if pos is None:
+            return
+        if self._msm.is_insert():
+            self._buf.cursor_col = min(self._buf.cursor_col, len(self._buf.current_line))
+        self._app._refresh_all()
 
     # rendering
     def render_line(self, y):
