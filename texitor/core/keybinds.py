@@ -46,6 +46,15 @@ def _normalizeToken(token):
     return token
 
 
+def _bindingFromValue(value):
+    if value is False or value == "":
+        return None
+    if not isinstance(value, str):
+        return None
+    if value.startswith(":"):
+        return KeyBinding("command", value)
+    return KeyBinding("action", value)
+
 # default keybinds, overridden by user config if present
 # writing all these took way too long but should be a good starting point. mostly just nabbed from vim/nvim because who uses nano 
 _DEFAULTS = {
