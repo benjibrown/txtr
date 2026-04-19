@@ -28,6 +28,8 @@ Press `:` in Normal mode to enter Command mode. Type a command and press `Enter`
 |---|---|
 | `:config get <key>` | Print the current value of a config key |
 | `:config set <key> <value>` | Set a config value and persist it to disk |
+| `:keybinds reload` | Reload `~/.config/txtr/keybinds.toml` without restarting |
+| `:keybinds path` | Print the custom keybind file path |
 
 Config keys use dot notation: `section.key`. The section prefix is optional for unambiguous keys.
 
@@ -40,3 +42,4 @@ Config keys use dot notation: `section.key`. The section prefix is optional for 
 
 Changes take effect immediately for most editor settings. Theme changes require a restart.
 
+Custom keybinds live in `~/.config/txtr/keybinds.toml`. See [Custom Keybinds](/usage/custom-keybinds).
