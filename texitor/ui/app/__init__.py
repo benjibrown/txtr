@@ -36,6 +36,7 @@ _CITE_PAT = re.compile(r'\\cite[a-z*]*\{([^}]*)$')
 
 from texitor.ui.app.actions import ActionsMixin
 from texitor.ui.app.commands import CommandsMixin
+from texitor.ui.app.keybind_commands import KeybindCommandsMixin
 # TODO - no bib file? send noti
 
 # helpers!!
@@ -76,7 +77,7 @@ def _buildAppCss(t):
 
     AutocompleteWidget {{
         layer: overlay;
-        width: 36;
+        width: 44;
         height: auto;
         display: none;
     }}
@@ -149,7 +150,7 @@ def _useSystemClip():
 
 
 # the main app - W class
-class TxtrApp(ActionsMixin, CommandsMixin, App):
+class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App):
 
     TITLE = "txtr"
     ENABLE_COMMAND_PALETTE = False
@@ -210,6 +211,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
         cfg.load()
         self.snippets.load()
         self.completer.load()
+        self._reloadUserKeybinds(notify=False)
 
         if filename:
             self.buffer.load(filename)
@@ -393,6 +395,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
 
     # key dispatch stuff
     def on_key(self, event: Key):
+        from texitor.ui.app.keydispatch import tryDispatchKey
         event.stop()
         event.prevent_default()
 
@@ -586,31 +589,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, App):
             return
 
         mode = self.msm.mode
-        candidate = (self._pending_key + " " + key).strip()
-
-        char_candidate = (self._pending_key + " " + char).strip() if char else ""
-
-        action = self.keybinds.get(mode, candidate) or (
-            self.keybinds.get(mode, char_candidate) if char_candidate else None
-        )
-        if action:
-            self._pending_key = ""
-            handler = getattr(self, f"_action_{action}", None)
-            if handler:
-                handler()
-            self._refresh_all()
-            return
-
-        if self._is_prefix(mode, candidate) or (char_candidate and self._is_prefix(mode, char_candidate)):
-            self._pending_key = candidate
-            return
-
-        self._pending_key = ""
-        action = self.keybinds.get(mode, key) or (self.keybinds.get(mode, char) if char else None)
-        if action:
-            handler = getattr(self, f"_action_{action}", None)
-            if handler:
-                handler()
+        if tryDispatchKey(self, mode, key, char):
             self._refresh_all()
             return
 
