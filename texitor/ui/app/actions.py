@@ -129,10 +129,34 @@ class ActionsMixin:
 
     # cursor movement
 
-    def _action_cursor_left(self):  self.buffer.move(dcol=-1)
+    def _action_cursor_left(self):
+        buf = self.buffer
+        if buf.cursor_col == 0 and buf.cursor_row > 0:
+            prev_row = buf.cursor_row - 1
+            prev_line = buf.lines[prev_row]
+            target = len(prev_line) if self.msm.is_insert() else max(0, len(prev_line) - 1)
+            buf.move_to(prev_row, target)
+            return
+        buf.move(dcol=-1)
+
     def _action_cursor_right(self): self.buffer.move(dcol=1)
-    def _action_cursor_up(self):    self.buffer.move(drow=-1); self.buffer.clamp_col()
-    def _action_cursor_down(self):  self.buffer.move(drow=1);  self.buffer.clamp_col()
+
+    def _action_cursor_up(self):
+        if self.acActive and self.acItems and self.msm.is_insert():
+            self.acIndex = (self.acIndex - 1) % len(self.acItems)
+            self._refreshAutocomplete()
+            return
+        self.buffer.move(drow=-1)
+        self.buffer.clamp_col()
+
+    def _action_cursor_down(self):
+        if self.acActive and self.acItems and self.msm.is_insert():
+            self.acIndex = (self.acIndex + 1) % len(self.acItems)
+            self._refreshAutocomplete()
+            return
+        self.buffer.move(drow=1)
+        self.buffer.clamp_col()
+
     def _action_line_start(self):   self.buffer.cursor_col = 0
     def _action_goto_first_line(self): self.buffer.move_to(0, 0)
     def _action_goto_last_line(self):  self.buffer.move_to(self.buffer.line_count - 1, 0)
@@ -397,11 +421,6 @@ class ActionsMixin:
     # tab stops / snippets
 
     def _action_insert_tab(self):
-        if self.acActive and self.acItems:
-            self.acIndex = (self.acIndex + 1) % len(self.acItems)
-            self._refreshAutocomplete()
-            return
-
         from texitor.ui.app import _tabStr
         buf = self.buffer
         textBefore = buf.current_line[:buf.cursor_col]
@@ -467,6 +486,22 @@ class ActionsMixin:
         if (a_row, a_col) <= (c_row, c_col):
             return a_row, a_col, c_row, c_col
         return c_row, c_col, a_row, a_col
+
+    def _selectedText(self):
+        from texitor.core.modes import Mode
+
+        buf = self.buffer
+        if self.msm.mode is Mode.VISUAL_LINE:
+            if self.visual_anchor is None:
+                return ""
+            r0 = min(self.visual_anchor[0], buf.cursor_row)
+            r1 = max(self.visual_anchor[0], buf.cursor_row)
+            return "\n".join(buf.lines[r0 : r1 + 1])
+
+        bounds = self._selection_bounds()
+        if bounds is None:
+            return ""
+        r0, c0, r1, c1 = bounds
 
     def _action_yank_selection(self):
         from texitor.core.modes import Mode
