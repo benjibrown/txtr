@@ -1,0 +1,38 @@
+# txtr custom keybinds
+# TODO - put into docs
+# this file only contains overrides.
+# defaults still exist unless you replace or disable them here.
+#
+# rules:
+# - section names are: [normal], [insert], [visual], [visual_line], [command], [search]
+# - values that start with ":" run a txtr command directly
+# - plain values call internal editor actions
+# - set a key to false or "" to disable the default binding
+# - multi-key sequences use spaces, eg "g g" or "d d"
+#
+# examples:
+#
+# [normal]
+# "ctrl+s" = ":w"
+# "space b" = ":build"
+# "?" = false
+#
+# [insert]
+# "ctrl+s" = ":w"
+# "ctrl+/" = "enter_command"
+#
+# [visual]
+# "ctrl+shift+c" = "system_copy"
+
+[normal]
+
+[insert]
+
+[visual]
+
+[visual_line]
+
+[command]
+
+[search]
+
