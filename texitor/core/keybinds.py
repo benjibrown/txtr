@@ -104,6 +104,10 @@ _DEFAULTS = {
         "r":       "replace_char",
         ">":       "indent",
         "<":       "dedent",
+        "ctrl+shift+c": "system_copy",
+        "ctrl+shift+v": "system_paste",
+        "ctrl+insert": "system_copy",
+        "shift+insert": "system_paste",
     },
     Mode.INSERT: {
         "escape":    "enter_normal",
@@ -119,6 +123,10 @@ _DEFAULTS = {
         "down":      "cursor_down",
         "left":      "cursor_left",
         "right":     "cursor_right",
+        "ctrl+shift+c": "system_copy",
+        "ctrl+shift+v": "system_paste",
+        "ctrl+insert": "system_copy",
+        "shift+insert": "system_paste",
     },
     Mode.VISUAL: {
         "escape": "enter_normal",
@@ -145,6 +153,10 @@ _DEFAULTS = {
         "down":   "cursor_down",
         "left":   "cursor_left",
         "right":  "cursor_right",
+        "ctrl+shift+c": "system_copy",
+        "ctrl+shift+v": "system_paste",
+        "ctrl+insert": "system_copy",
+        "shift+insert": "system_paste",
     },
     Mode.VISUAL_LINE: {
         "escape": "enter_normal",
@@ -171,14 +183,26 @@ _DEFAULTS = {
         "down":   "cursor_down",
         "left":   "cursor_left",
         "right":  "cursor_right",
+        "ctrl+shift+c": "system_copy", # these tend to get swallowed by terminal so might remove shift so its just ctrl+c/v  -this isnt being eaten up by the terminal from what i can tell 
+        "ctrl+shift+v": "system_paste",
+        "ctrl+insert": "system_copy",
+        "shift+insert": "system_paste",
     },
     Mode.COMMAND: {
         "escape": "enter_normal",
         "enter":  "execute_command",
+        "ctrl+shift+c": "system_copy",
+        "ctrl+shift+v": "system_paste",
+        "ctrl+insert": "system_copy",
+        "shift+insert": "system_paste",
     },
     Mode.SEARCH: {
         "escape": "enter_normal",
         "enter":  "execute_search",
+        "ctrl+shift+c": "system_copy",
+        "ctrl+shift+v": "system_paste",
+        "ctrl+insert": "system_copy",
+        "shift+insert": "system_paste",
     },
 }
 # TODO - add the rest later
@@ -189,7 +213,11 @@ class KeybindRegistry:
     def __init__(self):
         # prevent mutation
         self._map = {
-            mode: dict(binds) for mode, binds in _DEFAULTS.items()
+            mode: {
+                normalizeKeySequence(seq): KeyBinding("action", action)
+                for seq, action in binds.items()
+            }
+            for mode, binds in _DEFAULTS.items()
         }
 
     def load_toml(self, path):
@@ -203,13 +231,25 @@ class KeybindRegistry:
             "visual":       Mode.VISUAL,
             "visual_line":  Mode.VISUAL_LINE,
             "command":      Mode.COMMAND,
+            "search":       Mode.SEARCH,
         }
         for section, mode in section_to_mode.items():
             overrides = data.get(section, {})
-            self._map.setdefault(mode, {}).update(overrides)
+            mapped = self._map.setdefault(mode, {})
+            for seq, value in overrides.items():
+                norm = normalizeKeySequence(seq)
+                binding = _bindingFromValue(value)
+                if binding is None:
+                    mapped.pop(norm, None)
+                else:
+                    mapped[norm] = binding
+
+    def load_user(self):
+        if USER_KEYBINDS_PATH.exists():
+            self.load_toml(USER_KEYBINDS_PATH)
 
     def get(self, mode, key):
-        return self._map.get(mode, {}).get(key)
+        return self._map.get(mode, {}).get(normalizeKeySequence(key))
 
     def all_for_mode(self, mode):
         return dict(self._map.get(mode, {}))
