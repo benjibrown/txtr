@@ -29,6 +29,8 @@ _TL = "╭"; _TR = "╮"; _BL = "╰"; _BR = "╯"; _H = "─"; _V = "│"
 _MAX_W = 76
 _MAX_H = 24
 _ROW_KEY_WIDTH = 16
+_CONFIG_KEY_WIDTH = 18
+_CONFIG_DEFAULT_WIDTH = 16
 
 
 class InfoPanel(Widget):
@@ -235,6 +237,10 @@ class InfoPanel(Widget):
             return _renderHeader(self._rows[rowIdx][1], width, inner)
         if kind == "text":
             return _renderText(self._rows[rowIdx][1], rowIdx, width, inner)
+        if kind == "config":
+            return _renderConfigRow(self._rows[rowIdx][1], self._rows[rowIdx][2], self._rows[rowIdx][3], rowIdx, width, inner)
+        if kind == "config_cont":
+            return _renderConfigRow("", "", self._rows[rowIdx][1], rowIdx, width, inner, continuation=True)
         if kind == "gap":
             return _renderBlank(width, inner)
         return _renderRow(
@@ -261,10 +267,20 @@ def _wrapText(text, width):
             width=width,
             replace_whitespace=False,
             drop_whitespace=False,
-            break_long_words=True,
+            break_long_words=False,
             break_on_hyphens=False,
         )
-        lines.extend(wrapped or [""])
+        if not wrapped:
+            lines.append("")
+            continue
+        for chunk in wrapped:
+            if len(chunk) <= width:
+                lines.append(chunk)
+                continue
+            start = 0
+            while start < len(chunk):
+                lines.append(chunk[start : start + width])
+                start += width
     return lines or [""]
 
 
@@ -281,6 +297,16 @@ def _expandRows(rows, width):
         if kind == "text":
             for chunk in _wrapText(row[1], textWidth):
                 out.append(("text", chunk))
+            continue
+        if kind == "config":
+            key = str(row[1])
+            default = str(row[2])
+            desc = str(row[3])
+            descWidth = max(8, usable - 4 - _CONFIG_KEY_WIDTH - 2 - _CONFIG_DEFAULT_WIDTH - 2)
+            chunks = _wrapText(desc, descWidth)
+            out.append(("config", key, default, chunks[0]))
+            for chunk in chunks[1:]:
+                out.append(("config_cont", chunk))
             continue
         if kind == "row":
             key = str(row[1])
@@ -360,8 +386,9 @@ def _renderText(text, rowIdx, width, inner):
     t = Text(no_wrap=True)
     t.append(_V, style=bs)
     t.append("  ", style=Style(bgcolor=bg))
-    t.append(text[: max(0, inner - 2)], style=Style(color=_FG, bgcolor=bg))
-    t.append(" " * inner, style=Style(bgcolor=bg))
+    trimmed = text[: max(0, inner - 2)]
+    t.append(trimmed, style=Style(color=_FG, bgcolor=bg))
+    t.append(" " * max(0, inner - 2 - len(trimmed)), style=Style(bgcolor=bg))
     t.append(_V, style=bs)
     return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
 
@@ -378,7 +405,25 @@ def _renderRow(key, val, rowIdx, width, inner, selected=False, selectable=False,
     t.append(keyCol, style=keyStyle)
     t.append("  ", style=Style(bgcolor=bg))
     available = max(0, inner - len(prefix) - _ROW_KEY_WIDTH - 2)
-    t.append(val[:available], style=Style(color=_FG, bgcolor=bg, bold=selected))
-    t.append(" " * inner, style=Style(bgcolor=bg))
+    trimmed = val[:available]
+    t.append(trimmed, style=Style(color=_FG, bgcolor=bg, bold=selected))
+    t.append(" " * max(0, available - len(trimmed)), style=Style(bgcolor=bg))
     t.append(_V, style=bs)
     return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
+
+
+def _renderConfigRow(key, default, desc, rowIdx, width, inner, continuation=False):
+    bg = _BG_ALT if rowIdx % 2 == 0 else _BG
+    bs = Style(color=_BORDER, bgcolor=bg)
+    t = Text(no_wrap=True)
+    t.append(_V, style=bs)
+    t.append("  ", style=Style(bgcolor=bg))
+    key_text = f"{key:<{_CONFIG_KEY_WIDTH}}" if not continuation else " " * _CONFIG_KEY_WIDTH
+    default_text = f"{default:<{_CONFIG_DEFAULT_WIDTH}}" if not continuation else " " * _CONFIG_DEFAULT_WIDTH
+    t.append(key_text, style=Style(color=_FG_KEY, bgcolor=bg, bold=not continuation))
+    t.append("  ", style=Style(bgcolor=bg))
+    t.append(default_text, style=Style(color=_FG_DIM, bgcolor=bg))
+    t.append("  ", style=Style(bgcolor=bg))
+    available = max(0, inner - 2 - _CONFIG_KEY_WIDTH - 2 - _CONFIG_DEFAULT_WIDTH - 2)
+    trimmed = desc[:available]
+    t.append(trimmed, style=Style(color=_FG, bgcolor=bg))
