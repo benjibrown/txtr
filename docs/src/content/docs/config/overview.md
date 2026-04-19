@@ -5,6 +5,8 @@ description: Full config reference for ~/.config/txtr/config.toml
 
 Config lives at `~/.config/txtr/config.toml`. it is seeded from defaults on first run. Edit it directly or use `:config set` inside txtr. 
 
+Key overrides live separately in `~/.config/txtr/keybinds.toml` so keybind customisation does not clutter the main config file.
+
 You can also view all your configuration options with `:config` inside txtr.
 
 ## Editor 
