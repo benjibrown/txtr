@@ -637,11 +637,17 @@ class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App):
                 self._lastTabRow, self._lastTabCol, self._lastTabLength = row, col, length
                 self.tabStopIdx = 1
 
-    def _is_prefix(self, mode, prefix):
-        return any(
-            seq == prefix or seq.startswith(prefix + " ")
-            for seq in self.keybinds.all_for_mode(mode)
-        )
+    def _reloadUserKeybinds(self, notify=False):
+        self.keybinds = KeybindRegistry()
+        try:
+            self.keybinds.load_user()
+        except Exception as e:
+            if notify:
+                self.notify(f"could not load keybinds: {e}", severity="error")
+            return False
+        if notify:
+            self.notify("reloaded custom keybinds")
+        return True
 
     # used everywhere - refresh editor + bar
     def _refresh_all(self):
@@ -740,7 +746,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App):
             row = max(0, screenRow - popupHeight)
         col = max(0, screenCol)
 
-        ac.styles.width = 58 if wide else 36
+        ac.styles.width = 62 if wide else 44
         ac.styles.offset = (col, row)
 
     def _refreshAutocomplete(self):
