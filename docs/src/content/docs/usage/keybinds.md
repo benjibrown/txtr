@@ -93,7 +93,7 @@ description: Full default keybind reference for all modes.
 | `Ctrl+Shift+c` / `Ctrl+Insert` | Copy the current command/search text |
 | `Ctrl+Shift+v` / `Shift+Insert` | Paste system clipboard text |
 
-Note that many terminals swallow `Ctrl+Shift+c` / `Ctrl+Shift+v`, so txtr also supports `Ctrl+Insert` / `Shift+Insert`
+Note that many terminals swallow `Ctrl+Shift+c` / `Ctrl+Shift+v`, so txtr also supports `Ctrl+Insert` / `Shift+Insert`.
 
 ## Customising keybinds
 

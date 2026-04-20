@@ -85,14 +85,14 @@ You do not need to restart txtr after every edit.
 ```text
 :keybinds reload
 :keybinds path
-``````
+```
 
 `:keybinds path` prints the exact file path txtr is loading.
 
 ## Good starter setup
 
 ```toml
-[normall
+[normal]
 "ctrl+s" = ":w"
 "space b" = ":build"
 "space w" = ":buildwatch"
@@ -103,11 +103,8 @@ You do not need to restart txtr after every edit.
 
 [visual]
 "ctrl+shift+c" = "system_copy"
+"ctrl+insert" = "system_copy"
 ```
-
-# Full sequence syntax reference 
-
-TODO
 
 
 ## Notes
@@ -116,4 +113,3 @@ TODO
 - command bindings run exactly the same command registry as typing `:` manually
 - clipboard shortcuts are direct system clipboard actions and do not depend on `editor.system_clipboard`
 - many terminals intercept `ctrl+shift+c` / `ctrl+shift+v` before txtr sees them, so `ctrl+insert` / `shift+insert` are better terminal-friendly defaults
-
