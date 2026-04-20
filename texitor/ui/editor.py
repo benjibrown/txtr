@@ -24,35 +24,37 @@ _CONSOLE = Console(
 )
 
 # colors - all sourced from the active theme
-_BG           = _theme.bg
-_CURSORLINE   = _theme.cursor_line
-_LINENUM_CUR  = _theme.accent2
-_LINENUM_OFF  = _theme.fg_muted
-_GUTTER_SEP   = _theme.border
-_TEXT         = _theme.fg
-_TILDE        = _theme.border
+_BG = _theme.bg
+_CURSORLINE = _theme.cursor_line
+_LINENUM_CUR = _theme.accent2
+_LINENUM_OFF = _theme.fg_muted
+_GUTTER_SEP = _theme.border
+_TEXT = _theme.fg
+_TILDE = _theme.border
+
 _CURSOR_BLOCK = {
-    Mode.NORMAL:      (_theme.bg, _theme.accent),
-    Mode.VISUAL:      (_theme.bg, _theme.accent2),
+    Mode.NORMAL: (_theme.bg, _theme.accent),
+    Mode.VISUAL: (_theme.bg, _theme.accent2),
     Mode.VISUAL_LINE: (_theme.bg, _theme.accent2),
 }
 _CURSOR_INSERT_FG = _theme.green
-_SEL_BG   = _theme.bg_sel
+_SEL_BG  = _theme.bg_sel
 _MATCH_BG = _theme.bg_search
 _MATCH_FG = _theme.bg
 
 # syntax highlight colors
-_HL_CMD     = _theme.accent
-_HL_ENV     = _theme.green
-_HL_MATH    = _theme.orange
+_HL_CMD = _theme.accent
+_HL_ENV = _theme.green
+_HL_MATH = _theme.orange
 _HL_COMMENT = _theme.fg_muted
-_HL_BRACE   = _theme.accent2
+_HL_BRACE = _theme.accent2
 
 
 _INDENT_GUIDE = _theme.border   # subtle - same as border color
 
 
 def _highlight(line, bg, tab_width=4, indent_guides=True):
+    # proud of this function ngl 
     # tokenise and colour a single line of latex
 
     # indent guides - replace a space at each tab stop in leading whitespace with a visible bar

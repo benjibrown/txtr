@@ -1,6 +1,5 @@
 # clipboard - system clipboard read/write for txtr
-# priority order: macOS pbcopy/pbpaste, Wayland wl-copy/wl-paste, X11 xclip, X11 xsel
-# no third party deps - just subprocess calls
+# v. peak but needs pbcopy or wl-copy or xclip 
 
 import subprocess
 import sys
@@ -66,7 +65,7 @@ def pasteFromSystem():
 
     return ""
 
-
+# added this just for the freeze plugin btw
 def copyImageToSystem(path):
     p = Path(path).expanduser()
     try:

@@ -29,7 +29,7 @@ _TL = "╭"; _TR = "╮"; _BL = "╰"; _BR = "╯"; _H = "─"; _V = "│"
 _MAX_W = 60
 _MAX_H = 24
 
-
+# pure waffle btw
 class ConfigPanel(Widget):
 
     DEFAULT_CSS = """
@@ -110,10 +110,14 @@ class ConfigPanel(Widget):
         inner = width - 2
 
         height = self.size.height
-        if y == 0:              return _renderTopBorder(width, inner)
-        if y == height - 3:     return _renderDivider(width, inner)
-        if y == height - 2:     return _renderFooter(width, inner)
-        if y == height - 1:     return _renderBottomBorder(width, inner)
+        if y == 0: 
+            return _renderTopBorder(width, inner)
+        if y == height - 3:     
+            return _renderDivider(width, inner)
+        if y == height - 2:     
+            return _renderFooter(width, inner)
+        if y == height - 1:     
+            return _renderBottomBorder(width, inner)
 
         # content rows between border and footer
         contentY = y - 1

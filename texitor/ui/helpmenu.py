@@ -13,7 +13,7 @@ from textual.widget import Widget
 
 if TYPE_CHECKING:
     from texitor.ui.app import TxtrApp
-
+# oi get out of my source code >:(
 _CONSOLE = Console(width=500, no_color=False, highlight=False, markup=False, emoji=False)
 
 # colors - all sourced from the active theme
@@ -55,9 +55,9 @@ def _keybindRows(keybinds):
     rows = []
     modeOrder = [Mode.NORMAL, Mode.INSERT, Mode.VISUAL, Mode.VISUAL_LINE]
     modeLabels = {
-        Mode.NORMAL:      "Normal",
-        Mode.INSERT:      "Insert",
-        Mode.VISUAL:      "Visual",
+        Mode.NORMAL: "Normal",
+        Mode.INSERT: "Insert",
+        Mode.VISUAL: "Visual",
         Mode.VISUAL_LINE: "Visual Line",
     }
     sections = [mode for mode in modeOrder if keybinds.all_for_mode(mode)]
@@ -155,7 +155,7 @@ def _pluginRows():
             for cmd, desc in cmds:
                 rows.append(("row", cmd, desc))
         rows.append(("gap",))
-
+    # surely i can make this less cursed 
     rows.append(("header", "Plugin management"))
     rows.append(("row", ":plugin list", "show installed plugin overview"))
     rows.append(("row", ":plugin info <n>", "show full plugin info"))

@@ -12,8 +12,8 @@ _CONSOLE = Console(width=500, no_color=False, highlight=False, markup=False, emo
 # colors - all sourced from the active theme
 from texitor.core.theme import theme as _theme
 
-searchBg     = _theme.bg_popup
-searchFg     = _theme.fg
+searchBg = _theme.bg_popup
+searchFg = _theme.fg
 searchPrompt = _theme.accent
 
 

@@ -1,5 +1,5 @@
 # statusbar - mode pill, filename, position
-# also doubles as input bar for COMMAND and SEARCH modes
+# also doubles as input bar for COMMAND and SEARCH modes - so peak
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
@@ -22,20 +22,19 @@ _CONSOLE = Console(
     width=500, no_color=False, highlight=False, markup=False, emoji=False
 )
 
-# colors - all sourced from the active theme
 _MODE_STYLE = {
-    Mode.NORMAL:      ("NORMAL",      _theme.bg, _theme.accent),
-    Mode.INSERT:      ("INSERT",      _theme.bg, _theme.green),
-    Mode.VISUAL:      ("VISUAL",      _theme.bg, _theme.accent2),
+    Mode.NORMAL: ("NORMAL", _theme.bg, _theme.accent),
+    Mode.INSERT: ("INSERT", _theme.bg, _theme.green),
+    Mode.VISUAL: ("VISUAL", _theme.bg, _theme.accent2),
     Mode.VISUAL_LINE: ("VISUAL LINE", _theme.bg, _theme.accent2),
-    Mode.COMMAND:     ("COMMAND",     _theme.bg, _theme.red),
-    Mode.SEARCH:      ("SEARCH",      _theme.bg, _theme.accent),
+    Mode.COMMAND: ("COMMAND", _theme.bg, _theme.red),
+    Mode.SEARCH: ("SEARCH", _theme.bg, _theme.accent),
 }
 
-_BAR_BG    = _theme.bg_alt
-_BAR_FG    = _theme.fg
-_POS_BG    = _theme.bg_popup
-_CMD_FG    = _theme.red
+_BAR_BG = _theme.bg_alt
+_BAR_FG = _theme.fg
+_POS_BG = _theme.bg_popup
+_CMD_FG = _theme.red
 _SEARCH_FG = _theme.accent
 
 

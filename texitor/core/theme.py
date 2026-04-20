@@ -1,14 +1,5 @@
 # I LOVE THEMES 
 # im gonna comment this loads so it is actually maintainable for once
-# theme system - defines color palettes for the editor
-# built-in: catppuccin (default), gruvbox
-# custom: set name = "custom" in config and provide custom_path pointing to a toml file
-#
-# custom theme toml format (flat):
-#   name = "my-theme"
-#   bg = "#1a1b26"
-#   bg_alt = "#16161e"
-#   ... (all fields required, see Theme dataclass below)
 
 from __future__ import annotations
 
@@ -25,28 +16,28 @@ _startup_warning: str | None = None
 class Theme:
     name: str
     # backgrounds
-    bg: str           # main editor background
-    bg_alt: str       # darker bg (statusbar, panel headers)
-    bg_popup: str     # popup and dropdown surface
+    bg: str  # main editor background
+    bg_alt: str  # darker bg (statusbar, panel headers)
+    bg_popup: str   # popup and dropdown surface
     cursor_line: str  # current line subtle highlight
-    bg_sel: str       # visual selection background
+    bg_sel: str  # visual selection background
     bg_search: str    # search match highlight background
     # borders and separators
     border: str
     # foregrounds
-    fg: str           # default text
-    fg_dim: str       # very muted (disabled, placeholder)
+    fg: str  # default text
+    fg_dim: str # very muted (disabled, placeholder)
     fg_muted: str     # muted (line numbers, comments)
     fg_sub: str       # subtle secondary text
-    # semantic accent colors
-    accent: str       # primary - normal mode, keybinds, search prompt
-    accent2: str      # secondary - visual mode, section headers
-    green: str        # insert mode cursor, LaTeX env names
-    yellow: str       # warnings
-    orange: str       # math regions
-    red: str          # errors, command mode
+    #  accent colors
+    accent: str  # primary - normal mode, keybinds, search prompt
+    accent2: str # secondary - visual mode, section headers
+    green: str  # insert mode cursor, LaTeX env names
+    yellow: str # warnings
+    orange: str # math regions
+    red: str # errors, command mode
 
-
+# # TODO - hardcode them somewhere else idk
 BUILTIN_THEMES: dict[str, Theme] = {
     "catppuccin": Theme(
         name="catppuccin",
@@ -163,7 +154,7 @@ def _loadCustomTheme(path: str) -> Theme:
 
 
 def loadTheme() -> Theme:
-    # loads theme from config - falls back to catppuccin on any failure
+    # loads theme from config - falls back to catppuccin on any failure, cos catppuccin is love catppuccin is life
     # stores a startup warning if something went wrong
     global _startup_warning
     _startup_warning = None

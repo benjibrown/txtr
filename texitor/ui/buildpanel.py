@@ -39,6 +39,7 @@ class BuildPanel(Widget):
     DEFAULT_CSS = ""  # handled by app CSS
 
     def __init__(self, **kwargs):
+        # W kwargs
         super().__init__(**kwargs)
         self._lines = []
         self._errors = []   # list[LogEntry] from parse_log

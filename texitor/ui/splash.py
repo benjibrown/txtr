@@ -1,6 +1,4 @@
-# splash screen / landing page - shown when txtr opens with no file argument
-# nvim-style: rotating logo, tagline, version, recent files list
-# j/k navigate recents, enter opens selected, any other key dismisses
+# luh splash screen 
 
 from __future__ import annotations
 import random
@@ -21,12 +19,13 @@ import texitor.core.recents as _recents
 _CONSOLE = Console(width=500, no_color=False, highlight=False, markup=False, emoji=False)
 
 _ACCENT  = Style(color=_t.accent, bold=True)
-_DIM     = Style(color=_t.fg_dim)
-_SUB     = Style(color=_t.fg_sub)
-_SEC     = Style(color=_t.accent2, bold=True)
-_FG_SEL  = Style(color=_t.fg, bgcolor=_t.bg_sel, bold=True)
+_DIM = Style(color=_t.fg_dim)
+_SUB = Style(color=_t.fg_sub)
+_SEC = Style(color=_t.accent2, bold=True)
+_FG_SEL = Style(color=_t.fg, bgcolor=_t.bg_sel, bold=True)
 _ACC_SEL = Style(color=_t.accent, bgcolor=_t.bg_sel, bold=True)
 
+# ascii is a must have icl
 _LOGO_A = [
     "  █████                 █████             ",
     " ░░███                 ░░███              ",
@@ -80,17 +79,18 @@ _LOGO_D = [
     "   'Y\"    ` \"Y   Y\"       'Y\"        \"Y\"      ",
 ]
 _LOGOS = [_LOGO_A, _LOGO_B, _LOGO_C, _LOGO_D]
-_VERSION = "v1.9.8" # TODO - fetch from package metadata
+_VERSION = "v2.2.0" # TODO - fetch from package metadata - i should really do this
 _TAGLINE = "LaTeX, fast."
+
 # this is so incredibly peak
-# animation modes — picked randomly on launch
+# animation modes - picked randomly on launch
 _ANIM_STATIC = "static"
 _ANIM_TYPEWRITER = "typewriter"
 _ANIM_GLITCH = "glitch"
 
-_TYPEWRITER_CPS = 20    # chars revealed per tick (tick = 0.07s)
+_TYPEWRITER_CPS = 20    # chars revealed per tick :)
 _GLITCH_CHARS   = "▓░▒▌▐╬╪┼╫▄▀■□▪▫"
-_GLITCH_FRAMES  = 42   # frames before glitch settles (~3s)
+_GLITCH_FRAMES  = 42   
 
 _TICKER_ITEMS = [
     r"\frac{a}{b}",
@@ -110,7 +110,7 @@ _TICKER_ITEMS = [
     r"\mathbb{P}(A \mid B)",
     r"\varepsilon \to 0^+",
 ]
-# build a long looping plain string and a parallel list of styles per char
+# build a long looping plain string and a parallel list of styles per char, i love this
 _SEP = "     ·     "
 
 def _build_ticker():
@@ -201,7 +201,7 @@ class SplashWidget(Widget):
         return None
 
     def _content_lines(self):
-        rows = []
+        rows = [] # wooooooo rows row rows
         for line in self._logo:
             rows.append(("logo", line))
         rows.append(("blank",))

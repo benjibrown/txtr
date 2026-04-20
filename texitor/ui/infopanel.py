@@ -24,7 +24,7 @@ _FG_SECTION = _theme.accent2
 _BORDER = _theme.border
 _TITLE_FG = _theme.accent2
 
-_TL = "╭"; _TR = "╮"; _BL = "╰"; _BR = "╯"; _H = "─"; _V = "│"
+_TL = "╭"; _TR = "╮"; _BL = "╰"; _BR = "╯"; _H = "─"; _V = "│" # ive copied this line so many times at this point its not even funny
 
 _MAX_W = 76
 _MAX_H = 24
@@ -169,7 +169,7 @@ class InfoPanel(Widget):
                     break
         else:
             self._cursor = self._firstSelectable()
-
+        # AAAAARRRRRFHHHFHGHHFHFHFFHFH
         if self._cursor >= 0 and "enter open" not in self._footer and "enter select" not in self._footer:
             self._footer = "  j/k move   enter open   q close"
 

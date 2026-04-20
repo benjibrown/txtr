@@ -4,6 +4,7 @@
 # CommandsMixin — _action_execute_command, _cmd_* methods (commands.py)
 from __future__ import annotations
 
+# TODO - somehow make this look better lol
 import asyncio
 from textual.app import App, ComposeResult
 from textual.events import Key
@@ -32,11 +33,14 @@ from texitor.core.citecompleter import CiteCompleter
 from texitor.core.plugins import pluginLoader, PLUGIN_DIR, readMetadata
 
 import re
+
+# more regex smh
 _CITE_PAT = re.compile(r'\\cite[a-z*]*\{([^}]*)$')
 
 from texitor.ui.app.actions import ActionsMixin
 from texitor.ui.app.commands import CommandsMixin
 from texitor.ui.app.keybind_commands import KeybindCommandsMixin
+
 # TODO - no bib file? send noti
 
 # helpers!!
@@ -149,8 +153,12 @@ def _useSystemClip():
 
 
 
+
+
+
 # the main app - W class
-class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App):
+# i have made so many questionable choices here but oh well (ts is way too long)
+class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App): # i love inheritance
 
     TITLE = "txtr"
     ENABLE_COMMAND_PALETTE = False
@@ -165,7 +173,8 @@ class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App):
         self.visual_anchor = None
         self._commandSourceMode = None
         self._commandContext = None
-
+        
+        # sorry for the mess 
         self.cmd_input = ""
         self.searchPattern = ""
         self.searchMatches = []
@@ -442,6 +451,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App):
             return
 
         # overlays swallow keys while open
+        # TODO - move this to a better statemachine, most of the logic is repeated 
         if self.helpOpen:
             if self.msm.is_command():
                 pass
@@ -535,7 +545,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App):
                 return
             else:
                 return
-
+    
         if self.buildOpen:
             panel = self.query_one(BuildPanel)
             if self.msm.is_command():
@@ -784,3 +794,4 @@ class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App):
         buf.insert(cmd)
         buf.modified = True
         self._dismissAutocomplete()
+# why did i do this ....
