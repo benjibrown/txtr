@@ -30,7 +30,8 @@ class ActionsMixin:
 
     def _action_enter_insert(self):
         self.msm.transition(Mode.INSERT)
-
+    
+    # so many helpers :(
     def _action_enter_insert_after(self):
         self.msm.transition(Mode.INSERT)
         line = self.buffer.current_line
@@ -44,6 +45,8 @@ class ActionsMixin:
     def _action_enter_insert_eol(self):
         self.msm.transition(Mode.INSERT)
         self.buffer.cursor_col = len(self.buffer.current_line)
+
+
 
     def _action_enter_visual(self):
         self.msm.transition(Mode.VISUAL)
@@ -64,6 +67,7 @@ class ActionsMixin:
         self._pending_key = ""
         self.searchPattern = ""
         self.searchBackward = False
+
 
     def _action_enter_search_back(self):
         self.msm.transition(Mode.SEARCH)
@@ -89,6 +93,7 @@ class ActionsMixin:
         self.searchIndex = (self.searchIndex + 1) % len(self.searchMatches)
         self._jumpToMatch(self.searchIndex)
 
+    # son im crine 
     def _action_search_prev(self):
         if not self.searchMatches:
             return
@@ -248,6 +253,7 @@ class ActionsMixin:
         else:
             buf.backspace()
         self._updateAutocomplete()
+
 
     def _action_newline(self):
         if self.acActive and self.acItems:

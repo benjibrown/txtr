@@ -262,6 +262,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App):
     def plugin_open_panel(self, title, rows, footer=None):
         self._openInfoPanel(title, rows, footer=footer)
 
+
     def plugin_set_panel_rows(self, rows, footer=None):
         self._setInfoPanelRows(rows, footer=footer)
 
@@ -282,6 +283,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App):
             widget.remove()
         except Exception:
             pass
+
 
     def _closeOverlayPanels(self, except_name=None):
         if except_name != "help" and self.helpOpen:
@@ -325,6 +327,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App):
 
     def _citationsScanLocalDir(self):
         return cfg.get("citations", "scan_local_dir", True)
+
 
     def _stopBibAutoscan(self):
         if self._bibWatchTask and not self._bibWatchTask.done():
@@ -387,6 +390,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App):
             self.query_one(HelpMenu).on_resize(event)
         if self.configOpen:
             self.query_one(ConfigPanel).on_resize(event)
+
         if self.infoOpen:
             self.query_one(InfoPanel).on_resize(event)
         if self.buildOpen:

@@ -3,7 +3,7 @@ from texitor.core.plugins import PluginBase
 from texitor.core.cmdregistry import registry
 from texitor.core.theme import theme as _theme
 
-
+# I HATE REGEX
 _COMMENT_RE = re.compile(r"(?<!\\)%.*$")
 _COMMAND_ARG_RE = re.compile(r"\\[a-zA-Z]+\*?\s*(?:\[[^\]]*\])?")
 _BEGIN_END_RE = re.compile(r"\\(?:begin|end)\{[^}]+\}")

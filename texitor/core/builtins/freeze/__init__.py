@@ -9,7 +9,7 @@ from texitor.core.cmdregistry import registry
 
 from .helpers import buildFreezeCommand, lineRangeArg, parseFreezeArgs, parseLineArg
 
-
+# incredibly peak btw
 class FreezePlugin(PluginBase):
     name = "freeze"
     description = "capture code screenshots with the freeze CLI"

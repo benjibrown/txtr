@@ -2,7 +2,7 @@
 # each handler is decorated with @command so the registry can wire it up at mount
 # _action_execute_command is a pure registry dispatch - no if/elif chains
 # plugins follow the same pattern: decorate a function and call registry.register()
-
+# TODO - make this less cluttered lmao
 from __future__ import annotations
 import asyncio
 
@@ -327,7 +327,7 @@ class CommandsMixin:
 
         self._buildTask = asyncio.create_task(_run())
 
-
+    # such a fire command
     @command(":build", "build with configured engine", section="Compiler", aliases=[":compile", ":b"])
     def _cmd_build(self, args):
         from pathlib import Path
