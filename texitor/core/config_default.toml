@@ -32,6 +32,7 @@ wrap = true
 
 # compiler to use: "latexmk" is the default, "latexmk-lua", "latexmk-xe", "pdflatex", "xelatex", "lualatex" or "tectonic" are all supported / builtin 
 # recommended to use the latexmk variants as they directly allow for custom aux directories 
+# txtr's built-in presets also enable SyncTeX data so PDF forward search plugins can work
 # use :engines to see all available ones 
 engine = "latexmk"
 
@@ -114,7 +115,7 @@ scan_local_dir = true
 # plugins to load on startup (list of plugin names)
 # builtin plugins live in texitor/core/builtins/
 # user plugins live in ~/.config/txtr/plugins/
-# example: enabled = ["wordcount"]
+# example: enabled = ["wordcount", "zathura"]
 enabled = []
 
 # when true, check the registry on startup and update installed user plugins
