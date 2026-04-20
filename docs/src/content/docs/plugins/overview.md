@@ -99,8 +99,8 @@ All hooks are optional.
 - `on_cursor_move(app)`
 - `on_mode_change(app, mode)`
 - `on_build_done(app, rc)`
-- `on_key(app, key, char)` — return `True` to consume the key
-- `statusbar_segment(app)` — return `(text, color)` or `None`
+- `on_key(app, key, char)` - return `True` to consume the key
+- `statusbar_segment(app)` - return `(text, color)` or `None`
 
 ## Config
 

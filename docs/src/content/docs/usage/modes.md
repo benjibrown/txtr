@@ -42,7 +42,7 @@ Type `:` commands. Press `:` from Normal mode, type a command, press `Enter` to 
 
 The statusbar input turns red and shows `COMMAND`. Press `Escape` to cancel.
 
-Help and config popups stay open while in Command mode — you can read them while typing commands.
+Help and config popups stay open while in Command mode - you can read them while typing commands.
 
 ## Search mode
 
