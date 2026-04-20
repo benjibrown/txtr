@@ -149,9 +149,10 @@ class InfoPanel(Widget):
             return
         self._footer = "  j/k scroll   q close"
 
-    def _center(self):
-        screenW = self.app.size.width
-        screenH = self.app.size.height
+    def _center(self, size=None):
+        screen = size or self.app.size
+        screenW = screen.width
+        screenH = screen.height
         x = max(0, (screenW - self._panelWidth) // 2)
         y = max(0, (screenH - self._panelHeight) // 2)
         self.styles.offset = (x, y)
@@ -193,9 +194,10 @@ class InfoPanel(Widget):
         contentH = self._contentHeight()
         self._scrollTop = max(0, len(self._rows) - contentH)
 
-    def _fitToScreen(self):
-        screenW = self.app.size.width
-        screenH = self.app.size.height
+    def _fitToScreen(self, size=None):
+        screen = size or self.app.size
+        screenW = screen.width
+        screenH = screen.height
         self._panelWidth = min(_MAX_W, max(24, screenW - 2))
         self._panelHeight = min(_MAX_H, max(8, screenH - 2))
         self.styles.width = self._panelWidth
@@ -206,10 +208,13 @@ class InfoPanel(Widget):
 
     def on_resize(self, event):
         if self.display:
-            self._fitToScreen()
-            self._rebuildRows(preserve_cursor=True)
-            self._center()
-            self.refresh()
+            self.relayout()
+
+    def relayout(self, size=None):
+        self._fitToScreen(size)
+        self._rebuildRows(preserve_cursor=True)
+        self._center(size)
+        self.refresh()
 
     def get_content_height(self, container, viewport, width):
         return self.size.height or self._panelHeight
@@ -237,6 +242,8 @@ class InfoPanel(Widget):
             return _renderHeader(self._rows[rowIdx][1], width, inner)
         if kind == "text":
             return _renderText(self._rows[rowIdx][1], rowIdx, width, inner)
+        if kind == "status":
+            return _renderStatusText(self._rows[rowIdx][1], self._rows[rowIdx][2], rowIdx, width, inner)
         if kind == "config":
             return _renderConfigRow(self._rows[rowIdx][1], self._rows[rowIdx][2], self._rows[rowIdx][3], rowIdx, width, inner)
         if kind == "config_cont":
@@ -297,6 +304,10 @@ def _expandRows(rows, width):
         if kind == "text":
             for chunk in _wrapText(row[1], textWidth):
                 out.append(("text", chunk))
+            continue
+        if kind == "status":
+            for chunk in _wrapText(row[1], textWidth):
+                out.append(("status", chunk, row[2]))
             continue
         if kind == "config":
             key = str(row[1])
@@ -388,6 +399,26 @@ def _renderText(text, rowIdx, width, inner):
     t.append("  ", style=Style(bgcolor=bg))
     trimmed = text[: max(0, inner - 2)]
     t.append(trimmed, style=Style(color=_FG, bgcolor=bg))
+    t.append(" " * max(0, inner - 2 - len(trimmed)), style=Style(bgcolor=bg))
+    t.append(_V, style=bs)
+    return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
+
+
+def _renderStatusText(text, level, rowIdx, width, inner):
+    bg = _BG_ALT if rowIdx % 2 == 0 else _BG
+    bs = Style(color=_BORDER, bgcolor=bg)
+    color = {}
+        "success": _theme.green,
+        "error": _theme.red,
+        "warning": _theme.yellow,
+        "command": _theme.accent,
+        "info": _FG,
+    }.get(level, _FG)
+    t = Text(no_wrap=True)
+    t.append(_V, style=bs)
+    t.append("  ", style=Style(bgcolor=bg))
+    trimmed = text[: max(0, inner - 2)]
+    t.append(trimmed, style=Style(color=color, bgcolor=bg, bold=level in ("success", "error", "warning", "command")))
     t.append(" " * max(0, inner - 2 - len(trimmed)), style=Style(bgcolor=bg))
     t.append(_V, style=bs)
     return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
