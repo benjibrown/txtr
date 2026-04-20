@@ -76,16 +76,18 @@ class ConfigPanel(Widget):
     def on_mouse_scroll_up(self, event):
         self.scrollUp(3)
 
-    def _center(self):
-        screenW = self.app.size.width
-        screenH = self.app.size.height
+    def _center(self, size=None):
+        screen = size or self.app.size
+        screenW = screen.width
+        screenH = screen.height
         x = max(0, (screenW - self._panelWidth) // 2)
         y = max(0, (screenH - self._panelHeight) // 2)
         self.styles.offset = (x, y)
 
-    def _fitToScreen(self):
-        screenW = self.app.size.width
-        screenH = self.app.size.height
+    def _fitToScreen(self, size=None):
+        screen = size or self.app.size
+        screenW = screen.width
+        screenH = screen.height
         self._panelWidth = min(_MAX_W, max(24, screenW - 2))
         self._panelHeight = min(_MAX_H, max(8, screenH - 2))
         self.styles.width = self._panelWidth
@@ -93,9 +95,12 @@ class ConfigPanel(Widget):
 
     def on_resize(self, event):
         if self.display:
-            self._fitToScreen()
-            self._center()
-            self.refresh()
+            self.relayout()
+
+    def relayout(self, size=None):
+        self._fitToScreen(size)
+        self._center(size)
+        self.refresh()
 
     def get_content_height(self, container, viewport, width):
         return self.size.height or self._panelHeight
