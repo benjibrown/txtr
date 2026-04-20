@@ -172,12 +172,13 @@ class SplashWidget(Widget):
         self._cursor = 0
         self.refresh()
 
-    def reposition(self):
+    def reposition(self, size=None):
         rows = self._content_lines()
         h = len(rows)
         w = max(len(line) for logo in _LOGOS for line in logo) + 4
-        screenW = self.app.size.width
-        screenH = self.app.size.height
+        screen = size or self.app.size
+        screenW = screen.width
+        screenH = screen.height
         x = max(0, (screenW - w) // 2)
         y = max(0, (screenH - h) // 2)
         self.styles.width = w
