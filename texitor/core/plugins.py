@@ -40,7 +40,7 @@ class PluginContext:
     selected_lines: list[str] = field(default_factory=list)
     selected_text: str = ""
 
-
+# demo plugin stuff 
 class PluginBase:
     name: str = ""
     description: str = ""
@@ -49,7 +49,8 @@ class PluginBase:
     commands: list = []
     config_options: list = []
     config_section: str = ""
-
+    
+    # dont actually put pass here for everything lol its just a demo
     def on_load(self, app):
         pass
 
