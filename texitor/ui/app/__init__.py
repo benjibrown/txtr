@@ -384,18 +384,20 @@ class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App):
         self._refresh_all()
 
     def on_resize(self, event):
-        if self.splashOpen:
-            self.query_one(SplashWidget).reposition()
-        if self.helpOpen:
-            self.query_one(HelpMenu).on_resize(event)
-        if self.configOpen:
-            self.query_one(ConfigPanel).on_resize(event)
+        size = getattr(event, "size", None)
+        self.call_after_refresh(lambda size=size: self._relayoutOverlays(size))
 
+    def _relayoutOverlays(self, size=None):
+        if self.splashOpen:
+            self.query_one(SplashWidget).reposition(size)
+        if self.helpOpen:
+            self.query_one(HelpMenu).relayout(size)
+        if self.configOpen:
+            self.query_one(ConfigPanel).relayout(size)
         if self.infoOpen:
-            self.query_one(InfoPanel).on_resize(event)
+            self.query_one(InfoPanel).relayout(size)
         if self.buildOpen:
-            panel = self.query_one(BuildPanel)
-            panel.refresh()
+            self.query_one(BuildPanel).refresh()
 
     # key dispatch stuff
     def on_key(self, event: Key):
