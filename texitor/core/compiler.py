@@ -23,17 +23,17 @@ from pathlib import Path
 
 PRESETS = {
     # latexmk variants (recommended - proper outdir/auxdir support)
-    "latexmk":     "latexmk -pdf      -interaction=nonstopmode -outdir={dir} -auxdir={aux} {file}",
-    "latexmk-lua": "latexmk -lualatex -interaction=nonstopmode -outdir={dir} -auxdir={aux} {file}",
-    "latexmk-xe":  "latexmk -xelatex  -interaction=nonstopmode -outdir={dir} -auxdir={aux} {file}",
+    "latexmk":     "latexmk -pdf      -interaction=nonstopmode -synctex=1 -outdir={dir} -auxdir={aux} {file}",
+    "latexmk-lua": "latexmk -lualatex -interaction=nonstopmode -synctex=1 -outdir={dir} -auxdir={aux} {file}",
+    "latexmk-xe":  "latexmk -xelatex  -interaction=nonstopmode -synctex=1 -outdir={dir} -auxdir={aux} {file}",
 
     # direct engines - PDF + aux land in aux dir; PDF copied back to source dir afterward
-    "pdflatex": "pdflatex -interaction=nonstopmode -output-directory={aux} {file}",
-    "xelatex":  "xelatex  -interaction=nonstopmode -output-directory={aux} {file}",
-    "lualatex": "lualatex -interaction=nonstopmode -output-directory={aux} {file}",
+    "pdflatex": "pdflatex -interaction=nonstopmode -synctex=1 -output-directory={aux} {file}",
+    "xelatex":  "xelatex  -interaction=nonstopmode -synctex=1 -output-directory={aux} {file}",
+    "lualatex": "lualatex -interaction=nonstopmode -synctex=1 -output-directory={aux} {file}",
 
     # tectonic - just needs the file; manages its own cache
-    "tectonic": "tectonic {file}",
+    "tectonic": "tectonic --synctex {file}",
 }
 
 # engines that dump everything into aux and need PDF copied back
@@ -107,14 +107,17 @@ async def compile(filePath, engine="latexmk", auxConfig=".aux", customCmd=None, 
     )
     await proc.wait()
 
-    # copy PDF back to source dir for engines that dump into aux dir
+    # copy PDF + SyncTeX data back to source dir for engines that dump into aux dir
     if proc.returncode == 0 and engine in _COPY_PDF_ENGINES:
-        src = auxDir / (p.stem + ".pdf")
-        dst = p.parent / (p.stem + ".pdf")
-        if src.exists():
-            shutil.copy2(str(src), str(dst))
-            if onLine:
-                onLine(f"  → copied {src.name} to {dst.parent}", False)
+        copied = []
+        for suffix in (".pdf", ".synctex.gz"):
+            src = auxDir / (p.stem + suffix)
+            dst = p.parent / (p.stem + suffix)
+            if src.exists():
+                shutil.copy2(str(src), str(dst))
+                copied.append(src.name)
+        if copied and onLine:
+            onLine(f"  → copied {', '.join(copied)} to {p.parent}", False)
 
     return proc.returncode, lines
 
@@ -261,6 +264,5 @@ def parse_log(path: str | Path):
                 break 
         i += 1
     return entries
-
 
 
