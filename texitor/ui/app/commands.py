@@ -74,6 +74,12 @@ class CommandsMixin:
         self.infoOpen = True
         self.query_one(InfoPanel).appendText(text, autoScroll=autoScroll)
 
+    def _appendInfoPanelStatus(self, text, level="info", autoScroll=True):
+        from texitor.ui.infopanel import InfoPanel
+        self._closeOverlayPanels(except_name="info")
+        self.infoOpen = True
+        self.query_one(InfoPanel).appendRow(("status", text, level), autoScroll=autoScroll)
+
     async def _pluginFetchRegistry(self, registry_url):
         import json
         import urllib.request
@@ -742,12 +748,12 @@ class CommandsMixin:
 
         if updated:
             self._appendInfoPanelText("")
-            self._appendInfoPanelText("done.")
+            self._appendInfoPanelStatus("done.", "success")
             for canonical, old, new, force_override in updated:
                 if force_override and old == new:
-                    self._appendInfoPanelText(f"{canonical}: installed registry override ({new})")
+                    self._appendInfoPanelStatus(f"{canonical}: installed registry override ({new})", "success")
                 else:
-                    self._appendInfoPanelText(f"{canonical}: {old} -> {new}")
+                    self._appendInfoPanelStatus(f"{canonical}: {old} -> {new}", "success")
             self.notify(f"updated {len(updated)} plugin(s)")
 
     async def _pluginInstallFromEntry(self, name, entry, plugin_dir, load_after, update_loaded, status_label):
@@ -763,11 +769,11 @@ class CommandsMixin:
         was_loaded = pluginLoader.isLoaded(name)
         url = entry.get("url", "")
         if not url:
-            self._appendInfoPanelText(f"{name}: registry entry has no url")
+            self._appendInfoPanelStatus(f"{name}: registry entry has no url", "error")
             return False, name
 
         pkg_type = entry.get("type", "single")
-        self._appendInfoPanelText(f"{status_label} {name} ({pkg_type})")
+        self._appendInfoPanelStatus(f"{status_label} {name} ({pkg_type})", "info")
 
         if pkg_type == "git":
             dest = plugin_dir / name
@@ -776,16 +782,16 @@ class CommandsMixin:
             else:
                 rc = await self._pluginRunProcess(["git", "clone", "--depth=1", url, str(dest)], cwd=None)
             if rc != 0:
-                self._appendInfoPanelText(f"{name}: git command failed")
+                self._appendInfoPanelStatus(f"{name}: git command failed", "error")
                 return False, name
 
         elif pkg_type == "package":
-            self._appendInfoPanelText(f"downloading {url}")
+            self._appendInfoPanelStatus(f"downloading {url}", "command")
             try:
                 with urllib.request.urlopen(url, timeout=15) as r:
                     raw = r.read()
             except Exception as e:
-                self._appendInfoPanelText(f"download failed: {e}")
+                self._appendInfoPanelStatus(f"download failed: {e}", "error")
                 return False, name
             try:
                 with tempfile.TemporaryDirectory() as td:
@@ -802,28 +808,28 @@ class CommandsMixin:
                         ]
                         source = candidates[0] if len(candidates) == 1 else None
                     if source is None or not source.exists():
-                        self._appendInfoPanelText("extract failed: could not find package root in archive")
+                        self._appendInfoPanelStatus("extract failed: could not find package root in archive", "error")
                         return False, name
                     dest = plugin_dir / name
                     if dest.exists():
                         shutil.rmtree(dest)
                     shutil.copytree(source, dest)
-                    self._appendInfoPanelText(f"extracted package to {dest}")
+                    self._appendInfoPanelStatus(f"extracted package to {dest}", "success")
             except Exception as e:
-                self._appendInfoPanelText(f"extract failed: {e}")
+                self._appendInfoPanelStatus(f"extract failed: {e}", "error")
                 return False, name
 
         else:
-            self._appendInfoPanelText(f"downloading {url}")
+            self._appendInfoPanelStatus(f"downloading {url}", "command")
             try:
                 with urllib.request.urlopen(url, timeout=15) as r:
                     raw = r.read()
             except Exception as e:
-                self._appendInfoPanelText(f"download failed: {e}")
+                self._appendInfoPanelStatus(f"download failed: {e}", "error")
                 return False, name
             dest = plugin_dir / f"{name}.py"
             dest.write_bytes(raw)
-            self._appendInfoPanelText(f"wrote {dest}")
+            self._appendInfoPanelStatus(f"wrote {dest}", "success")
 
         meta = readMetadata(name)
         canonical = meta.get("name") or name
@@ -836,17 +842,17 @@ class CommandsMixin:
         if load_after:
             ok = pluginLoader.load(self, canonical, notify_error=True)
             if not ok:
-                self._appendInfoPanelText(f"{canonical}: failed to load after {status_label}")
+                self._appendInfoPanelStatus(f"{canonical}: failed to load after {status_label}", "error")
                 return False, canonical
 
         if should_sync_config:
             self._pluginEnableName(name, canonical)
 
-        self._appendInfoPanelText(f"{canonical}: {status_label} complete")
+        self._appendInfoPanelStatus(f"{canonical}: {status_label} complete", "success")
         return True, canonical
 
     async def _pluginRunProcess(self, args, cwd=None):
-        self._appendInfoPanelText("$ " + " ".join(args))
+        self._appendInfoPanelStatus("$ " + " ".join(args), "command")
         proc = await asyncio.create_subprocess_exec(
             *args,
             cwd=cwd,
@@ -859,7 +865,8 @@ class CommandsMixin:
                 break
             text = line.decode(errors="replace").rstrip()
             if text:
-                self._appendInfoPanelText(text)
+                level = "error" if "error" in text.lower() or "failed" in text.lower() else "info"
+                self._appendInfoPanelStatus(text, level)
         return await proc.wait()
 
     def _pluginEnableName(self, old_name, canonical):
