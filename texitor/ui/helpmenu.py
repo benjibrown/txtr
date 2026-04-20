@@ -211,26 +211,31 @@ class HelpMenu(Widget):
         self.display = True
         self.refresh()
 
-    def _center(self):
+    def _center(self, size=None):
         # calculate offset to center the widget on screen
-        screenW = self.app.size.width
-        screenH = self.app.size.height
+        screen = size or self.app.size
+        screenW = screen.width
+        screenH = screen.height
         x = max(0, (screenW - self._panelWidth) // 2)
         y = max(0, (screenH - self._panelHeight) // 2)
         self.styles.offset = (x, y)
 
-    def _fitToScreen(self):
-        self._panelWidth = min(84, max(28, self.app.size.width - 2))
-        self._panelHeight = min(26, max(10, self.app.size.height - 2))
+    def _fitToScreen(self, size=None):
+        screen = size or self.app.size
+        self._panelWidth = min(84, max(28, screen.width - 2))
+        self._panelHeight = min(26, max(10, screen.height - 2))
         self.styles.width = self._panelWidth
         self.styles.height = self._panelHeight
 
     def on_resize(self, event):
         # re-center if terminal is resized while open
         if self.display:
-            self._fitToScreen()
-            self._center()
-            self.refresh()
+            self.relayout()
+
+    def relayout(self, size=None):
+        self._fitToScreen(size)
+        self._center(size)
+        self.refresh()
 
     def close(self):
         self.display = False
