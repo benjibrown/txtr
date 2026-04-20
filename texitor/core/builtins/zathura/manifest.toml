@@ -1,0 +1,19 @@
+name = "zathura"
+description = "open PDFs in zathura and jump to the current source location with SyncTeX"
+version = "0.1.0"
+author = "benjibrown"
+entry = "__init__.py"
+
+commands = [
+  { syntax = ":pdf", description = "forward-search the current cursor position in zathura" },
+  { syntax = ":pdf open", description = "open the current file's PDF in zathura" },
+  { syntax = ":pdf sync", description = "forward-search the current cursor position in zathura" },
+  { syntax = ":pdf close", description = "close the zathura window launched by txtr" }
+]
+
+config_options = [
+  { key = "executable", default = "zathura", description = "zathura executable to run" },
+  { key = "extra_args", default = [], description = "extra CLI args appended before the PDF path" },
+  { key = "auto_open_on_build", default = false, description = "open the current PDF after a successful build if no tracked viewer is already open" },
+  { key = "auto_sync_on_build", default = false, description = "run SyncTeX forward search after a successful build" }
+]
