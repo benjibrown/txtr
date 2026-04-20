@@ -407,7 +407,7 @@ def _renderText(text, rowIdx, width, inner):
 def _renderStatusText(text, level, rowIdx, width, inner):
     bg = _BG_ALT if rowIdx % 2 == 0 else _BG
     bs = Style(color=_BORDER, bgcolor=bg)
-    color = {}
+    color = {
         "success": _theme.green,
         "error": _theme.red,
         "warning": _theme.yellow,
