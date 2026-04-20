@@ -100,7 +100,7 @@ class AutocompleteWidget(Widget):
         trimmed_desc = desc[:desc_width]
         t.append(prefix, style=Style(color=_theme.accent2 if isSelected else _BORDER_COL, bgcolor=bgColor, bold=isSelected))
         t.append(f"{trimmed_cmd:<{cmd_width}}", style=Style(color=cmdColor, bgcolor=bgColor, bold=isSelected))
-        t.append(" — ", style=Style(color=_BORDER_COL, bgcolor=bgColor))
+        t.append(" - ", style=Style(color=_BORDER_COL, bgcolor=bgColor))
         t.append(trimmed_desc, style=Style(color=descColor, bgcolor=bgColor, italic=True))
         remaining = width - len(prefix) - cmd_width - 3 - len(trimmed_desc)
         if remaining > 0:

@@ -135,7 +135,7 @@ _DEFAULTS = {
         "d":      "delete_selection",
         ">":      "indent",
         "<":      "dedent",
-        # motions — all extend the selection
+        # motions - all extend the selection
         "h":      "cursor_left",
         "j":      "cursor_down",
         "k":      "cursor_up",
@@ -165,7 +165,7 @@ _DEFAULTS = {
         "d":      "delete_selection",
         ">":      "indent",
         "<":      "dedent",
-        # motions — all extend the selection
+        # motions - all extend the selection
         "h":      "cursor_left",
         "j":      "cursor_down",
         "k":      "cursor_up",

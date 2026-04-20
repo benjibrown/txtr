@@ -1,7 +1,7 @@
 # txtr app package
 # TxtrApp is the main application class.
-# ActionsMixin  — all _action_* handler methods (actions.py)
-# CommandsMixin — _action_execute_command, _cmd_* methods (commands.py)
+# ActionsMixin  - all _action_* handler methods (actions.py)
+# CommandsMixin - _action_execute_command, _cmd_* methods (commands.py)
 from __future__ import annotations
 
 # TODO - somehow make this look better lol
@@ -378,7 +378,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App): # i love 
             while self._watchActive:
                 await self._watchEvent.wait()
                 self._watchEvent.clear()
-                # debounce — wait for typing to pause
+                # debounce - wait for typing to pause
                 await _aio.sleep(delay)
                 # drain any further events that arrived during sleep
                 self._watchEvent.clear()
