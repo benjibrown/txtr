@@ -67,7 +67,7 @@ The full docs live at **[txtr.benji.mom](https://txtr.benji.mom)**.
 Useful starting points:
 
 - snippets: [txtr.benji.mom/snippets/overview](https://txtr.benji.mom/snippets/overview)
-- configuration: [txtr.benji.mom/config/overview](https://txtr.benji.mom/configuration/overview)
+- configuration: [txtr.benji.mom/config/overview](https://txtr.benji.mom/config/overview)
 - plugins: [txtr.benji.mom/plugins/overview](https://txtr.benji.mom/plugins/overview)
 - plugin development: [txtr.benji.mom/plugins/development](https://txtr.benji.mom/plugins/development)
 
@@ -81,7 +81,6 @@ Useful starting points:
 
 txtr is early-stage. If you find a bug or want to add something, open an issue or PR on [GitHub](https://github.com/benjibrown/txtr). 
 > tl;dr - just make a pr ...
-
 
 
 
