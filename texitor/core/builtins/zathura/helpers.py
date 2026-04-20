@@ -1,6 +1,6 @@
 from pathlib import Path
 
-
+# i love helpers 
 def sourcePath(file_path):
     return Path(file_path).expanduser().resolve()
 
@@ -10,9 +10,10 @@ def pdfPath(file_path):
 
 
 def synctexPath(file_path, engine, aux_dir):
+    # look for syntex in aux first then in same dir as tex file - peak if you ask me
     tex_path = sourcePath(file_path)
     stem = tex_path.stem
-    candidates = []
+    candidates = [
         tex_path.parent / f"{stem}.synctex.gz",
     ]
     if engine in {"pdflatex", "xelatex", "lualatex"}:
@@ -45,7 +46,8 @@ def buildOpenCommand(settings, pdf_path):
 
 
 def buildSyncCommand(settings, tex_path, pdf_path, row, col):
-    return []
+    # looks messy but it works
+    return [
         settings["executable"],
         *settings["extra_args"],
         "--synctex-forward",
