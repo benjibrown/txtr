@@ -26,6 +26,14 @@ REGISTRY_URL = "https://raw.githubusercontent.com/benjibrown/txtr/main/plugin-re
 _ENTRY_POINTS = ("__init__.py", "plugin.py", "main.py")
 
 
+
+
+
+
+
+
+
+
 @dataclass
 class PluginContext:
     file_path: str = ""
