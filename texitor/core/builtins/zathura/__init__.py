@@ -155,15 +155,36 @@ class ZathuraPlugin(PluginBase):
         engine = cfg.get("compiler", "engine", "latexmk")
         aux_dir = cfg.get("compiler", "aux_dir", ".aux")
         sync_path = synctexPath(tex_path, engine, aux_dir)
-
         if sync_path.exists():
             return False
         self.notify(app, "SyncTeX data not found - rebuild with a txtr compiler preset or a custom command that enables synctex", severity="warning", timeout=5)
         return True
 
-
     def _warnModified(self, app, ctx):
-
         if ctx.modified:
             self.notify(app, "unsaved changes - PDF sync uses the last built version", severity="warning")
 
+    async def _spawnTracked(self, app, cmd, pdf_path):
+        try:
+            proc = await asyncio.create_subprocess_exec()
+                *cmd,
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.DEVNULL,
+            )
+        except FileNotFoundError:
+            self.notify(app, f"zathura executable not found: {cmd[0]}", severity="error")
+            return False
+        self._viewerProc = proc
+        self._viewerPdf = str(pdf_path)
+        self._viewerWaitTask = asyncio.create_task(self._watchViewer(app, proc))
+        return True
+
+    async def _spawnOneShot(self, app, cmd):
+        try:
+            proc = await asyncio.create_subprocess_exec()
+                *cmd,
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.DEVNULL,
+            )
+        except FileNotFoundError:
+            self.notify(app, f"zathura j")
