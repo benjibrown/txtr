@@ -39,6 +39,7 @@ If the file does not exist, txtr creates it. Config and snippets are seeded to `
 - LaTeX snippets and completions
 - citation autocomplete from `.bib` files
 - compiler commands and build/watch flows
+- built-in Zathura PDF sync plugin
 - built-in + installable plugins
 - a full docs site with config, snippets, and plugin guides
 
@@ -81,6 +82,5 @@ Useful starting points:
 
 txtr is early-stage. If you find a bug or want to add something, open an issue or PR on [GitHub](https://github.com/benjibrown/txtr). 
 > tl;dr - just make a pr ...
-
 
 
