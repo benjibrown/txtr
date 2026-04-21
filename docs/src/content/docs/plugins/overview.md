@@ -151,7 +151,7 @@ ctx.selected_lines
 ctx.selected_text
 ```
 
-This is the preferred way to read editor state instead of scraping random app internals (understandbly tempting especially as the current level of context is pretty decent but not guaranteed to be perfect for every plugin's needs). 
+This is the preferred way to read editor state instead of scraping random app internals (understandably tempting especially as the current level of context is pretty decent but not guaranteed to be perfect for every plugin's needs). 
 
 `selected_line_range` is a 1-based inclusive `(start, end)` tuple, which is useful for tools like `freeze` that want a literal `--lines 12,20` style range.
 
