@@ -83,7 +83,11 @@ class WordCountPlugin(PluginBase):
         try:
             text = "\n".join(self.context(app).selected_lines or app.buffer.lines)
             stats = _latexWordStats(text, count_math=self.config("count_math", False))
-            self.notify(app, f"{stats['words']} words  {stats['chars']} chars  {stats['lines']} lines", timeout=5)
+            # just for you aditya - smh
+            plural = "word" if int(stats['words']) == 1 else "words"
+            charsp = "char" if int(stats['chars']) == 1 else "chars"
+            linesp = "line" if int(stats['lines']) == 1 else "lines"
+            self.notify(app, f"{stats['words']} {plural}  {stats['chars']} {charsp} {stats['lines']} {linesp}", timeout=5)
         except Exception as e:
             self.notify(app, f"wordcount error: {e}", severity="error")
 
