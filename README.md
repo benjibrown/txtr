@@ -24,6 +24,8 @@ pip install texitor
 ```
 > In-depth installation instructions are in the docs - see [txtr.benji.mom/installation](https://txtr.benji.mom/installation) for more details.
 
+If you encouter an error regarding installing system wide packages, you may need to install with `pipx` or in a virtual environment. 
+
 Requires Python 3.11 or later.
 
 ## Quick start
