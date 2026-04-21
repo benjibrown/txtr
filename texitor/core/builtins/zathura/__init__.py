@@ -179,7 +179,7 @@ class ZathuraPlugin(PluginBase):
         self._viewerWaitTask = asyncio.create_task(self._watchViewer(app, proc))
         return True
 
-    async def _spawnOneShot(self, app, cmd):
+    async def _spawnOneShot(self, app, cmd): # one shot???? future cat reference 
         try:
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
@@ -226,7 +226,7 @@ class ZathuraPlugin(PluginBase):
         if opened and notify:
             self.notify(app, f"opened {pdf_path.name} in zathura", timeout=4)
         return opened
-
+    # im hungry 
     async def _runSync(self, app, notify=True):
         ctx, tex_path, pdf_path = self._currentPaths(app)
         if not tex_path:
@@ -256,7 +256,7 @@ class ZathuraPlugin(PluginBase):
         if not self._viewerRunning():
             self._clearViewerState()
             if notify:
-                self.notify(app, "no txtr-launched zathura window is open", severity="warning")
+                self.notify(app, "no txtr-launched zathura window is open", severity="warning") # why would u even close it bruh
             return False
 
         self._closingViewer = True
