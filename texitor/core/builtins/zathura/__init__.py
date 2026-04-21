@@ -242,3 +242,34 @@ class ZathuraPlugin(PluginBase):
 
         if not self._viewerRunning():
             synced = await self._spawnTracked(app, cmd, pdf_path)
+        elif self._viewerPdf != str(pdf_path):
+            await self._runClose(app, notify=False)
+            synced = await self._spawnTracked(app, cmd, pdf_path)
+        else:
+            synced = await self._spawnOneShot(app, cmd)
+
+        if synced and notify:
+            self.notify(app, f"synced {pdf_path.name} in zathura", timeout=4)
+        return synced
+
+    async def _runClose(self, app, notify=True):
+        if not self._viewerRunning():
+            self._clearViewerState()
+            if notify:
+                self.notify(app, "no txtr-launched zathura window is open", severity="warning")
+            return False
+
+        self._closingViewer = True
+        self._viewerProc.terminate()
+        try:
+            await asyncio.wait_for(self._viewerProc.wait(), timeout=2)
+        except asyncio.TimeoutError:
+            self._viewerProc.kill()
+            await self._viewerProc.wait()
+        self._clearViewerState()
+        if notify:
+            self.notify(app, "closed zathura", timeout=3)
+        return True
+
+
+plugin = ZathuraPlugin
