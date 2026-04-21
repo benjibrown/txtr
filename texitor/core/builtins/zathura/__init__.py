@@ -166,7 +166,7 @@ class ZathuraPlugin(PluginBase):
 
     async def _spawnTracked(self, app, cmd, pdf_path):
         try:
-            proc = await asyncio.create_subprocess_exec()
+            proc = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.DEVNULL,
@@ -181,10 +181,64 @@ class ZathuraPlugin(PluginBase):
 
     async def _spawnOneShot(self, app, cmd):
         try:
-            proc = await asyncio.create_subprocess_exec()
+            proc = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.DEVNULL,
             )
         except FileNotFoundError:
-            self.notify(app, f"zathura j")
+            self.notify(app, f"zathura executable not found: {cmd[0]}", severity="error")
+            return False
+        asyncio.create_task(self._waitOneShot(app, proc))
+        return True
+
+    async def _watchViewer(self, app, proc):
+        rc = await proc.wait()
+        closing = self._closingViewer
+        if self._viewerProc is proc:
+            self._clearViewerState()
+        if rc not in (0, None) and not closing:
+            self.notify(app, f"zathura exited with code {rc}", severity="warning")
+
+    async def _waitOneShot(self, app, proc):
+        rc = await proc.wait()
+        if rc not in (0, None):
+            self.notify(app, f"zathura sync failed (exit {rc})", severity="warning")
+
+    async def _runOpen(self, app, notify=True):
+        ctx, tex_path, pdf_path = self._currentPaths(app)
+        if not tex_path:
+            return False
+        settings = self._settings()
+        if self._missingExecutable(app, settings) or self._missingPdf(app, pdf_path):
+            return False
+        self._warnModified(app, ctx)
+
+        if self._viewerRunning() and self._viewerPdf == str(pdf_path):
+            if notify:
+                self.notify(app, f"zathura already open for {pdf_path.name}")
+            return True
+
+        if self._viewerRunning():
+            await self._runClose(app, notify=False)
+
+        opened = await self._spawnTracked(app, buildOpenCommand(settings, pdf_path), pdf_path)
+        if opened and notify:
+            self.notify(app, f"opened {pdf_path.name} in zathura", timeout=4)
+        return opened
+
+    async def _runSync(self, app, notify=True):
+        ctx, tex_path, pdf_path = self._currentPaths(app)
+        if not tex_path:
+            return False
+        settings = self._settings()
+        if self._missingExecutable(app, settings) or self._missingPdf(app, pdf_path):
+            return False
+        if self._missingSynctex(app, tex_path):
+            return False
+        self._warnModified(app, ctx)
+
+        cmd = buildSyncCommand(settings, tex_path, pdf_path, ctx.cursor_row, ctx.cursor_col)
+
+        if not self._viewerRunning():
+            synced = await self._spawnTracked(app, cmd, pdf_path)
