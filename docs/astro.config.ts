@@ -83,6 +83,7 @@ export default defineConfig({
         label: "Plugins",
         items: [
           {label: "Overview", slug: "plugins/overview"},
+          {label: "Zathura PDF Sync", slug: "plugins/zathura"},
           {label: "Development", slug: "plugins/development"},
           {label: "Freeze Example", slug: "plugins/freeze-example"},
         ],
