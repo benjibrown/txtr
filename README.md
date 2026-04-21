@@ -22,7 +22,7 @@ txtr (aka texitor) is a terminal-based LaTeX editor built for speed. It combines
 ```
 pip install texitor
 ```
-> In-depth installation instructions are in the docs - see [txtr.benji.mom/installation](https://txtr.benji.mom/config/installation) for more details.
+> In-depth installation instructions are in the docs - see [txtr.benji.mom/installation](https://txtr.benji.mom/installation) for more details.
 
 Requires Python 3.11 or later.
 
