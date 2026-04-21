@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from texitor.ui.app import TxtrApp
 
 from texitor.core.theme import theme as _t
+from texitor.core.version import displayVersion
 import texitor.core.recents as _recents
 
 _CONSOLE = Console(width=500, no_color=False, highlight=False, markup=False, emoji=False)
@@ -79,7 +80,7 @@ _LOGO_D = [
     "   'Y\"    ` \"Y   Y\"       'Y\"        \"Y\"      ",
 ]
 _LOGOS = [_LOGO_A, _LOGO_B, _LOGO_C, _LOGO_D]
-_VERSION = "v2.2.0" # TODO - fetch from package metadata - i should really do this
+_VERSION = displayVersion()
 _TAGLINE = "LaTeX, fast."
 
 # this is so incredibly peak
