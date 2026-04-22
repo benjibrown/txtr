@@ -163,10 +163,16 @@ class CommandsMixin:
             self._openBufferPath(path, notify=True)
             import texitor.core.recents as _recents
             _recents.push(path)
-            self._loadBibsForFile(path)
-            self._refresh_all()
         else:
             self.notify(":e <filename>", severity="warning")
+
+    @command(":bn", "switch to next open buffer", section="File")
+    def _cmd_bufferNext(self, args):
+        self._nextBuffer()
+
+    @command(":bp", "switch to previous open buffer", section="File")
+    def _cmd_bufferPrev(self, args):
+        self._prevBuffer()
 
     @command(":bib", "reload .bib files from current file's directory", section="File")
     def _cmd_bib(self, args):
