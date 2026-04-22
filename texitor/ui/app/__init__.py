@@ -445,7 +445,6 @@ class TxtrApp(BufferManagerMixin, ActionsMixin, CommandsMixin, KeybindCommandsMi
                     self._dismissSplash()
                     self._openBufferPath(path)
                     _recents.push(path)
-                    self._refresh_all()
                 else:
                     self._dismissSplash()
             elif key == "q":
@@ -677,6 +676,7 @@ class TxtrApp(BufferManagerMixin, ActionsMixin, CommandsMixin, KeybindCommandsMi
 
     # used everywhere - refresh editor + bar
     def _refresh_all(self):
+        self.query_one(BufferTabs).refresh()
         editor = self.query_one(EditorWidget)
         editor.rebuildVisualLines()
         editor.scroll_to_cursor()
