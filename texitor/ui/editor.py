@@ -178,20 +178,24 @@ class EditorWidget(Widget):
             self._scroll_top = vrow 
         elif vrow >= self._scroll_top + height:
             self._scroll_top = vrow - height + 1
+        self._buf.view_scroll_top = self._scroll_top
 
     def on_resize(self, event):
         self.rebuildVisualLines()
         self.scroll_to_cursor()
+        self._buf.view_scroll_top = self._scroll_top
         self.refresh()
 
     def on_mouse_scroll_down(self, event):
         step = 3
         maxScroll = max(0, len(self._visualLines) - 1)
         self._scroll_top = min(self._scroll_top + step, maxScroll)   
+        self._buf.view_scroll_top = self._scroll_top
         self.refresh()
 
     def on_mouse_scroll_up(self, event):
         self._scroll_top = max(0, self._scroll_top - 3)
+        self._buf.view_scroll_top = self._scroll_top
         self.refresh()
 
     def _eventBufferPos(self, event):
