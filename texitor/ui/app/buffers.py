@@ -78,4 +78,45 @@ class BufferManagerMixin:
         self._clearBufferScopedUi()
         self._syncBufferWidgets()
 
+        # praying this actually works lol 
+        if self.buffer.path:
+            self._loadBibsForFile(self.buffer.path, quiet=True)
+        else:
+            self.citeCompleter.clear()
+            self._bibSignature = ()
+            self._stopBibAutoscan()
+        self._refresh_all()
+        if notify:
+            self.notify(f"switched to {self._bufferLabel(idx)}", timeout=2)
+        return True
 
+    def _openBufferPath(self, path, notify=False):
+        canonical = self._canonicalPath(path)
+        existing = self._findBufferIndex(canonical)
+        if existing is not None:
+            return self._activateBuffer(existing, notify=notify)
+
+        if len(self.buffers) == 1 and self.activeBufferIndex == 0 and self._isPristineScratch():
+            self.buffer.load(canonical)
+            self._syncBufferWidgets()
+            self._loadBibsForFile(canonical)
+            self._refresh_all()
+            return True
+
+        buf = Buffer() # instanitate !!
+        buf.load(canonical)
+        self.buffers.append(buf)
+        return self._activateBuffer(len(self.buffers) - 1, notify=notify)
+
+    def _nextBuffer(self):
+        if len(self.buffers) <= 1:
+            return
+        self._activateBuffer((self.activeBufferIndex + 1) % len(self.buffers))
+
+    def _prevBuffer(self):
+        if len(self.buffers) <= 1:
+            return
+        self._activateBuffer((self.activeBufferIndex - 1) % len(self.buffers))
+
+    def _hasModifiedBuffers(self):
+        return any(buf.modified for buf in self.buffers) # i hope u actually did some editing if u see this message
