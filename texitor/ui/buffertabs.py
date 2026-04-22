@@ -21,7 +21,7 @@ _EDGE_FG = _theme.fg_muted
 class BufferTabs(Widget):
 
     DEFAULT_CSS = """
-    BufferTabs {}
+    BufferTabs {
         height: 1;
         dock: top;
     }

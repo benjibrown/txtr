@@ -17,6 +17,7 @@ from texitor.core.firstrun import ensureUserConfig
 from texitor.core.config import config as cfg
 from texitor.core.clipboard import copyToSystem, pasteFromSystem
 from texitor.core.theme import theme as _theme, getStartupWarning
+from texitor.ui.buffertabs import BufferTabs
 from texitor.ui.editor import EditorWidget
 from texitor.ui.statusbar import StatusBar
 from texitor.ui.autocomplete import AutocompleteWidget
@@ -38,6 +39,7 @@ import re
 _CITE_PAT = re.compile(r'\\cite[a-z*]*\{([^}]*)$')
 
 from texitor.ui.app.actions import ActionsMixin
+from texitor.ui.app.buffers import BufferManagerMixin
 from texitor.ui.app.commands import CommandsMixin
 from texitor.ui.app.keybind_commands import KeybindCommandsMixin
 
@@ -55,6 +57,10 @@ def _buildAppCss(t):
     ToastRack {{
         align: right top;
         margin: 1 2;
+    }}
+
+    BufferTabs {{
+        dock: top;
     }}
 
     Toast {{
@@ -158,7 +164,7 @@ def _useSystemClip():
 
 # the main app - W class
 # i have made so many questionable choices here but oh well (ts is way too long)
-class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App): # i love inheritance
+class TxtrApp(BufferManagerMixin, ActionsMixin, CommandsMixin, KeybindCommandsMixin, App): # i love inheritance
 
     TITLE = "txtr"
     ENABLE_COMMAND_PALETTE = False
@@ -166,7 +172,9 @@ class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App): # i love 
 
     def __init__(self, filename=None, startup_notice=None, show_splash=True):
         super().__init__()
-        self.buffer = Buffer()
+        self.buffers = [Buffer()]
+        self.activeBufferIndex = 0
+        self.buffer = self.buffers[0]
         self.msm = ModeStateMachine()
         self.keybinds = KeybindRegistry()
         self._yank = []
@@ -228,6 +236,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App): # i love 
             self._loadBibsForFile(filename)
 
     def compose(self) -> ComposeResult: # peak
+        yield BufferTabs(self)
         yield EditorWidget(self.buffer, self.msm, self)
         yield AutocompleteWidget(self)
         yield HelpMenu(self)
@@ -238,6 +247,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App): # i love 
         yield StatusBar(self.buffer, self.msm, self)
 
     def on_mount(self):
+        self._syncBufferWidgets()
         self._registerCommands()
         self.msm.on_change = lambda mode: pluginLoader.fireModeChange(self, mode)
         enabled = cfg.get("plugins", "enabled", [])
@@ -433,7 +443,7 @@ class TxtrApp(ActionsMixin, CommandsMixin, KeybindCommandsMixin, App): # i love 
                 path = splash.selected_recent()
                 if path:
                     self._dismissSplash()
-                    self.buffer.load(path)
+                    self._openBufferPath(path)
                     _recents.push(path)
                     self._refresh_all()
                 else:

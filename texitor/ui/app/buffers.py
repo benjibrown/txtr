@@ -13,7 +13,7 @@ class BufferManagerMixin:
     # essentialy - is this a new, unsaved buffer with no content and no undo history ???/
     def _isPristineScratch(self, buf=None):
         buf = buf or self.buffer
-        return ()
+        return (
             buf.path is None
             and not buf.modified
             and buf.lines == [""]
