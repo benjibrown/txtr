@@ -97,6 +97,8 @@ cursor_left
 cursor_right
 cursor_up
 cursor_down
+jump_100_down
+jump_100_up
 line_start
 line_end
 goto_first_line
@@ -106,6 +108,8 @@ word_backward
 word_end
 scroll_half_down
 scroll_half_up
+next_buffer
+prev_buffer
 ```
 
 ### Search / command / help

@@ -12,7 +12,9 @@ Press `:` in Normal mode to enter Command mode. Type a command and press `Enter`
 | `:w` | Save the current file |
 | `:q` | Quit |
 | `:wq` | Save and quit |
-| `:e <file>` | Open a file |
+| `:e <file>` | Open a file in a new buffer, or switch to it if it is already open |
+| `:bn` | Switch to the next open buffer |
+| `:bp` | Switch to the previous open buffer |
 
 ## View
 

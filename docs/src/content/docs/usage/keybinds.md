@@ -17,8 +17,10 @@ description: Full default keybind reference for all modes.
 | `$` | Line end |
 | `gg` | First line |
 | `G` | Last line |
+| `100j` / `100k` | Jump 100 lines down / up |
 | `Ctrl+d` | Scroll half page down |
 | `Ctrl+u` | Scroll half page up |
+| `Tab` / `Shift+Tab` | Cycle next / previous open buffer |
 | Arrow keys | Also work for movement |
 
 ### Editing
