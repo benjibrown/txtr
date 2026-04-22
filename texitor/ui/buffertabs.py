@@ -1,3 +1,4 @@
+# this is very peak
 from __future__ import annotations
 
 from rich.console import Console
@@ -19,7 +20,7 @@ _EDGE_FG = _theme.fg_muted
 
 class BufferTabs(Widget):
 
-    DEFAULT_CSS = """"
+    DEFAULT_CSS = """
     BufferTabs {}
         height: 1;
         dock: top;
@@ -29,7 +30,7 @@ class BufferTabs(Widget):
     def __init__(self, app):
         super().__init__()
         self._app = app
-
+    # visible tabs :)
     def _visibleTabs(self, width):
         count = len(self._app.buffers)
         active = self._app.activeBufferIndex
@@ -67,3 +68,33 @@ class BufferTabs(Widget):
             if not added:
                 break
 
+        return visible, labels
+    # this code looks hard to read but its just building a text ojbect based on if the file is active or not
+    def render_line(self, y):
+        if y != 0:
+            return Strip.blank(self.size.width)
+
+        width = self.size.width
+        visible, labels = self._visibleTabs(width)
+        active = self._app.activeBufferIndex
+
+        text = Text(no_wrap=True)
+        if visible and visible[0] > 0:
+            text.append("< ", style=Style(color=_EDGE_FG, bgcolor=_BAR_BG, bold=True))
+
+        for pos, idx in enumerate(visible):
+            if text.cell_len and not text.plain.endswith(" "):
+                text.append(" ", style=Style(bgcolor=_BAR_BG))
+            label = labels[idx]
+            if idx == active:
+                text.append(f" {label} ", style=Style(color=_ACTIVE_FG, bgcolor=_ACTIVE_BG, bold=True))
+            else:
+                text.append(f" {label} ", style=Style(color=_BAR_FG, bgcolor=_INACTIVE_BG))
+
+        if visible and visible[-1] < len(labels) - 1:
+            if text.cell_len:
+                text.append(" ", style=Style(bgcolor=_BAR_BG))
+            text.append(" >", style=Style(color=_EDGE_FG, bgcolor=_BAR_BG, bold=True))
+
+        text.append(" " * max(0, width - text.cell_len), style=Style(color=_BAR_FG, bgcolor=_BAR_BG))
+        return Strip(list(text.render(_CONSOLE))).adjust_cell_length(width)
