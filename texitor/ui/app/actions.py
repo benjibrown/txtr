@@ -162,6 +162,20 @@ class ActionsMixin:
         self.buffer.move(drow=1)
         self.buffer.clamp_col()
 
+    def _action_jump_100_down(self):
+        self.buffer.move(drow=100)
+        self.buffer.clamp_col()
+
+    def _action_jump_100_up(self):
+        self.buffer.move(drow=-100)
+        self.buffer.clamp_col()
+
+    def _action_next_buffer(self):
+        self._nextBuffer()
+
+    def _action_prev_buffer(self):
+        self._prevBuffer()
+
     def _action_line_start(self):   self.buffer.cursor_col = 0
     def _action_goto_first_line(self): self.buffer.move_to(0, 0)
     def _action_goto_last_line(self):  self.buffer.move_to(self.buffer.line_count - 1, 0)
