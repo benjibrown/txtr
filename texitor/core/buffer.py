@@ -10,6 +10,7 @@ class Buffer:
         self.cursor_col = 0
         self.modified = False
         self.path = None
+        self.view_scroll_top = 0
         # will define later, this'll do for now...
         self._undo = []
         self._redo = []
@@ -134,6 +135,7 @@ class Buffer:
         self.cursor_col = 0
         self.modified = False
         self.path = path
+        self.view_scroll_top = 0
         self._undo.clear()
         self._redo.clear()
 
@@ -153,6 +155,5 @@ class Buffer:
     @staticmethod
     def _leading_whitespace(line):
         return line[: len(line) - len(line.lstrip())]
-
 
 
