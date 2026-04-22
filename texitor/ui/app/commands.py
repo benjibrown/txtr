@@ -100,18 +100,27 @@ class CommandsMixin:
 
     @command(":w", "save file", section="File")
     def _cmd_write(self, args):
+        from pathlib import Path
+        import texitor.core.recents as _recents
         from texitor.core.plugins import pluginLoader
         if args:
-            self.buffer.save(args)
-            self.notify(f"saved {args}")
-            self._loadBibsForFile(args, quiet=True)
-            pluginLoader.fireSave(self, args)
+            target = self._canonicalPath(Path(args).expanduser())
+            existing = self._findBufferIndex(target, exclude_idx=self.activeBufferIndex)
+            if existing is not None:
+                self.notify(f"'{Path(target).name}' is already open in another buffer", severity="warning")
+                return
+            self.buffer.save(target)
+            self.notify(f"saved {target}")
+            _recents.push(target)
+            self._loadBibsForFile(target, quiet=True)
+            pluginLoader.fireSave(self, target)
             return
         if not self.buffer.path:
             self.notify("no file name - use :w <filename>", severity="warning")
             return
         self.buffer.save()
         self.notify(f"saved {self.buffer.path}")
+        _recents.push(self.buffer.path)
         self._loadBibsForFile(self.buffer.path, quiet=True)
         pluginLoader.fireSave(self, self.buffer.path)
         mode = cfg.get("compiler", "autocompile", "save")
@@ -125,11 +134,14 @@ class CommandsMixin:
     @command(":wq", "save and quit", section="File", aliases=[":x", "imstuckintxtrpleasehelpme"])
     def _cmd_wq(self, args):
         self._cmd_write("")
+        if any(buf.modified for idx, buf in enumerate(self.buffers) if idx != self.activeBufferIndex):
+            self.notify("other open buffers still have unsaved changes - use :q! to force quit", severity="warning")
+            return
         self.exit()
 
     @command(":q", "quit (warns if unsaved)", section="File")
     def _cmd_quit(self, args):
-        if self.buffer.modified:
+        if self._hasModifiedBuffers():
             self.notify("unsaved changes - use :q! to force quit", severity="warning")
             return
         self.exit()
@@ -147,8 +159,8 @@ class CommandsMixin:
             if target.exists() and target.is_dir():
                 self.notify(f"cannot open directory: {target}", severity="warning")
                 return
-            path = str(target)
-            self.buffer.load(path)
+            path = self._canonicalPath(target)
+            self._openBufferPath(path, notify=True)
             import texitor.core.recents as _recents
             _recents.push(path)
             self._loadBibsForFile(path)
