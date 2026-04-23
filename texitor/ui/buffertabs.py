@@ -30,6 +30,7 @@ class BufferTabs(Widget):
     def __init__(self, app):
         super().__init__()
         self._app = app
+        self._ranges = []
     # visible tabs :)
     def _visibleTabs(self, width):
         count = len(self._app.buffers)
@@ -79,6 +80,7 @@ class BufferTabs(Widget):
         active = self._app.activeBufferIndex
 
         text = Text(no_wrap=True)
+        self._ranges = []
         if visible and visible[0] > 0:
             text.append("< ", style=Style(color=_EDGE_FG, bgcolor=_BAR_BG, bold=True))
 
@@ -86,10 +88,12 @@ class BufferTabs(Widget):
             if text.cell_len and not text.plain.endswith(" "):
                 text.append(" ", style=Style(bgcolor=_BAR_BG))
             label = labels[idx]
+            start = text.cell_len
             if idx == active:
                 text.append(f" {label} ", style=Style(color=_ACTIVE_FG, bgcolor=_ACTIVE_BG, bold=True))
             else:
                 text.append(f" {label} ", style=Style(color=_BAR_FG, bgcolor=_INACTIVE_BG))
+            self._ranges.append((start, text.cell_len, idx))
 
         if visible and visible[-1] < len(labels) - 1:
             if text.cell_len:
@@ -98,3 +102,11 @@ class BufferTabs(Widget):
 
         text.append(" " * max(0, width - text.cell_len), style=Style(color=_BAR_FG, bgcolor=_BAR_BG))
         return Strip(list(text.render(_CONSOLE))).adjust_cell_length(width)
+
+    def on_mouse_down(self, event):
+        if event.button != 1:
+            return
+        for start, end, idx in self._ranges:
+            if start <= event.x < end:
+                self._app._activateBuffer(idx, notify=False)
+                return
