@@ -135,22 +135,22 @@ class FileExplorer(Widget):
 
         self._entries.extend(dirs + files)
         self._cursor = min(self._cursor, max(0, len(self._entries) - 1))
-        self._scrollTop = 0 
+        self._scrollTop = 0
         self.refresh()
-    
+
     def _center(self, size=None):
-        screen = size or self.app.size 
+        screen = size or self.app.size
         self.styles.offset = (
-                max(0, (screen.width - self._panelWidth) // 2), 
-                max(0, (screen.height - self._panelHeight) // 2),
+            max(0, (screen.width - self._panelWidth) // 2),
+            max(0, (screen.height - self._panelHeight) // 2),
         )
 
     def _fitToScreen(self, size=None):
-        screen = size or self.app.size 
+        screen = size or self.app.size
         self._panelWidth = min(_MAX_W, max(44, screen.width - 2))
         self._panelHeight = min(_MAX_H, max(12, screen.height - 2))
-        self.styles.width = self._panelWidth 
-        self.styles.height = self._panelHeight 
+        self.styles.width = self._panelWidth
+        self.styles.height = self._panelHeight
 
     def _contentHeight(self):
         return max(1, self.size.height - 4)
@@ -161,8 +161,7 @@ class FileExplorer(Widget):
     def _revealCursor(self):
         contentH = self._contentHeight()
         if self._cursor < self._scrollTop:
-            self._scrollTop = self._cursor 
-
+            self._scrollTop = self._cursor
         elif self._cursor >= self._scrollTop + contentH:
             self._scrollTop = self._cursor - contentH + 1
 
@@ -202,8 +201,7 @@ class FileExplorer(Widget):
             Text(str(path), style=Style(color=_FG_SUB, bgcolor=_BG)),
             Text(""),
         ]
-        # TODO - finish this off when i can be arsed
-    
 
+        # TODO - finish this off when i can be arsed
 
 
