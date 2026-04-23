@@ -25,6 +25,7 @@ from texitor.ui.helpmenu import HelpMenu
 from texitor.ui.configpanel import ConfigPanel
 from texitor.ui.buildpanel import BuildPanel
 from texitor.ui.infopanel import InfoPanel
+from texitor.ui.fileexplorer import FileExplorer
 from texitor.ui.splash import SplashWidget
 import texitor.core.compiler as _compiler
 import texitor.core.recents as _recents
@@ -98,6 +99,11 @@ def _buildAppCss(t):
     }}
 
     ConfigPanel {{
+        layer: overlay;
+        display: none;
+    }}
+
+    FileExplorer {{
         layer: overlay;
         display: none;
     }}
@@ -207,6 +213,7 @@ class TxtrApp(BufferManagerMixin, ActionsMixin, CommandsMixin, KeybindCommandsMi
         self.splashOpen = (filename is None and show_splash)
         self.helpOpen   = False
         self.configOpen = False
+        self.explorerOpen = False
         self.infoOpen = False
         self.buildOpen  = False
         self._buildTask = None
@@ -214,6 +221,8 @@ class TxtrApp(BufferManagerMixin, ActionsMixin, CommandsMixin, KeybindCommandsMi
         self._buildStatus = ""
         self._watchTask = None
         self._watchActive = False
+        self._watchBufferPath = None
+        self._watchLastRevision = {}
         self._watchEvent = None
         self._bibWatchTask = None
         self._bibSignature = ()
@@ -231,6 +240,7 @@ class TxtrApp(BufferManagerMixin, ActionsMixin, CommandsMixin, KeybindCommandsMi
         self._reloadUserKeybinds(notify=False)
 
         if filename:
+            filename = self._canonicalPath(filename)
             self.buffer.load(filename)
             _recents.push(filename)
             self._loadBibsForFile(filename)
