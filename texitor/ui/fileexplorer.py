@@ -133,4 +133,77 @@ class FileExplorer(Widget):
             else:
                 files.append(("file", item.name, item))
 
+        self._entries.extend(dirs + files)
+        self._cursor = min(self._cursor, max(0, len(self._entries) - 1))
+        self._scrollTop = 0 
+        self.refresh()
+    
+    def _center(self, size=None):
+        screen = size or self.app.size 
+        self.styhles.offset = (
+                max(0, (screen.width - self._panelWidth) // 2)), 
+                max(0, (screen.height - self._panelHeight) // 2),
+                )
+
+    def _fitToScreen(self, size=None):
+        screen = size or self.app.size 
+        self._panelWidth = min(_MAX_W, max(44, screen.width - 2))
+        self._panelHeight = min(_MAX_H, max(12, screen.height - 2))
+        self.styles.width = self._panelWidth 
+        self.styles.height = self._panelHeight 
+
+    def _contentHeight(self):
+        return max(1, self.size.height - 4)
+
+    def _leftWidth(self):
+        return max(24, min(42, self.size.width // 3))
+
+    def _revealCursor(self):
+        contentH = self._contentHeight()
+        if self._cursor < self._scrollTop:
+            self._scrollTop = self._cursor 
+
+        elif self._cursor >= self._scrollTop + contentH:
+            self._scrollTop = self._cursor - contentH + 1
+
+    # gen preview content for explorer 
+    def _previewRows(self, width, height):
+        if not self._entries:
+            return [Text(" empty directory ", style=Style(color=_FG_DIM, bgcolor=_BG)] 
+        kind, label, path = self._entries[self._cursor]
+                    if kind in ("dir", "parent"):
+                        rows = [
+                            Text(" directory ", style=Style(color_ACC2, bgcolor=_BG, bold=True)),
+                            Text(str(path), style=Style(color=_FG_SUB, bgcolor=_BG)),
+                            Text(""),
+                            ]
+                    child_count = 0 
+                    try: 
+                        child_count = len([p for p in path.iterdir() if not p.name.startswith(".")])
+                    except OSError:
+                        pass 
+                    # only pluralise if not 1 - just for u aditya
+                    rows.append(Text(f"{child_count} visible item{'s' if child_count != 1 else ''}", style=Style(color=_FG, bgcolor=_BG)))
+                    rows.append(Text(""))
+                    rows.append(Text("press enter or l to open this directory", style=Style(color=_GREEN, bgcolor=_BG)))
+                    rows.append(Text("press h or left to go to parent", style=Style(color=_FG_DIM, bgcolor=_BG)))
+                    return rows[:height]
+
+        try:
+            raw = path.read_text(encoding="utf-8", errors="replace").splitlines()
+        except Exception:
+            return [
+                Text(" preview unavailable ", style=Style(color=_YELLOW, bgcolor=_BG, bold=True)),
+                Text(str(path), style=Style(color=_FG_SUB, bgcolor=_BG)),
+                ]
+
+        rows = [
+            Text(path.name, style=Style(color=_ACC2, bgcolor=_BG, bold=True)),
+            Text(str(path), style=Style(color=_FG_SUB, bgcolor=_BG)),
+            Text(""),
+            ]
+        # TODO - finish this off when i can be arsed
+    
+
+
 
