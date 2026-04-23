@@ -53,6 +53,7 @@ class CommandsMixin:
                 meta["description"],
                 section=meta["section"],
                 aliases=meta["aliases"] or None,
+                hidden=meta.get("hidden", False),
                 handler=bound,
             )
 
@@ -80,6 +81,75 @@ class CommandsMixin:
         self.infoOpen = True
         self.query_one(InfoPanel).appendRow(("status", text, level), autoScroll=autoScroll)
 
+    def _saveBuffer(self, buf, target=None, notify=True, autocompile=False):
+        import texitor.core.recents as _recents
+        from texitor.core.plugins import pluginLoader
+
+        old_path = buf.path
+        path = target or buf.path
+        if not path:
+            return False
+
+        if target:
+            buf.save(target)
+            path = target
+        else:
+            buf.save()
+            path = buf.path
+
+        if notify:
+            self.notify(f"saved {path}")
+        _recents.push(path)
+        if buf is self.buffer:
+            self._loadBibsForFile(path, quiet=True)
+        pluginLoader.fireSave(self, path)
+
+        watched_old = self._watchActive and old_path and self._watchBufferPath == old_path
+        watched_new = self._watchActive and self._watchBufferPath == path
+        if watched_old:
+            self._watchBufferPath = path
+        if watched_old or watched_new:
+            self._watchLastRevision[path] = buf.revision
+
+        mode = cfg.get("compiler", "autocompile", "save")
+        if mode is True:
+            mode = "save"
+        elif mode is False:
+            mode = "off"
+
+        if autocompile and (mode == "always" or (mode == "save" and buf.build_primed)):
+            self._cmd_build("")
+        return True
+
+    def _saveAllBuffers(self, force=False):
+        modified = [(idx, buf) for idx, buf in enumerate(self.buffers) if buf.modified]
+        unnamed = [(idx, buf) for idx, buf in modified if not buf.path]
+        if unnamed and not force:
+            self.notify(f"{self._bufferLabel(unnamed[0][0])} has no file name - save it first or use :wqa! to force quit all", severity="warning")
+            return False
+
+        saved = 0
+        for _, buf in modified:
+            if not buf.path:
+                continue
+            self._saveBuffer(buf, notify=False, autocompile=(buf is self.buffer))
+            saved += 1
+
+        if saved:
+            self.notify(f"saved {saved} buffer{'s' if saved != 1 else ''}")
+        elif not force:
+            self.notify("nothing to save")
+        return True
+
+    def _quitCurrent(self, force=False):
+        if len(self.buffers) > 1:
+            return self._closeBuffer(force=force)
+        if self.buffer.modified and not force:
+            self.notify("unsaved changes - use :q! to force quit", severity="warning")
+            return False
+        self.exit()
+        return True
+
     async def _pluginFetchRegistry(self, registry_url):
         import json
         import urllib.request
@@ -98,11 +168,9 @@ class CommandsMixin:
         
     # file commands
 
-    @command(":w", "save file", section="File")
+    @command(":w", "save current buffer", section="File")
     def _cmd_write(self, args):
         from pathlib import Path
-        import texitor.core.recents as _recents
-        from texitor.core.plugins import pluginLoader
         if args:
             target = self._canonicalPath(Path(args).expanduser())
             existing = self._findBufferIndex(target, exclude_idx=self.activeBufferIndex)
