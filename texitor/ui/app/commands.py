@@ -176,28 +176,18 @@ class CommandsMixin:
             existing = self._findBufferIndex(target, exclude_idx=self.activeBufferIndex)
             if existing is not None:
                 self.notify(f"'{Path(target).name}' is already open in another buffer", severity="warning")
-                return
-            self.buffer.save(target)
-            self.notify(f"saved {target}")
-            _recents.push(target)
-            self._loadBibsForFile(target, quiet=True)
-            pluginLoader.fireSave(self, target)
-            return
+                return False
+            return self._saveBuffer(self.buffer, target=target, autocompile=True)
         if not self.buffer.path:
             self.notify("no file name - use :w <filename>", severity="warning")
+            return False
+        return self._saveBuffer(self.buffer, autocompile=True)
+
+    @command(":wq", "save current buffer, then close it or quit if it is the last one", section="File", aliases=[":x", "imstuckintxtrpleasehelpme"], hidden=True)
+    def _cmd_wq(self, args):
+        if not self._cmd_write(""):
             return
-        self.buffer.save()
-        self.notify(f"saved {self.buffer.path}")
-        _recents.push(self.buffer.path)
-        self._loadBibsForFile(self.buffer.path, quiet=True)
-        pluginLoader.fireSave(self, self.buffer.path)
-        mode = cfg.get("compiler", "autocompile", "save")
-        if mode is True:
-            mode = "save"
-        elif mode is False:
-            mode = "off"
-        if mode == "always" or (mode == "save" and self._buildPrimed):
-            self._cmd_build("")
+        self._quitCurrent(force=False)
 
     @command(":wq", "save and quit", section="File", aliases=[":x", "imstuckintxtrpleasehelpme"])
     def _cmd_wq(self, args):
