@@ -56,6 +56,7 @@ class BufferManagerMixin:
             status._buf = self.buffer
         tabs = self.query(BufferTabs).first(None)
         if tabs:
+            tabs.display = len(self.buffers) > 1
             tabs.refresh()
 
     def _clearBufferScopedUi(self):
@@ -68,6 +69,10 @@ class BufferManagerMixin:
     def _activateBuffer(self, idx, notify=False):
         if idx < 0 or idx >= len(self.buffers):
             return False
+        if idx == self.activeBufferIndex:
+            if notify:
+                self.notify(f"already on {self._bufferLabel(idx)}", timeout=2)
+            return True
 
         editor = self.query(EditorWidget).first(None)
         if editor:
@@ -94,29 +99,53 @@ class BufferManagerMixin:
         canonical = self._canonicalPath(path)
         existing = self._findBufferIndex(canonical)
         if existing is not None:
-            return self._activateBuffer(existing, notify=notify)
+            if existing == self.activeBufferIndex:
+                if notify:
+                    self.notify(f"{Path(canonical).name} is already open", timeout=2)
+                return "already-open"
+            self._activateBuffer(existing, notify=False)
+            if notify:
+                self.notify(f"{Path(canonical).name} is already open - switched to it", timeout=2)
+            return "switched"
 
         if len(self.buffers) == 1 and self.activeBufferIndex == 0 and self._isPristineScratch():
             self.buffer.load(canonical)
             self._syncBufferWidgets()
             self._loadBibsForFile(canonical)
             self._refresh_all()
-            return True
+            if notify:
+                self.notify(f"opened {Path(canonical).name}", timeout=2)
+            return "opened"
 
         buf = Buffer() # instanitate !!
         buf.load(canonical)
         self.buffers.append(buf)
-        return self._activateBuffer(len(self.buffers) - 1, notify=notify)
+        self._activateBuffer(len(self.buffers) - 1, notify=False)
+        if notify:
+            self.notify(f"opened {Path(canonical).name}", timeout=2)
+        return "opened"
+
+    def _newScratchBuffer(self):
+        buf = Buffer()
+        self.buffers.append(buf)
+        return self._activateBuffer(len(self.buffers) - 1, notify=True)
 
     def _nextBuffer(self):
         if len(self.buffers) <= 1:
-            return
+            self.notify("no buffers to switch to or open", severity="warning")
+            return False
         self._activateBuffer((self.activeBufferIndex + 1) % len(self.buffers))
+        return True
 
     def _prevBuffer(self):
         if len(self.buffers) <= 1:
-            return
+            self.notify("no buffers to switch to or open", severity="warning")
+            return False
         self._activateBuffer((self.activeBufferIndex - 1) % len(self.buffers))
+        return True
 
     def _hasModifiedBuffers(self):
         return any(buf.modified for buf in self.buffers) # i hope u actually did some editing if u see this message
+
+    def _bufferRows(self):
+        rows = [("header", "Open buffers")]
