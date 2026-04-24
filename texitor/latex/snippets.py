@@ -10,7 +10,7 @@ userPath = Path.home() / ".config" / "txtr" / "snippets.toml"
 # TODO - new tab stop system, dont use | --> better syntax should be ${1} ${2}, ${1:placeholder}
 # TODO - keep support for | just in case 
 _STOP_RE = re.compile(r"\$\{(\d+)(?::([^}]*))?\}") # i hope this works
-_MATH_ENVS = {}
+_MATH_ENVS = {
     "math", "displaymath", "equation", "align", "alignat", "gather", "multline",
     "flalign", "eqnarray", "split", "aligned", "alignedat", "cases", "matrix",
     "pmatrix", "bmatrix", "Bmatrix", "vmatrix", "Vmatrix", "smallmatrix",
