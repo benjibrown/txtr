@@ -189,16 +189,35 @@ class CommandsMixin:
             return
         self._quitCurrent(force=False)
 
-    @command(":wq", "save and quit", section="File", aliases=[":x", "imstuckintxtrpleasehelpme"])
-    def _cmd_wq(self, args):
-        self._cmd_write("")
-        if any(buf.modified for idx, buf in enumerate(self.buffers) if idx != self.activeBufferIndex):
-            self.notify("other open buffers still have unsaved changes - use :q! to force quit", severity="warning")
+    @command(":wa", "save all modified named buffers", section="File", hidden=True)
+    def _cmd_writeAll(self, args):
+        self._saveAllBuffers(force=False)
+
+    @command(":wqa", "save all modified named buffers, then quit all", section="File", hidden=True)
+    def _cmd_writeQuitAll(self, args):
+        if not self._saveAllBuffers(force=False):
             return
         self.exit()
 
-    @command(":q", "quit (warns if unsaved)", section="File")
+    @command(":wqa!", "save all named buffers you can, then force quit all", section="File", hidden=True)
+    def _cmd_writeQuitAllForce(self, args):
+        self._saveAllBuffers(force=True)
+        self.exit()
+
+    @command(":a", "modifier  •  can be stacked with other commands to apply them to all buffers", section="File")
+    def _cmd_allModifier(self, args):
+        self.notify(":a needs to be stacked with another command, like :wa or :qa", severity="warning")
+
+    @command(":q", "close current buffer, or quit txtr if it is the last one", section="File")
     def _cmd_quit(self, args):
+        self._quitCurrent(force=False)
+
+    @command(":q!", "force close current buffer, or force quit txtr if it is the last one", section="File")
+    def _cmd_forceQuit(self, args):
+        self._quitCurrent(force=True)
+
+    @command(":qa", "quit all open buffers and exit txtr", section="File", hidden=True)
+    def _cmd_quitAll(self, args):
         if self._hasModifiedBuffers():
             self.notify("unsaved changes - use :q! to force quit", severity="warning")
             return
