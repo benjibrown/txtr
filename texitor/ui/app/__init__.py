@@ -251,6 +251,7 @@ class TxtrApp(BufferManagerMixin, ActionsMixin, CommandsMixin, KeybindCommandsMi
         yield AutocompleteWidget(self)
         yield HelpMenu(self)
         yield ConfigPanel()
+        yield FileExplorer(self)
         yield InfoPanel()
         yield BuildPanel()
         yield SplashWidget(self)
@@ -321,6 +322,9 @@ class TxtrApp(BufferManagerMixin, ActionsMixin, CommandsMixin, KeybindCommandsMi
         if except_name != "config" and self.configOpen:
             self.configOpen = False
             self.query_one(ConfigPanel).close()
+        if except_name != "explorer" and self.explorerOpen:
+            self.explorerOpen = False
+            self.query_one(FileExplorer).close()
         if except_name != "info" and self.infoOpen:
             self.infoOpen = False
             self.query_one(InfoPanel).close()
