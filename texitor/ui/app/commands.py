@@ -620,7 +620,7 @@ class CommandsMixin:
             sb.refresh()
         delay = cfg.get("compiler", "watch_interval", 1.5)
         self._startWatchLoop()
-        self.notify(f"buildwatch active for {Path(self.buffer.path).name} - builds {delay}s after each edit - :bw to stop")}
+        self.notify(f"buildwatch active for {Path(self.buffer.path).name} - builds {delay}s after each edit - :bw to stop")
 
     @command(":engines", "list available engines", section="Compiler", aliases=[":compilers"])
     def _cmd_listEngines(self, args):

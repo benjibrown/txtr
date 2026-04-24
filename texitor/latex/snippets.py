@@ -45,7 +45,7 @@ def inMathContext(lines, row, col):
         line = _stripComment(line)
         i = 0
         while i < len(line):
-            if line.startswith(r"\begin{", i):}")
+            if line.startswith(r"\begin{", i):
                 end = line.find("}", i + 7)
                 if end != -1:
                     env = line[i + 7:end]
@@ -53,7 +53,7 @@ def inMathContext(lines, row, col):
                         env_stack.append(env.rstrip("*"))
                     i = end + 1
                     continue
-            if line.startswith(r"\end{", i):}")
+            if line.startswith(r"\end{", i):
                 end = line.find("}", i + 5)
                 if end != -1:
                     env = line[i + 5:end].rstrip("*")
@@ -63,7 +63,7 @@ def inMathContext(lines, row, col):
                             break
                     i = end + 1
                     continue
-            if line.startswith(r"\[", i):]")
+            if line.startswith(r"\[", i):
                 bracket = True
                 i += 2
                 continue
@@ -71,7 +71,7 @@ def inMathContext(lines, row, col):
                 bracket = False
                 i += 2
                 continue
-            if line.startswith(r"\(", i):")
+            if line.startswith(r"\(", i):
                 paren = True
                 i += 2
                 continue
