@@ -406,8 +406,8 @@ class TxtrApp(BufferManagerMixin, ActionsMixin, CommandsMixin, KeybindCommandsMi
                 await _aio.sleep(delay)
                 # drain any further events that arrived during sleep
                 self._watchEvent.clear()
-                if self._watchActive:
-                    self._cmd_buildSilent()
+                if self._watchActive and self._watchBufferPath:
+                    self._cmd_buildSilent(path=self._watchBufferPath)
 
         self._watchTask = _aio.create_task(_loop())
 
@@ -427,6 +427,8 @@ class TxtrApp(BufferManagerMixin, ActionsMixin, CommandsMixin, KeybindCommandsMi
             self.query_one(HelpMenu).relayout(size)
         if self.configOpen:
             self.query_one(ConfigPanel).relayout(size)
+        if self.explorerOpen:
+            self.query_one(FileExplorer).relayout(size)
         if self.infoOpen:
             self.query_one(InfoPanel).relayout(size)
         if self.buildOpen:
@@ -529,6 +531,44 @@ class TxtrApp(BufferManagerMixin, ActionsMixin, CommandsMixin, KeybindCommandsMi
             else:
                 return
 
+        if self.explorerOpen:
+            explorer = self.query_one(FileExplorer)
+            if self.msm.is_command():
+                pass
+            elif key in ("q", "escape"):
+                self.explorerOpen = False
+                explorer.close()
+                return
+            elif key == "colon" or event.character == ":":
+                self._action_enter_command()
+                self._refresh_all()
+                return
+            elif key in ("j", "down"):
+                explorer.scrollDown()
+                return
+            elif key in ("k", "up"):
+                explorer.scrollUp()
+                return
+            elif key == "ctrl+d":
+                explorer.scrollDown(8)
+                return
+            elif key == "ctrl+u":
+                explorer.scrollUp(8)
+                return
+            elif key in ("h", "left"):
+                explorer.parentDir()
+                return
+            elif key in ("l", "right", "enter"):
+                action = explorer.activateSelection()
+                if action and action[0] == "file":
+                    self.explorerOpen = False
+                    explorer.close()
+                    self._openBufferPath(action[1], notify=True)
+                    _recents.push(action[1])
+                return
+            else:
+                return
+
         if self.infoOpen:
             panel = self.query_one(InfoPanel)
             if self.msm.is_command():
@@ -565,6 +605,10 @@ class TxtrApp(BufferManagerMixin, ActionsMixin, CommandsMixin, KeybindCommandsMi
                     self.infoOpen = False
                     panel.close()
                     self._cmd_plugin(f"info {action[1]}")
+                elif action and action[0] == "buffer-switch":
+                    self.infoOpen = False
+                    panel.close()
+                    self._activateBuffer(action[1], notify=True)
                 return
             else:
                 return
@@ -698,8 +742,11 @@ class TxtrApp(BufferManagerMixin, ActionsMixin, CommandsMixin, KeybindCommandsMi
         self.query_one(StatusBar).refresh()
         if self.acActive:
             self._refreshAutocomplete()
-        if self._watchActive and self.buffer.modified:
-            self._watchKick()
+        if self._watchActive and self._watchBufferPath and self.buffer.path == self._watchBufferPath:
+            last = self._watchLastRevision.get(self._watchBufferPath, -1)
+            if self.buffer.revision != last:
+                self._watchLastRevision[self._watchBufferPath] = self.buffer.revision
+                self._watchKick()
         pluginLoader.fireCursorMove(self)
 
 
