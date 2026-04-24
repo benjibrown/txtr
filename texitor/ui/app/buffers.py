@@ -149,3 +149,55 @@ class BufferManagerMixin:
 
     def _bufferRows(self):
         rows = [("header", "Open buffers")]
+        for idx, buf in enumerate(self.buffers):
+            path = buf.path or self._unnamedBufferLabel(idx)
+            right = "active" if idx == self.activeBufferIndex else "hidden"
+            rows.append(("row", self._bufferLabel(idx), right, ("buffer-switch", idx)))
+            rows.append(("text", path))
+        return rows
+
+    def _closeBuffer(self, idx=None, force=False):
+        idx = self.activeBufferIndex if idx is None else idx
+        if idx < 0 or idx >= len(self.buffers):
+            return False
+
+        buf = self.buffers[idx]
+        watched = buf.path and buf.path == self._watchBufferPath
+        if buf.modified and not force:
+            self.notify(f"{self._bufferLabel(idx)} has unsaved changes - use :q! to force close", severity="warning")
+            return False
+
+        if len(self.buffers) == 1:
+            if self._isPristineScratch(buf):
+                self.notify("last buffer is already empty", severity="warning")
+                return False
+            self.buffers[0] = Buffer()
+            self.activeBufferIndex = 0
+            self.buffer = self.buffers[0]
+            self._clearBufferScopedUi()
+            if watched:
+                self._watchActive = False
+                self._watchBufferPath = None
+                self._buildStatus = ""
+            self._syncBufferWidgets()
+            self.citeCompleter.clear()
+            self._bibSignature = ()
+            self._stopBibAutoscan()
+            self._refresh_all()
+            return True
+
+        closing_active = idx == self.activeBufferIndex
+        del self.buffers[idx]
+        if watched:
+            self._watchActive = False
+            self._watchBufferPath = None
+            self._buildStatus = ""
+        if idx < self.activeBufferIndex:
+            self.activeBufferIndex -= 1
+        elif idx >= len(self.buffers):
+            self.activeBufferIndex = len(self.buffers) - 1
+
+        if closing_active:
+            return self._activateBuffer(self.activeBufferIndex, notify=True)
+
+
