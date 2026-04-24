@@ -200,4 +200,7 @@ class BufferManagerMixin:
         if closing_active:
             return self._activateBuffer(self.activeBufferIndex, notify=True)
 
-
+        self.buffer = self.buffers[self.activeBufferIndex]
+        self._syncBufferWidgets()
+        self._refresh_all()
+        return True
