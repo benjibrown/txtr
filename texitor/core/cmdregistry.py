@@ -13,7 +13,8 @@ class CommandRegistry:
         self._dispatch: dict[str, "_CmdEntry"] = {}
 
     def register(self, syntax: str, description: str, section: str = "General",
-                 aliases: list[str] | None = None, handler: Callable | None = None):
+                 aliases: list[str] | None = None, handler: Callable | None = None,
+                 hidden: bool = False):
         # syntax - form shown in help, e.g. ":build <engine>"
         # description - one-line description for help menu
         # section - section grouping in help menu
@@ -27,7 +28,7 @@ class CommandRegistry:
         if aliases:
             triggers += [_stripLeadingColon(a) for a in aliases]
 
-        entry = _CmdEntry(syntax, description, triggers, handler)
+        entry = _CmdEntry(syntax, description, triggers, handler, hidden=hidden)
         self._sections[section].append(entry)
 
         for t in triggers:
@@ -80,12 +81,13 @@ class CommandRegistry:
         # returns list of (section_name, [(display_syntax, description), ...]) for the help menu
         out = []
         for name, entries in self._sections.items():
-            out.append((name, [(e.display, e.description) for e in entries]))
+            visible = [(e.display, e.description) for e in entries if not e.hidden]
+            out.append((name, visible))
         return out
 
     def allCommands(self):
         # flat list of (display_syntax, description) across all sections
-        return [(e.display, e.description) for e in self._allEntries()]
+        return [(e.display, e.description) for e in self._allEntries() if not e.hidden]
 
     def _allEntries(self):
         for entries in self._sections.values():
@@ -93,13 +95,14 @@ class CommandRegistry:
 
 
 class _CmdEntry:
-    __slots__ = ("syntax", "description", "triggers", "handler", "display", "_method_name")
+    __slots__ = ("syntax", "description", "triggers", "handler", "display", "_method_name", "hidden")
 
-    def __init__(self, syntax, description, triggers, handler):
+    def __init__(self, syntax, description, triggers, handler, hidden=False):
         self.syntax = syntax
         self.description = description
         self.triggers = triggers
         self.handler = handler
+        self.hidden = hidden
         self._method_name: str | None = None
         self.display = "  /  ".join(
             (":" if not t.startswith(":") else "") + t for t in triggers
@@ -114,7 +117,7 @@ _cmd_counter = 0  # incremented each time @command is applied, preserves definit
 
 
 def command(syntax: str, description: str, section: str = "General",
-            aliases: list[str] | None = None):
+            aliases: list[str] | None = None, hidden: bool = False):
     # decorator for _cmd_* methods on CommandsMixin.
     # marks the method with metadata so _registerCommands() can wire it up at mount.
     # decorated method signature: def _cmd_foo(self, app, args: str)
@@ -133,6 +136,7 @@ def command(syntax: str, description: str, section: str = "General",
             "description": description,
             "section": section,
             "aliases": aliases or [],
+            "hidden": hidden,
             "order": _cmd_counter,
         }
         return fn
@@ -141,4 +145,3 @@ def command(syntax: str, description: str, section: str = "General",
 
 # singleton
 registry = CommandRegistry()
-
