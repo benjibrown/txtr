@@ -223,7 +223,7 @@ class FileExplorer(Widget):
         if len(raw) > shown_lines:
             rows.append(Text(" ...", style=Style(color=_FG_DIM, bgcolor=_BG)))
         return rows[:height]
-
+    # holy peak method 
     def render_line(self, y):
         width = self.size.width
         inner = width - 2
@@ -248,8 +248,9 @@ class FileExplorer(Widget):
 
         text = Text(no_wrap=True)
         text.append(_V, style=Style(color=_BORDER, bgcolor=_BG))
-        text.append_text(_renderEntry(entry, rowIdx == self._cursor, leftW))
+        text.append_text(_renderEntry(entry, rowIdx == self._cursor, leftW)) # yeah do cool stuff
         text.append("│", style=Style(color=_BORDER, bgcolor=_BG))
+
         text.append_text(_fitText(previewRow, rightW))
         text.append(_V, style=Style(color=_BORDER, bgcolor=_BG))
         return Strip(list(text.render(_CONSOLE))).adjust_cell_length(width)
@@ -273,10 +274,12 @@ def _renderEntry(entry, selected, width):
         icon = "󰈔 "
         style = Style(color=_FG, bgcolor=bg, bold=selected)
 
-    body = f" {icon}{label}"
+    body = f" {icon}{label}" # is it a file? or  dir? or parent?
     text.append(body[:width], style=style)
     text.append(" " * max(0, width - len(body[:width])), style=Style(bgcolor=bg))
+
     return text
+
 
 
 def _fitText(text, width):
@@ -336,4 +339,4 @@ def _renderBottomBorder(width, inner):
     t.append(_BR, style=bs)
     return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
 
-    # reused a few methods from 
+    # reused a few methods from othe panels lmao - could centralise it
