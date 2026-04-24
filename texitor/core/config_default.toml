@@ -42,6 +42,14 @@ aux_dir = ".aux"
 # if this is not empty, this command is used instead of the engine above 
 custom_cmd = ""
 
+# hook commands that run before / after the main build command
+# placeholders you can use in them: {file} {dir} {stem} {aux}
+# singular and plural forms both work - plural is nice if u want a lil sequence
+pre_build_cmd = ""
+post_build_cmd = ""
+pre_build_cmds = []
+post_build_cmds = []
+
 # autocompilation config - 3 modes:
 # "save" - whenever the file is saved, the latex is compiled however you must manually build it once in order to start the auto-compilation
 # "always" - whenever the file is saved, the latex is compiled to pdf, you do not need to prime the compiler like in save mode

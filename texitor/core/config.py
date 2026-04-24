@@ -25,6 +25,10 @@ _DEFAULTS = {
         "engine":           "latexmk",
         "aux_dir":          ".aux",
         "custom_cmd":       "",
+        "pre_build_cmd":    "",
+        "post_build_cmd":   "",
+        "pre_build_cmds":   [],
+        "post_build_cmds":  [],
         "autocompile":      "off", # 3 modes - always/off/save - always doesnt require initialising, off will never autocompile and save will autocompile when the file is saved but only if user initialises the compiler once first
         "build_log_autohide":   False,
         "build_log_autoclose":  False,
