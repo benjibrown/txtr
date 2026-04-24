@@ -10,6 +10,89 @@ userPath = Path.home() / ".config" / "txtr" / "snippets.toml"
 # TODO - new tab stop system, dont use | --> better syntax should be ${1} ${2}, ${1:placeholder}
 # TODO - keep support for | just in case 
 _STOP_RE = re.compile(r"\$\{(\d+)(?::([^}]*))?\}") # i hope this works
+_MATH_ENVS = {}
+    "math", "displaymath", "equation", "align", "alignat", "gather", "multline",
+    "flalign", "eqnarray", "split", "aligned", "alignedat", "cases", "matrix",
+    "pmatrix", "bmatrix", "Bmatrix", "vmatrix", "Vmatrix", "smallmatrix",
+}
+
+
+def _stripComment(line):
+    # latex comments are cute until u actually have to parse around them
+    for idx, ch in enumerate(line):
+        if ch != "%":
+            continue
+        slash_count = 0
+        back = idx - 1
+        while back >= 0 and line[back] == "\\":
+            slash_count += 1
+            back -= 1
+        if slash_count % 2 == 0:
+            return line[:idx]
+    return line
+
+
+def inMathContext(lines, row, col):
+    # this just walks the doc up to the cursor and keeps a rough math state
+    inline = False
+    display = False
+    paren = False
+    bracket = False
+    env_stack = []
+
+    for line_idx, source in enumerate(lines[:row + 1]):
+        line = source if line_idx != row else source[:col]
+        line = _stripComment(line)
+        i = 0
+        while i < len(line):
+            if line.startswith(r"\begin{", i):}")
+                end = line.find("}", i + 7)
+                if end != -1:
+                    env = line[i + 7:end]
+                    if env.rstrip("*") in _MATH_ENVS:
+                        env_stack.append(env.rstrip("*"))
+                    i = end + 1
+                    continue
+            if line.startswith(r"\end{", i):}")
+                end = line.find("}", i + 5)
+                if end != -1:
+                    env = line[i + 5:end].rstrip("*")
+                    for pos in range(len(env_stack) - 1, -1, -1):
+                        if env_stack[pos] == env:
+                            del env_stack[pos]
+                            break
+                    i = end + 1
+                    continue
+            if line.startswith(r"\[", i):]")
+                bracket = True
+                i += 2
+                continue
+            if line.startswith(r"\]", i):
+                bracket = False
+                i += 2
+                continue
+            if line.startswith(r"\(", i):")
+                paren = True
+                i += 2
+                continue
+            if line.startswith(r"\)", i):
+                paren = False
+                i += 2
+                continue
+
+            ch = line[i]
+            if ch == "\\":
+                i += 2 if i + 1 < len(line) else 1
+                continue
+            if ch == "$":
+                if i + 1 < len(line) and line[i + 1] == "$":
+                    display = not display
+                    i += 2
+                    continue
+                inline = not inline
+            i += 1
+
+    return inline or display or paren or bracket or bool(env_stack)
 
 # peak snippet manager - proud of this lol
 class SnippetManager:
@@ -18,12 +101,13 @@ class SnippetManager:
         self._tabTriggers = {}   # only expand when tab is pressed
 
     def load(self, path=None):
-        # user config takes priority, falls back to bundled defaults
-        target = Path(path) if path else (userPath if userPath.exists() else defaultPath)
-        if not target.exists():
-            return
-        with open(target, "rb") as f:
-            data = tomllib.load(f)
+        # load bundled defs first, then let user snippets override them
+        if path:
+            data = self._loadToml(Path(path))
+        else:
+            data = self._loadToml(defaultPath)
+            if userPath.exists():
+                data = self._mergeSnippetData(data, self._loadToml(userPath))
 
         self._autoTriggers = {}
         self._tabTriggers = {}
@@ -37,6 +121,28 @@ class SnippetManager:
                     self._autoTriggers[snippet["trigger"]] = snippet
                 else:
                     self._tabTriggers[snippet["trigger"]] = snippet
+
+    def _loadToml(self, target):
+        if not target.exists():
+            return {}
+        with open(target, "rb") as f:
+            return tomllib.load(f)
+
+    def _mergeSnippetData(self, base, override):
+        # user snippets should win, but bundled defaults should still fill in new keys
+        merged = dict(base)
+        for section, values in override.items():
+            if not isinstance(values, dict):
+                merged[section] = values
+                continue
+            current = dict(merged.get(section, {}))
+            for name, snippet in values.items():
+                if isinstance(snippet, dict) and isinstance(current.get(name), dict):
+                    nxt = dict(current[name])
+                    nxt.update(snippet)
+                    current[name] = nxt
+                else:
+                    current[name] = snippet
 
     def findAutoTrigger(self, textBefore):
         # fires as you type - only for auto_expand snippets

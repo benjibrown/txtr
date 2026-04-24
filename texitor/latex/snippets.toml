@@ -269,6 +269,7 @@ auto_expand = true
 name = "Infinity"
 trigger = "oo"
 body = "\\infty"
+math_auto = true
 
 [triggers.cdot]
 name = "Dot product"
@@ -328,11 +329,13 @@ body = "\\exists"
 name = "Partial"
 trigger = "pd"
 body = "\\partial"
+math_auto = true
 
 [commands.nabla]
 name = "Nabla"
 trigger = "nab"
 body = "\\nabla"
+math_auto = true
 
 
 # document templates - full preamble skeletons, tab to expand
@@ -434,6 +437,7 @@ body = "\\begin{figure}[h]\n    \\centering\n    \\includegraphics[width=${1}\\t
 name = "Square Root"
 trigger = "sq"
 body = "\\sqrt{${1}}"
+math_auto = true
 
 [commands.text]
 name = "Text in math"
@@ -474,6 +478,7 @@ body = "\\cite{${1}}"
 name = "Vector"
 trigger = "vec"
 body = "\\vec{${1}}"
+math_auto = true
 
 [commands.hat]
 name = "Hat"
