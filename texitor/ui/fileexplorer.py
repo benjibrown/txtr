@@ -201,7 +201,139 @@ class FileExplorer(Widget):
             Text(str(path), style=Style(color=_FG_SUB, bgcolor=_BG)),
             Text(""),
         ]
+        usable = max(0, height - len(rows))
+        bodyW = max(1, width - 4)
+        shown_lines = 0
+        for idx, line in enumerate(raw, start=1):
+            if len(rows) >= height:
+                break
+            line_no = Text(f"{idx:>3} ", style=Style(color=_FG_DIM, bgcolor=_BG_POP))
+            body = _highlight(line, _BG_POP) if path.suffix == ".tex" else Text(line, style=Style(color=_FG, bgcolor=_BG_POP))
+            wrapped = _wrapPreviewText(body, bodyW)
+            if not wrapped:
+                wrapped = [Text("", style=Style(bgcolor=_BG_POP))]
+            for wrap_idx, chunk in enumerate(wrapped):
+                if len(rows) >= height:
+                    break
+                row = Text()
+                row.append_text(line_no if wrap_idx == 0 else Text("    ", style=Style(bgcolor=_BG_POP)))
+                row.append_text(chunk)
+                rows.append(row)
+            shown_lines = idx
+        if len(raw) > shown_lines:
+            rows.append(Text(" ...", style=Style(color=_FG_DIM, bgcolor=_BG)))
+        return rows[:height]
 
-        # TODO - finish this off when i can be arsed
+    def render_line(self, y):
+        width = self.size.width
+        inner = width - 2
+        height = self.size.height
+        leftW = self._leftWidth()
+        rightW = max(1, inner - leftW - 1)
+
+        if y == 0:
+            return _renderTopBorder(width, inner, " file explorer ")
+        if y == height - 3:
+            return _renderDivider(width, inner)
+        if y == height - 2:
+            return _renderFooter(width, inner)
+        if y == height - 1:
+            return _renderBottomBorder(width, inner)
+
+        contentY = y - 1
+        rowIdx = self._scrollTop + contentY
+        entry = self._entries[rowIdx] if rowIdx < len(self._entries) else None
+        preview = self._previewRows(rightW - 1, self._contentHeight())
+        previewRow = preview[contentY] if contentY < len(preview) else Text("")
+
+        text = Text(no_wrap=True)
+        text.append(_V, style=Style(color=_BORDER, bgcolor=_BG))
+        text.append_text(_renderEntry(entry, rowIdx == self._cursor, leftW))
+        text.append("│", style=Style(color=_BORDER, bgcolor=_BG))
+        text.append_text(_fitText(previewRow, rightW))
+        text.append(_V, style=Style(color=_BORDER, bgcolor=_BG))
+        return Strip(list(text.render(_CONSOLE))).adjust_cell_length(width)
 
 
+def _renderEntry(entry, selected, width):
+    bg = _SEL_BG if selected else _BG_ALT
+    text = Text(no_wrap=True)
+    if entry is None:
+        text.append(" " * width, style=Style(bgcolor=bg))
+        return text
+
+    kind, label, _ = entry
+    if kind == "dir":
+        icon = " " # ts took so long to find 
+        style = Style(color=_ACC, bgcolor=bg, bold=selected)
+    elif kind == "parent":
+        icon = "󰁍 "
+        style = Style(color=_FG_SUB, bgcolor=bg, bold=selected)
+    else:
+        icon = "󰈔 "
+        style = Style(color=_FG, bgcolor=bg, bold=selected)
+
+    body = f" {icon}{label}"
+    text.append(body[:width], style=style)
+    text.append(" " * max(0, width - len(body[:width])), style=Style(bgcolor=bg))
+    return text
+
+
+def _fitText(text, width):
+    trimmed = text.copy()
+    trimmed.truncate(width, overflow="crop", pad=True)
+    return trimmed
+
+
+def _wrapPreviewText(text, width):
+    if width <= 0:
+        return []
+    wrapped = text.wrap(_CONSOLE, width, overflow="fold", no_wrap=False)
+    rows = []
+    for line in wrapped:
+        row = Text()
+        row.append_text(line)
+        rows.append(_fitText(row, width))
+    return rows
+
+
+def _renderTopBorder(width, inner, title):
+    t = Text(no_wrap=True)
+    bs = Style(color=_BORDER, bgcolor=_BG)
+    t.append(_TL, style=bs)
+    t.append(_H, style=bs)
+    t.append(title, style=Style(color=_ACC2, bgcolor=_BG, bold=True))
+    t.append(_H * max(0, inner - 1 - len(title)), style=bs)
+    t.append(_TR, style=bs)
+    return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
+
+
+def _renderDivider(width, inner):
+    t = Text(no_wrap=True)
+    bs = Style(color=_BORDER, bgcolor=_BG)
+    t.append("├", style=bs)
+    t.append(_H * inner, style=bs)
+    t.append("┤", style=bs)
+    return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
+
+
+def _renderFooter(width, inner):
+    hints = "  j/k move   enter/l open   h parent   : command   q close"
+    t = Text(no_wrap=True)
+    bs = Style(color=_BORDER, bgcolor=_BG)
+    t.append(_V, style=bs)
+    t.append(hints[:inner], style=Style(color=_FG_DIM, bgcolor=_BG))
+    t.append(" " * max(0, inner - len(hints[:inner])), style=Style(bgcolor=_BG))
+    t.append(_V, style=bs)
+    return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
+
+
+def _renderBottomBorder(width, inner):
+    t = Text(no_wrap=True)
+    bs = Style(color=_BORDER, bgcolor=_BG)
+    t.append(_BL, style=bs)
+    t.append(_H * inner, style=bs)
+    t.append(_BR, style=bs)
+    return Strip(list(t.render(_CONSOLE))).adjust_cell_length(width)
+
+    # reused a few methods from 
