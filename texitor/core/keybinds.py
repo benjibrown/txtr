@@ -73,6 +73,7 @@ _DEFAULTS = {
         "G":       "goto_last_line",
         "1 0 0 j": "jump_100_down",
         "1 0 0 k": "jump_100_up",
+        "-":       ":explore",
         "ctrl+d":  "scroll_half_down",
         "ctrl+u":  "scroll_half_up",
         "tab":     "next_buffer",
@@ -222,7 +223,7 @@ class KeybindRegistry:
         # prevent mutation
         self._map = {
             mode: {
-                normalizeKeySequence(seq): KeyBinding("action", action)
+                normalizeKeySequence(seq): _bindingFromValue(action)
                 for seq, action in binds.items()
             }
             for mode, binds in _DEFAULTS.items()
