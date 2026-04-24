@@ -57,6 +57,7 @@ class CommandsMixin:
                 handler=bound,
             )
 
+	# loads of open panel methods 
     def _openInfoPanel(self, title, rows, footer=None):
         from texitor.ui.infopanel import InfoPanel
         self._closeOverlayPanels(except_name="info")
@@ -152,7 +153,7 @@ class CommandsMixin:
 
     async def _pluginFetchRegistry(self, registry_url):
         import json
-        import urllib.request
+        import urllib.request # only import if needed lol 
 
         try:
             with urllib.request.urlopen(registry_url, timeout=10) as r:
@@ -167,7 +168,7 @@ class CommandsMixin:
 
         
     # file commands
-
+	# i hope i added all the right ones - for a 
     @command(":w", "save current buffer", section="File")
     def _cmd_write(self, args):
         from pathlib import Path
@@ -219,12 +220,12 @@ class CommandsMixin:
     @command(":qa", "quit all open buffers and exit txtr", section="File", hidden=True)
     def _cmd_quitAll(self, args):
         if self._hasModifiedBuffers():
-            self.notify("unsaved changes - use :q! to force quit", severity="warning")
+            self.notify("unsaved changes - use :qa! to force quit all", severity="warning")
             return
         self.exit()
 
-    @command(":q!", "force quit without saving", section="File")
-    def _cmd_forceQuit(self, args):
+    @command(":qa!", "force quit all open buffers without saving", section="File", hidden=True)
+    def _cmd_forceQuitAll(self, args):
         self.exit()
 
     @command(":e <file>", "open file", section="File")
@@ -250,6 +251,27 @@ class CommandsMixin:
     @command(":bp", "switch to previous open buffer", section="File")
     def _cmd_bufferPrev(self, args):
         self._prevBuffer()
+
+    @command(":buffers", "show the open buffer list", section="File", aliases=[":ls"])
+    def _cmd_buffers(self, args):
+        self._openInfoPanel("buffers", self._bufferRows(), footer="  enter open   q close")
+
+    @command(":explore", "open the file explorer in the current file directory", section="File", aliases=[":ex"])
+    def _cmd_explore(self, args):
+        from pathlib import Path
+        from texitor.ui.fileexplorer import FileExplorer
+
+        base = None
+        if args:
+            base = Path(args).expanduser()
+        elif self.buffer.path:
+            base = Path(self.buffer.path).expanduser().parent
+        else:
+            base = Path.cwd()
+
+        self._closeOverlayPanels(except_name="explorer")
+        self.explorerOpen = True
+        self.query_one(FileExplorer).open(base)
 
     @command(":bib", "reload .bib files from current file's directory", section="File")
     def _cmd_bib(self, args):
@@ -355,18 +377,23 @@ class CommandsMixin:
 
     # build commands
 
-    def _cmd_buildSilent(self, engine=None):
+    def _cmd_buildSilent(self, engine=None, path=None):
         # like _cmd_build but never opens the build panel (used by buildwatch)
         from texitor.ui.buildpanel import BuildPanel
         from texitor.ui.statusbar import StatusBar
         from texitor.core.plugins import pluginLoader
+        from pathlib import Path
 
-        if not self.buffer.path:
+        target_path = path or self.buffer.path
+        if not target_path:
             return
         if self._buildTask and not self._buildTask.done():
             return
 
-        self.buffer.save()
+        buffer_idx = self._findBufferIndex(target_path)
+        build_buffer = self.buffers[buffer_idx] if buffer_idx is not None else self.buffer
+        if build_buffer.modified:
+            build_buffer.save()
 
         engine = engine or cfg.get("compiler", "engine", "latexmk")
         auxDir = cfg.get("compiler", "aux_dir", ".aux")
@@ -377,7 +404,7 @@ class CommandsMixin:
             return
 
         panel = self.query_one(BuildPanel)
-        panel.reset(engine, self.buffer.path)
+        panel.reset(engine, target_path)
 
         self._buildStatus = "building ..."
         sb = self.query(StatusBar).first(None)
@@ -390,18 +417,19 @@ class CommandsMixin:
                 panel.appendLine(line, isErr)
             try:
                 rc, _ = await _compiler.compile(
-                    self.buffer.path,
+                    target_path,
                     engine=engine,
                     auxConfig=auxDir,
                     customCmd=customCmd,
                     onLine=onLine,
                 )
                 panel.setDone(rc)
-                lp = _compiler.logPath(self.buffer.path, engine, auxDir)
+                lp = _compiler.logPath(target_path, engine, auxDir)
                 panel.setErrors(_compiler.parse_log(lp))
 
                 if rc == 0:
-                    self._buildPrimed = True
+                    build_buffer.build_primed = True
+                    self._watchLastRevision[target_path] = build_buffer.revision
                     self.notify(f"build succeeded ({engine})", timeout=3)
                 else:
                     self._closeOverlayPanels(except_name="build")
@@ -420,7 +448,7 @@ class CommandsMixin:
             if self._watchActive:
                 self._buildStatus = "watching"
             else:
-                self._buildStatus = "built" if self._buildPrimed else "failed"
+                self._buildStatus = "built" if build_buffer.build_primed else "failed"
 
             sb2 = self.query(StatusBar).first(None)
             if sb2:
@@ -448,6 +476,7 @@ class CommandsMixin:
             return
 
         build_path = Path(self.buffer.path).expanduser()
+        build_buffer = self.buffer
         if not build_path.exists():
             self.notify("save the file first before building", severity="warning")
             return
@@ -492,8 +521,9 @@ class CommandsMixin:
                 panel.setErrors(_compiler.parse_log(lp))
 
                 if rc == 0:
-                    self._buildPrimed = True
+                    build_buffer.build_primed = True
                     self._buildStatus = "built"
+                    self._watchLastRevision[str(build_path)] = build_buffer.revision
                     self.notify(f"build succeeded ({engine})", timeout=3)
                     if autoclose and self.buildOpen:
                         panel.display = False
@@ -557,9 +587,10 @@ class CommandsMixin:
             self.notify("build cancelled")
         else:
             self.notify("no build running", severity="warning")
-
+	# do stuff 
     @command(":buildwatch", "toggle continuous build on every edit", section="Compiler", aliases=[":bw"])
     def _cmd_buildwatch(self, args):
+        from pathlib import Path
         from texitor.ui.statusbar import StatusBar
 
         if self._watchActive:
@@ -567,6 +598,8 @@ class CommandsMixin:
             if self._watchTask and not self._watchTask.done():
                 self._watchTask.cancel()
                 self._watchTask = None
+			# whereever u see this, its just making sure that multi buffer doesnt fry the watch buffer path stuff
+            self._watchBufferPath = None
             self._buildStatus = ""
             sb = self.query(StatusBar).first(None)
             if sb:
@@ -579,13 +612,15 @@ class CommandsMixin:
             return
 
         self._watchActive = True
+        self._watchBufferPath = self.buffer.path
+        self._watchLastRevision[self.buffer.path] = self.buffer.revision
         self._buildStatus = "watching"
         sb = self.query(StatusBar).first(None)
         if sb:
             sb.refresh()
         delay = cfg.get("compiler", "watch_interval", 1.5)
         self._startWatchLoop()
-        self.notify(f"buildwatch active - builds {delay}s after each edit - :bw to stop")
+        self.notify(f"buildwatch active for {Path(self.buffer.path).name} - builds {delay}s after each edit - :bw to stop")}
 
     @command(":engines", "list available engines", section="Compiler", aliases=[":compilers"])
     def _cmd_listEngines(self, args):
@@ -1088,3 +1123,5 @@ class CommandsMixin:
             pluginLoader.loadAll(self, cfg.get("plugins", "enabled", []))
 
         self._notifyNewPlugins()
+
+	# TODO - holy shit this file is long, i already refactored it once bruh, ill do it again ig
