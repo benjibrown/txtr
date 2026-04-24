@@ -21,6 +21,7 @@ description: Full default keybind reference for all modes.
 | `Ctrl+d` | Scroll half page down |
 | `Ctrl+u` | Scroll half page up |
 | `Tab` / `Shift+Tab` | Cycle next / previous open buffer |
+| `-` | Open the file explorer in the current file directory |
 | Arrow keys | Also work for movement |
 
 ### Editing

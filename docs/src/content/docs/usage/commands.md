@@ -7,14 +7,25 @@ Press `:` in Normal mode to enter Command mode. Type a command and press `Enter`
 
 ## File
 
+txtr keeps the file commands intentionally small.
+
+- `:w` saves the current buffer
+- `:q` closes the current buffer, or quits txtr if it is the last one
+- `:a` is a modifier for "all buffers"
+- `!` forces the command
+- you can stack modifiers together, so things like `:wa`, `:qa`, and `:wqa` work too
+
 | Command | Description |
 |---|---|
 | `:w` | Save the current file |
-| `:q` | Quit |
-| `:wq` | Save and quit |
+| `:a` | Modifier for all buffers. Stack it with commands like `:w` or `:q` |
+| `:q` | Close the current buffer, or quit txtr if it is the last one |
+| `:q!` | Force-close the current buffer, or force-quit txtr if it is the last one |
 | `:e <file>` | Open a file in a new buffer, or switch to it if it is already open |
 | `:bn` | Switch to the next open buffer |
 | `:bp` | Switch to the previous open buffer |
+| `:buffers` / `:ls` | Show the open buffer list |
+| `:explore` / `:ex` | Open the file explorer in the current file directory |
 
 ## View
 
