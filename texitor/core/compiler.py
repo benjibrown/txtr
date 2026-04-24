@@ -101,7 +101,7 @@ def _normaliseHookCommands(single, many):
 
 async def _runShellCommand(cmd, cwd, onLine=None, prefix=None):
     lines = []
-    proc = await asyncio.create_subprocess_shell()
+    proc = await asyncio.create_subprocess_shell(
         cmd,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
@@ -120,7 +120,7 @@ async def _runShellCommand(cmd, cwd, onLine=None, prefix=None):
             if onLine:
                 onLine(line, isErr)
 
-    await asyncio.gather()
+    await asyncio.gather(
         readStream(proc.stdout, False),
         readStream(proc.stderr, True),
     )
@@ -186,7 +186,10 @@ async def compile(
         if copied and onLine:
             onLine(f"  → copied {', '.join(copied)} to {p.parent}", False)
 
-    return proc.returncode, lines
+    if postHooks:
+        await _runHooks("post-build", postHooks, fmt, p.parent, onLine=onLine)
+
+    return proc_rc, lines
 
 
 def cleanAuxDir(filePath, auxConfig=".aux"):
@@ -331,5 +334,4 @@ def parse_log(path: str | Path):
                 break 
         i += 1
     return entries
-
 
