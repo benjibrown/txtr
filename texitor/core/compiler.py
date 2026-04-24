@@ -71,7 +71,91 @@ def buildCommand(filePath, engine, auxDir, customCmd=None):
     )
 
 
-async def compile(filePath, engine="latexmk", auxConfig=".aux", customCmd=None, onLine=None):
+def _buildFormatBits(filePath, auxDir):
+    p = Path(filePath).resolve()
+    return {
+        "file": str(p),
+        "dir": str(p.parent),
+        "stem": p.stem,
+        "aux": str(auxDir),
+    }
+
+
+def _normaliseHookCommands(single, many):
+    cmds = []
+    if isinstance(single, str) and single.strip():
+        cmds.append(single.strip())
+    elif isinstance(single, (list, tuple)):
+        for cmd in single:
+            if isinstance(cmd, str) and cmd.strip():
+                cmds.append(cmd.strip())
+
+    if isinstance(many, str) and many.strip():
+        cmds.append(many.strip())
+    elif isinstance(many, (list, tuple)):
+        for cmd in many:
+            if isinstance(cmd, str) and cmd.strip():
+                cmds.append(cmd.strip())
+    return cmds
+
+
+async def _runShellCommand(cmd, cwd, onLine=None, prefix=None):
+    lines = []
+    proc = await asyncio.create_subprocess_shell()
+        cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        cwd=str(cwd),
+    )
+
+    async def readStream(stream, isErr):
+        while True:
+            raw = await stream.readline()
+            if not raw:
+                break
+            line = raw.decode("utf-8", errors="replace").rstrip("\n\r")
+            if prefix:
+                line = f"{prefix}{line}"
+            lines.append((line, isErr))
+            if onLine:
+                onLine(line, isErr)
+
+    await asyncio.gather()
+        readStream(proc.stdout, False),
+        readStream(proc.stderr, True),
+    )
+    await proc.wait()
+    return proc.returncode, lines
+
+
+async def _runHooks(stage, commands, fmt, cwd, onLine=None):
+    # hooks are best-effort on purpose - they should help the build, not hold it hostage
+    for raw in commands:
+        try:
+            cmd = raw.format(**fmt)
+        except KeyError as e:
+            if onLine:
+                onLine(f"[{stage}] warning: unknown placeholder {{{e.args[0]}}} in hook", True)
+            continue
+
+        if onLine:
+            onLine(f"[{stage}] $ {cmd}", False)
+        rc, _ = await _runShellCommand(cmd, cwd, onLine=onLine, prefix=f"[{stage}] ")
+        if rc != 0 and onLine:
+            onLine(f"[{stage}] warning: command exited {rc}", True)
+
+
+async def compile(
+    filePath,
+    engine="latexmk",
+    auxConfig=".aux",
+    customCmd=None,
+    onLine=None,
+    preBuildCmd=None,
+    postBuildCmd=None,
+    preBuildCmds=None,
+    postBuildCmds=None,
+):
     # async compile; calls onLine(line, is_stderr) for each output line
     # returns (returncode, [output_lines])
     p = Path(filePath).resolve()
@@ -81,34 +165,17 @@ async def compile(filePath, engine="latexmk", auxConfig=".aux", customCmd=None, 
     auxDir = resolveAuxDir(p, auxConfig)
     auxDir.mkdir(parents=True, exist_ok=True)
 
+    fmt = _buildFormatBits(p, auxDir)
+    preHooks = _normaliseHookCommands(preBuildCmd, preBuildCmds)
+    postHooks = _normaliseHookCommands(postBuildCmd, postBuildCmds)
+    if preHooks:
+        await _runHooks("pre-build", preHooks, fmt, p.parent, onLine=onLine)
+
     cmd = buildCommand(str(p), engine, auxDir, customCmd)
-    lines = []
-
-    proc = await asyncio.create_subprocess_shell(
-        cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-        cwd=str(p.parent),
-    )
-
-    async def readStream(stream, isErr):
-        while True:
-            raw = await stream.readline()
-            if not raw:
-                break
-            line = raw.decode("utf-8", errors="replace").rstrip("\n\r")
-            lines.append((line, isErr))
-            if onLine:
-                onLine(line, isErr)
-
-    await asyncio.gather(
-        readStream(proc.stdout, False),
-        readStream(proc.stderr, True),
-    )
-    await proc.wait()
+    proc_rc, lines = await _runShellCommand(cmd, p.parent, onLine=onLine)
 
     # copy PDF + SyncTeX data back to source dir for engines that dump into aux dir
-    if proc.returncode == 0 and engine in _COPY_PDF_ENGINES:
+    if proc_rc == 0 and engine in _COPY_PDF_ENGINES:
         copied = []
         for suffix in (".pdf", ".synctex.gz"):
             src = auxDir / (p.stem + suffix)
