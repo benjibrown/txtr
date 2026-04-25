@@ -440,6 +440,20 @@ class ActionsMixin:
 
     # tab stops / snippets
 
+    def _expandSnippetTrigger(self, trigger, snippet):
+        # this just does the shared snippet expansion bit so it isnt copy pasted everywhere
+        buf = self.buffer
+        buf.checkpoint()
+        self.tabStops = self.snippets.expandInBuffer(trigger, snippet.get("body", ""), buf)
+        self.tabStopIdx = 0
+        self._justExpanded = True
+        self._revertCount = 1
+        if self.tabStops:
+            row, col, length = self.tabStops[0]
+            buf.move_to(row, col)
+            self._lastTabRow, self._lastTabCol, self._lastTabLength = row, col, length
+            self.tabStopIdx = 1
+
     def _action_insert_tab(self):
         from texitor.ui.app import _tabStr
         buf = self.buffer
@@ -447,16 +461,7 @@ class ActionsMixin:
 
         trigger, snippet = self.snippets.findTabTrigger(textBefore)
         if trigger and snippet:
-            self.buffer.checkpoint()
-            self.tabStops = self.snippets.expandInBuffer(trigger, snippet.get("body", ""), buf)
-            self.tabStopIdx = 0
-            self._justExpanded = True
-            self._revertCount = 1
-            if self.tabStops:
-                row, col, length = self.tabStops[0]
-                buf.move_to(row, col)
-                self._lastTabRow, self._lastTabCol, self._lastTabLength = row, col, length
-                self.tabStopIdx = 1
+            self._expandSnippetTrigger(trigger, snippet)
             return
 
         if self.tabStops and self.tabStopIdx < len(self.tabStops):
