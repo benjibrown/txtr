@@ -207,16 +207,17 @@ class FileExplorer(Widget):
         for idx, line in enumerate(raw, start=1):
             if len(rows) >= height:
                 break
-            line_no = Text(f"{idx:>3} ", style=Style(color=_FG_DIM, bgcolor=_BG_POP))
-            body = _highlight(line, _BG_POP) if path.suffix == ".tex" else Text(line, style=Style(color=_FG, bgcolor=_BG_POP))
+            line_no = Text(f"{idx:>3} ", style=Style(color=_FG_DIM, bgcolor=_BG))
+            # preview should just look like syntax colour, not like the line got selected lol
+            body = _highlight(line, _BG, indent_guides=False) if path.suffix == ".tex" else Text(line, style=Style(color=_FG, bgcolor=_BG))
             wrapped = _wrapPreviewText(body, bodyW)
             if not wrapped:
-                wrapped = [Text("", style=Style(bgcolor=_BG_POP))]
+                wrapped = [Text("", style=Style(bgcolor=_BG))]
             for wrap_idx, chunk in enumerate(wrapped):
                 if len(rows) >= height:
                     break
                 row = Text()
-                row.append_text(line_no if wrap_idx == 0 else Text("    ", style=Style(bgcolor=_BG_POP)))
+                row.append_text(line_no if wrap_idx == 0 else Text("    ", style=Style(bgcolor=_BG)))
                 row.append_text(chunk)
                 rows.append(row)
             shown_lines = idx
