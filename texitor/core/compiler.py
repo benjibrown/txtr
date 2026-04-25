@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import shlex
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -38,6 +39,9 @@ PRESETS = {
 
 # engines that dump everything into aux and need PDF copied back
 _COPY_PDF_ENGINES = {"pdflatex", "xelatex", "lualatex"}
+_SHELL_BUILTINS = {"cd", "echo", "export", "printf", "pwd", "test", "[", "]", "true", "false"}
+_SHELL_META = ("&&", "||", "|", ";", "$(", "`", ">", "<")
+_MISSING_RE = re.compile(r"(?:\[(pre-build|post-build)\]\s+)?missing executable:\s+([^\s]+)")
 
 # human-readable descriptions shown in help menu
 ENGINE_DESCRIPTIONS = {
@@ -81,6 +85,45 @@ def _buildFormatBits(filePath, auxDir):
     }
 
 
+def _shellHead(cmd):
+    if not cmd or any(token in cmd for token in _SHELL_META):
+        return None
+    try:
+        parts = shlex.split(cmd, posix=True)
+    except ValueError:
+        return None
+    return parts[0] if parts else None
+
+
+def _missingExecutable(cmd, cwd):
+    head = _shellHead(cmd)
+    if not head or head in _SHELL_BUILTINS:
+        return None
+    if "/" in head:
+        path = Path(head)
+        if not path.is_absolute():
+            path = (Path(cwd) / path).resolve()
+        return None if path.exists() else head
+    return None if shutil.which(head) else head
+
+
+def failureSummary(engine, customCmd, lines):
+    # i hate regex but this keeps the error toast way less useless
+    for line, _ in reversed(lines or []):
+        m = _MISSING_RE.search(line)
+        if not m:
+            continue
+        stage, exe = m.groups()
+        if stage == "pre-build":
+            return f"pre-build hook needs '{exe}' on PATH"
+        if stage == "post-build":
+            return f"post-build hook needs '{exe}' on PATH"
+        if customCmd:
+            return f"custom build command needs '{exe}' on PATH"
+        return f"compiler '{engine}' needs '{exe}' on PATH"
+    return ""
+
+
 def _normaliseHookCommands(single, many):
     cmds = []
     if isinstance(single, str) and single.strip():
@@ -101,6 +144,16 @@ def _normaliseHookCommands(single, many):
 
 async def _runShellCommand(cmd, cwd, onLine=None, prefix=None):
     lines = []
+    missing = _missingExecutable(cmd, cwd)
+    if missing:
+        line = f"missing executable: {missing}"
+        if prefix:
+            line = f"{prefix}{line}"
+        lines.append((line, True))
+        if onLine:
+            onLine(line, True)
+        return 127, lines
+
     proc = await asyncio.create_subprocess_shell(
         cmd,
         stdout=asyncio.subprocess.PIPE,
@@ -334,4 +387,3 @@ def parse_log(path: str | Path):
                 break 
         i += 1
     return entries
-
