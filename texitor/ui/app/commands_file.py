@@ -1,11 +1,11 @@
-from __future__ import annotations 
+from __future__ import annotations
 
-from texitor.core.cmdregistry import command 
-from texitor.core.config import config as cfg 
+from texitor.core.cmdregistry import command
+from texitor.core.config import config as cfg
 
 
 class FileCommandsMixin:
-    
+
     def _saveBuffer(self, buf, target=None, notify=True, autocompile=False):
         import texitor.core.recents as _recents
         from texitor.core.plugins import pluginLoader
@@ -47,13 +47,13 @@ class FileCommandsMixin:
         return True
 
     def _saveAllBuffers(self, force=False):
-        # this just saves the whole piles of buffers if theyre named 
+        # this just saves the whole little pile of buffers if they actually have names
         modified = [(idx, buf) for idx, buf in enumerate(self.buffers) if buf.modified]
         unnamed = [(idx, buf) for idx, buf in modified if not buf.path]
         if unnamed and not force:
             self.notify(
-                    f"{self._bufferLabel(unnamed[0][0])} has no file name - save it first or use :wqa! to force quit all",
-                    severity="warning"
+                f"{self._bufferLabel(unnamed[0][0])} has no file name - save it first or use :wqa! to force quit all",
+                severity="warning",
             )
             return False
 
@@ -83,6 +83,7 @@ class FileCommandsMixin:
     @command(":w", "save current buffer", section="File")
     def _cmd_write(self, args):
         from pathlib import Path
+
         if args:
             target = self._canonicalPath(Path(args).expanduser())
             existing = self._findBufferIndex(target, exclude_idx=self.activeBufferIndex)
