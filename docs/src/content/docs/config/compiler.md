@@ -63,7 +63,7 @@ post_build_cmd = "echo done with {file}"
 
 ```toml
 [compiler]
-post_build_cmds = []
+post_build_cmds = [
   "biber {stem}",
   "makeglossaries {stem}",
 ]
