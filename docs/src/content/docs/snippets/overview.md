@@ -28,6 +28,27 @@ Type the trigger word, then press `Tab`.
 
 Tab-triggered snippets are used for alphabetic triggers like `int`, `sum`, `cite`, `ref`, `lab`, or environment shorthands like `ali`, `eq`, and `itm`. These would be too noisy if they expanded automatically.
 
+## Math mode awareness
+
+txtr can also do a middle-ground version for math snippets.
+
+When `snippets.math_mode_snippets = true`, certain word-like math snippets become auto-expand **only while your cursor is inside math**.
+
+That means things like:
+
+- `int`
+- `sum`
+- `prod`
+- `lim`
+- `sq`
+- `sin`
+- `cos`
+- `log`
+
+can expand immediately inside `$...$`, `$$...$$`, `\(...\)`, `\[...\]`, and common math environments, while still staying normal `Tab` snippets outside math.
+
+This is the whole point of the feature really: fast equations without prose getting mangled.
+
 ## Tab Stops
 
 Most snippets include tab stops: `${1}`, `${2}`, and so on.
@@ -74,6 +95,15 @@ The same pattern works for `ref`, `eref`, and `lab`.
 ```
 
 The file is seeded from bundled defaults on the first run. Edit it directly to add, change or remove snippets. The format is documented in the file itself.
+
+### Snippet config
+
+```toml```
+[snippets]
+math_mode_snippets = true
+``````
+
+Set it to `false` if you want all of those word-like math snippets to stay tab-triggered everywhere.
 
 ### Adding a custom snippet
 

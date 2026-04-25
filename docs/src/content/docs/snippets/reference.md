@@ -63,6 +63,8 @@ These are [tab-triggered](/snippets/overview).
 
 ## Math commands
 
+Inside math mode, many of these also auto-expand as you type when `snippets.math_mode_snippets = true`.
+
 | Trigger | Expands to |
 | --- | --- | 
 | `sq` | `\sqrt{...}` |
