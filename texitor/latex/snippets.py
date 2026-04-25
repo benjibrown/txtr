@@ -1,4 +1,4 @@
-# snippet manager - loads from toml, matches triggers, expands into buffer
+# snippet manager - loads from toml, matches triggers, expands into buffer :)
 import re
 import tomllib
 from pathlib import Path
@@ -14,7 +14,7 @@ _MATH_ENVS = {
     "math", "displaymath", "equation", "align", "alignat", "gather", "multline",
     "flalign", "eqnarray", "split", "aligned", "alignedat", "cases", "matrix",
     "pmatrix", "bmatrix", "Bmatrix", "vmatrix", "Vmatrix", "smallmatrix",
-}
+} # w math envs, i hope i didnt forget any
 
 
 def _stripComment(line):
@@ -143,23 +143,41 @@ class SnippetManager:
                     current[name] = nxt
                 else:
                     current[name] = snippet
+            merged[section] = current
+        return merged
 
     def findAutoTrigger(self, textBefore):
         # fires as you type - only for auto_expand snippets
-        for trigger, snippet in self._autoTriggers.items():
-            if textBefore.endswith(trigger):
-                return trigger, snippet
-        return None, None
+        return self._findMatch(self._autoTriggers.items(), textBefore)
 
     def findTabTrigger(self, textBefore):
         # fires on tab press - for word/env/command snippets
-        for trigger, snippet in self._tabTriggers.items():
-            if textBefore.endswith(trigger):
-                return trigger, snippet
-        return None, None
+        return self._findMatch(self._tabTriggers.items(), textBefore)
+
+    def findTypingTrigger(self, textBefore, inMath=False):
+        # this lets safe math snippets act like auto snippets when ur actually in math
+        items = list(self._autoTriggers.items())
+        if inMath:
+            items.extend(
+                (trigger, snippet)
+                for trigger, snippet in self._tabTriggers.items()
+                if snippet.get("math_auto", False)
+            )
+        return self._findMatch(items, textBefore)
 
     def allSnippets(self):
         return {**self._autoTriggers, **self._tabTriggers}
+
+    def _findMatch(self, items, textBefore):
+        matches = [
+            (trigger, snippet)
+            for trigger, snippet in items
+            if textBefore.endswith(trigger)
+        ]
+        if not matches:
+            return None, None
+        matches.sort(key=lambda item: len(item[0]), reverse=True)
+        return matches[0]
 
     def expandInBuffer(self, trigger, body, buf):
         # deletes trigger from buffer, inserts expanded body
