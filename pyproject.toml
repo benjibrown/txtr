@@ -8,7 +8,7 @@ version = "2.2.1"
 description = "A Vim-style LaTeX TUI editor."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 dependencies = [
     "textual>=0.80",
     "tomli-w>=1.0",
