@@ -484,21 +484,25 @@ math_auto = true
 name = "Hat"
 trigger = "hat" 
 body = "\\hat{${1}}"
+math_auto = true
 
 [commands.bar]
 name = "Bar"
 trigger = "bar"
 body = "\\bar{${1}}"
+math_auto = true
 
 [commands.overline]
 name = "Overline"
 trigger = "ovl"
 body = "\\overline{${1}}"
+math_auto = true
 
 [commands.tilde]
 name = "Tilde"
 trigger = "tld"
 body = "\\tilde{${1}}"
+math_auto = true
 
 # trig functions - tab-triggered (alphabetic, safe)
 
@@ -506,93 +510,112 @@ body = "\\tilde{${1}}"
 name = "Sine"
 trigger = "sin"
 body = "\\sin"
+math_auto = true
 
 [commands.cos]
 name = "Cosine"
 trigger = "cos"
 body = "\\cos"
+math_auto = true
 
 [commands.tan]
 name = "Tangent"
 trigger = "tan"
 body = "\\tan"
+math_auto = true
 
 [commands.cot]
 name = "Cotangent"
 trigger = "cot"
 body = "\\cot"
+math_auto = true
 
 [commands.sec]
 name = "Secant"
 trigger = "sec"
 body = "\\sec"
+math_auto = true
 
 [commands.csc]
 name = "Cosecant"
 trigger = "csc"
 body = "\\csc"
+math_auto = true
 
 [commands.arcsin]
 name = "Arcsine"
 trigger = "arcsin"
 body = "\\arcsin"
+math_auto = true
 
 [commands.arccos]
 name = "Arccosine"
 trigger = "arccos"
 body = "\\arccos"
+math_auto = true
 
 [commands.arctan]
 name = "Arctangent"
 trigger = "arctan"
 body = "\\arctan"
+math_auto = true
 
 [commands.sinh]
 name = "Hyperbolic sine"
 trigger = "sinh"
 body = "\\sinh"
+math_auto = true
 
 [commands.cosh]
 name = "Hyperbolic cosine"
 trigger = "cosh"
 body = "\\cosh"
+math_auto = true
 
 [commands.tanh]
 name = "Hyperbolic tangent"
 trigger = "tanh"
 body = "\\tanh"
+math_auto = true
 
 [commands.log]
 name = "Logarithm"
 trigger = "log"
 body = "\\log"
+math_auto = true
 
 [commands.ln]
 name = "Natural log"
 trigger = "ln"
 body = "\\ln"
+math_auto = true
 
 [commands.exp]
 name = "Exponential"
 trigger = "exp"
 body = "\\exp"
+math_auto = true
 
 [commands.lim]
 name = "Limit"
 trigger = "lim"
 body = "\\lim_{${1} \\to ${2}}"
+math_auto = true
 
 [commands.sum]
 name = "Sum"
 trigger = "sum"
 body = "\\sum_{${1}}^{${2}}"
+math_auto = true
 
 [commands.prod]
 name = "Product"
 trigger = "prod"
 body = "\\prod_{${1}}^{${2}}"
+math_auto = true
 
 [commands.int]
 name = "Integral"
 trigger = "int"
 body = "\\int_{${1}}^{${2}} ${3} \\, d${4}"
+math_auto = true
