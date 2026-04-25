@@ -53,21 +53,21 @@ Hook errors show up as warnings in the build output, but they do **not** block t
 
 ### Example: run one command before and after build
 
-```toml```
+```toml
 [compiler]
 pre_build_cmd = "echo building {stem}"
 post_build_cmd = "echo done with {file}"
-``````
+```
 
 ### Example: run several helper commands
 
-```toml```
+```toml
 [compiler]
 post_build_cmds = []
   "biber {stem}",
   "makeglossaries {stem}",
 ]
-``````
+```
 
 ## Common setups
 
