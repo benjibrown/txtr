@@ -29,7 +29,7 @@ from texitor.ui.fileexplorer import FileExplorer
 from texitor.ui.splash import SplashWidget
 import texitor.core.compiler as _compiler
 import texitor.core.recents as _recents
-from texitor.latex.snippets import SnippetManager
+from texitor.latex.snippets import SnippetManager, inMathContext
 from texitor.latex.completer import LatexCompleter
 from texitor.core.citecompleter import CiteCompleter
 from texitor.core.plugins import pluginLoader, PLUGIN_DIR, readMetadata
@@ -706,19 +706,11 @@ class TxtrApp(BufferManagerMixin, ActionsMixin, CommandsMixin, KeybindCommandsMi
     def _checkSnippetTrigger(self):
         buf = self.buffer
         textBefore = buf.current_line[:buf.cursor_col]
-        trigger, snippet = self.snippets.findAutoTrigger(textBefore)
+        mathAware = cfg.get("snippets", "math_mode_snippets", True)
+        inMath = mathAware and inMathContext(buf.lines, buf.cursor_row, buf.cursor_col)
+        trigger, snippet = self.snippets.findTypingTrigger(textBefore, inMath=inMath)
         if trigger and snippet:
-            body = snippet.get("body", "")
-            buf.checkpoint()
-            self.tabStops = self.snippets.expandInBuffer(trigger, body, buf)
-            self.tabStopIdx = 0
-            self._justExpanded = True
-            self._revertCount = 1
-            if self.tabStops:
-                row, col, length = self.tabStops[0]
-                buf.move_to(row, col)
-                self._lastTabRow, self._lastTabCol, self._lastTabLength = row, col, length
-                self.tabStopIdx = 1
+            self._expandSnippetTrigger(trigger, snippet)
 
     def _reloadUserKeybinds(self, notify=False):
         self.keybinds = KeybindRegistry()
