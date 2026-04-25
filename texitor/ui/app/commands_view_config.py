@@ -32,6 +32,7 @@ class ViewConfigCommandsMixin:
     @command(":set wrap", "enable soft line wrapping", section="View")
     def _cmd_setWrap(self, args):
         from texitor.ui.editor import EditorWidget
+
         cfg.set("editor", "wrap", True)
         self.query_one(EditorWidget).rebuildVisualLines()
         self._refresh_all()
@@ -40,16 +41,17 @@ class ViewConfigCommandsMixin:
     @command(":set nowrap", "disable soft line wrapping", section="View")
     def _cmd_setNowrap(self, args):
         from texitor.ui.editor import EditorWidget
+
         cfg.set("editor", "wrap", False)
         self.query_one(EditorWidget).rebuildVisualLines()
         self._refresh_all()
         self.notify("wrap off")
 
-    # config commands
-
+    # config commands - small but very useful fr
     @command(":config set <section.key> <value>", "set a config value", section="Config")
     def _cmd_configSet(self, args):
         from texitor.ui.app import _coerceValue, _resolveConfigKey
+
         parts = args.split(None, 1)
         if len(parts) != 2:
             self.notify(":config set <section.key> <value>", severity="warning")
@@ -68,6 +70,7 @@ class ViewConfigCommandsMixin:
     @command(":config append <section.key> <value>", "append a value to a list config entry", section="Config")
     def _cmd_configAppend(self, args):
         from texitor.ui.app import _coerceValue, _resolveConfigKey
+
         parts = args.split(None, 1)
         if len(parts) != 2:
             self.notify(":config append <section.key> <value>", severity="warning")
@@ -87,6 +90,7 @@ class ViewConfigCommandsMixin:
     @command(":config get <section.key>", "get a config value", section="Config")
     def _cmd_configGet(self, args):
         from texitor.ui.app import _resolveConfigKey
+
         if not args:
             self.notify(":config get <section.key>", severity="warning")
             return

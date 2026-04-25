@@ -62,7 +62,7 @@ class CompilerCommandsMixin:
                 panel.appendLine(line, isErr)
 
             try:
-                rc, lines = await _compiler.compile()
+                rc, lines = await _compiler.compile(
                     target_path,
                     engine=engine,
                     auxConfig=auxDir,
@@ -163,7 +163,7 @@ class CompilerCommandsMixin:
                 panel.appendLine(line, isErr)
 
             try:
-                rc, _ = await _compiler.compile(
+                rc, lines = await _compiler.compile(
                     str(build_path),
                     engine=engine,
                     auxConfig=auxDir,
@@ -192,7 +192,7 @@ class CompilerCommandsMixin:
                     self._closeOverlayPanels(except_name="build")
                     panel.display = True
                     self.buildOpen = True
-                    self.notify(f"build failed (exit {rc})", severity="error", timeout=5)
+                    self.notify(self._buildFailureNotice(engine, customCmd, rc, lines), severity="error", timeout=6)
             except asyncio.CancelledError:
                 panel.appendLine("build cancelled", True)
                 panel.setDone(1)
@@ -231,6 +231,7 @@ class CompilerCommandsMixin:
     @command(":buildlog", "reopen last build panel", section="Compiler", aliases=[":buildpanel"])
     def _cmd_buildlog(self, args):
         from texitor.ui.buildpanel import BuildPanel
+
         panel = self.query_one(BuildPanel)
         if not panel._lines:
             self.notify("no build output yet - run :build first", severity="warning")
@@ -246,10 +247,9 @@ class CompilerCommandsMixin:
             self.notify("build cancelled")
         else:
             self.notify("no build running", severity="warning")
-	# do stuff 
+
     @command(":buildwatch", "toggle continuous build on every edit", section="Compiler", aliases=[":bw"])
     def _cmd_buildwatch(self, args):
-        from pathlib import Path
         from texitor.ui.statusbar import StatusBar
 
         if self._watchActive:
@@ -257,7 +257,7 @@ class CompilerCommandsMixin:
             if self._watchTask and not self._watchTask.done():
                 self._watchTask.cancel()
                 self._watchTask = None
-			# whereever u see this, its just making sure that multi buffer doesnt fry the watch buffer path stuff
+            # wherever u see this its just making sure the watch buffer path doesnt go feral
             self._watchBufferPath = None
             self._buildStatus = ""
             sb = self.query(StatusBar).first(None)
@@ -284,6 +284,7 @@ class CompilerCommandsMixin:
     @command(":engines", "list available engines", section="Compiler", aliases=[":compilers"])
     def _cmd_listEngines(self, args):
         from texitor.ui.buildpanel import BuildPanel
+
         panel = self.query_one(BuildPanel)
         panel.reset("engines", "available engines")
         for name, desc in _compiler.ENGINE_DESCRIPTIONS.items():
@@ -302,4 +303,3 @@ class CompilerCommandsMixin:
         self._closeOverlayPanels(except_name="build")
         panel.display = True
         self.buildOpen = True
-

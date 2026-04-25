@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import asyncio
 
-from texitor.core.cmdregistry import command 
-from texitor.core.config import config as cfg 
+from texitor.core.cmdregistry import command
+from texitor.core.config import config as cfg
 
 
 class PluginCommandsMixin:
 
     async def _pluginFetchRegistry(self, registry_url):
         import json
-        import urllib.request # only import if needed lol 
+        import urllib.request
 
         try:
             with urllib.request.urlopen(registry_url, timeout=10) as r:
@@ -21,6 +21,7 @@ class PluginCommandsMixin:
 
     def _pluginInfoRows(self, meta, loaded, plugin_cmds, config_options=None):
         from texitor.ui.plugininfo import pluginInfoRows
+
         return pluginInfoRows(meta, loaded, plugin_cmds, config_options=config_options)
 
     @command(":plugin", "manage plugins - list / info / enable / disable / install / update / uninstall", section="Plugins")
@@ -70,7 +71,6 @@ class PluginCommandsMixin:
             inst = pluginLoader.get(arg)
             loaded = inst is not None
 
-            # get metadata from live instance if loaded, else read from disk
             if inst:
                 meta = {
                     "name": inst.name or arg,
@@ -151,7 +151,7 @@ class PluginCommandsMixin:
             self._plugin_uninstall(arg, PLUGIN_DIR)
 
         else:
-            self.notify(f"unknown plugin action '{action}' - use list/info/enable/disable/install/update/uninstall", severity="warning")
+            self.notify("unknown plugin action - use list/info/enable/disable/install/update/uninstall", severity="warning")
 
     async def _plugin_install(self, name: str, registry_url: str, plugin_dir):
         from texitor.core.plugins import readMetadata
@@ -361,6 +361,7 @@ class PluginCommandsMixin:
         return True, canonical
 
     async def _pluginRunProcess(self, args, cwd=None):
+        # plugin installer output is noisy as hell so this keeps it in one place
         self._appendInfoPanelStatus("$ " + " ".join(args), "command")
         proc = await asyncio.create_subprocess_exec(
             *args,
@@ -502,4 +503,3 @@ class PluginCommandsMixin:
             pluginLoader.loadAll(self, cfg.get("plugins", "enabled", []))
 
         self._notifyNewPlugins()
-
