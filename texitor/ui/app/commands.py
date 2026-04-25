@@ -398,6 +398,10 @@ class CommandsMixin:
         engine = engine or cfg.get("compiler", "engine", "latexmk")
         auxDir = cfg.get("compiler", "aux_dir", ".aux")
         customCmd = cfg.get("compiler", "custom_cmd", "") or None
+        preBuildCmd = cfg.get("compiler", "pre_build_cmd", "") or None
+        postBuildCmd = cfg.get("compiler", "post_build_cmd", "") or None
+        preBuildCmds = cfg.get("compiler", "pre_build_cmds", [])
+        postBuildCmds = cfg.get("compiler", "post_build_cmds", [])
 
         if not customCmd and engine not in _compiler.PRESETS:
             self.notify(f"unknown engine '{engine}'", severity="warning")
@@ -422,6 +426,10 @@ class CommandsMixin:
                     auxConfig=auxDir,
                     customCmd=customCmd,
                     onLine=onLine,
+                    preBuildCmd=preBuildCmd,
+                    postBuildCmd=postBuildCmd,
+                    preBuildCmds=preBuildCmds,
+                    postBuildCmds=postBuildCmds,
                 )
                 panel.setDone(rc)
                 lp = _compiler.logPath(target_path, engine, auxDir)
@@ -486,6 +494,10 @@ class CommandsMixin:
         engine = engine or cfg.get("compiler", "engine", "latexmk")
         auxDir = cfg.get("compiler", "aux_dir", ".aux")
         customCmd = cfg.get("compiler", "custom_cmd", "") or None
+        preBuildCmd = cfg.get("compiler", "pre_build_cmd", "") or None
+        postBuildCmd = cfg.get("compiler", "post_build_cmd", "") or None
+        preBuildCmds = cfg.get("compiler", "pre_build_cmds", [])
+        postBuildCmds = cfg.get("compiler", "post_build_cmds", [])
         autohide = cfg.get("compiler", "build_log_autohide", False)
         autoclose = cfg.get("compiler", "build_log_autoclose", False)
 
@@ -514,6 +526,10 @@ class CommandsMixin:
                     auxConfig=auxDir,
                     customCmd=customCmd,
                     onLine=onLine,
+                    preBuildCmd=preBuildCmd,
+                    postBuildCmd=postBuildCmd,
+                    preBuildCmds=preBuildCmds,
+                    postBuildCmds=postBuildCmds,
                 )
                 panel.setDone(rc)
 
