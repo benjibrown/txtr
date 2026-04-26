@@ -25,6 +25,7 @@ class FileCommandsMixin:
         if notify:
             self.notify(f"saved {path}")
         _recents.push(path)
+        self._saveCursorState(buf)
         if buf is self.buffer:
             self._loadBibsForFile(path, quiet=True)
         pluginLoader.fireSave(self, path)

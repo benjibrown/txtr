@@ -80,7 +80,35 @@ class BufferManagerMixin:
 
     def _captureBufferView(self, buf=None):
         buf = buf or self.buffer
- 
+        if buf is not self.buffer:
+            return
+        editor = self._firstWidget(EditorWidget)
+        if editor:
+            buf.view_scroll_top = max(0, editor._scroll_top)
+
+    def _saveCursorState(self, buf=None):
+        buf = buf or self.buffer
+        if not self._rememberCursorEnabled() or not buf.path:
+            return
+        if buf is self.buffer:
+            self._captureBufferView(buf)
+        _cursorState.update()
+            self._canonicalPath(buf.path),
+            buf.cursor_row,
+            buf.cursor_col,
+            getattr(buf, "view_scroll_top", 0),
+            max_age_days=self._rememberCursorDays(),
+        )
+
+    def _restoreCursorState(self, buf):
+        if not self._rememberCursorEnabled() or not buf.path:
+            return False
+        state = _cursorState.get(self._canonicalPath(buf.path), max_age_days=self._rememberCursorDays())
+        if not state:
+            return False
+        buf.move_to(state["row"], state["col"])
+        buf.view_scroll_top = min(state["scroll_top"], max(0, buf.line_count - 1))
+        return True
     #
     # activate the buffer at a given index-  very nice
     def _activateBuffer(self, idx, notify=False):
@@ -94,6 +122,7 @@ class BufferManagerMixin:
         editor = self.query(EditorWidget).first(None)
         if editor:
             self.buffer.view_scroll_top = editor._scroll_top
+        self._saveCursorState(self.buffer)
 
         self.activeBufferIndex = idx
         self.buffer = self.buffers[idx]
@@ -127,6 +156,7 @@ class BufferManagerMixin:
 
         if len(self.buffers) == 1 and self.activeBufferIndex == 0 and self._isPristineScratch():
             self.buffer.load(canonical)
+            self._restoreCursorState(self.buffer)
             self._syncBufferWidgets()
             self._loadBibsForFile(canonical)
             self._refresh_all()
@@ -136,6 +166,7 @@ class BufferManagerMixin:
 
         buf = Buffer() # instanitate !!
         buf.load(canonical)
+        self._restoreCursorState(buf)
         self.buffers.append(buf)
         self._activateBuffer(len(self.buffers) - 1, notify=False)
         if notify:
@@ -183,6 +214,7 @@ class BufferManagerMixin:
         if buf.modified and not force:
             self.notify(f"{self._bufferLabel(idx)} has unsaved changes - use :q! to force close", severity="warning")
             return False
+        self._saveCursorState(buf)
 
         if len(self.buffers) == 1:
             if self._isPristineScratch(buf):

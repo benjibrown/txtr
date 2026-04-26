@@ -242,6 +242,7 @@ class TxtrApp(BufferManagerMixin, ActionsMixin, CommandsMixin, KeybindCommandsMi
         if filename:
             filename = self._canonicalPath(filename)
             self.buffer.load(filename)
+            self._restoreCursorState(self.buffer)
             _recents.push(filename)
             self._loadBibsForFile(filename)
 
@@ -283,6 +284,9 @@ class TxtrApp(BufferManagerMixin, ActionsMixin, CommandsMixin, KeybindCommandsMi
             splash.display = True
 
     def on_unmount(self):
+        self._captureBufferView()
+        for buf in self.buffers:
+            self._saveCursorState(buf)
         self._watchActive = False
         if self._watchTask and not self._watchTask.done():
             self._watchTask.cancel()
