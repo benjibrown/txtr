@@ -21,10 +21,15 @@ pip install texitor
 ```
 > The package name on PyPI is `texitor`. The command you run to use the editor is `txtr`.
 
-Some operating systems may throw an error about installing system-wide packages with pip. If this is the case then use `pipx` instead or install txtr in a virtual environment. 
+Some operating systems may throw an error about installing system-wide packages with pip. If this is the case then use `pipx`, `uv`, or install txtr in a virtual environment. 
 
 ```
 pipx install texitor
+```
+**or**
+
+```
+uv tool install texitor
 ```
 **or**
 
@@ -33,6 +38,7 @@ python -m venv txtr-env
 source txtr-env/bin/activate  
 pip install texitor
 ```
+> If installed in a venv, make sure to source the venv before running `txtr` to ensure the command is available in your PATH.
 
 ### Install from Source 
 
