@@ -15,18 +15,24 @@ class LatexCompleter:
         self._commands = []  # list of (cmd, desc)
 
     def load(self, path=None):
-        # user config takes priority, falls back to bundled default
-        target = Path(path) if path else (userPath if userPath.exists() else defaultPath)
-        if not target.exists():
-            return
-        with open(target, "rb") as f:
-            data = tomllib.load(f)
-
         self._commands = []
+        data = {}
+
+        # bundled defaults first, then user overrides - same vibe as snippets now
+        for target in [defaultPath, Path(path) if path else userPath]:
+            if not target.exists():
+                continue
+            with open(target, "rb") as f:
+                loaded = tomllib.load(f)
+            for sectionName, section in loaded.items():
+                if not isinstance(section, dict):
+                    continue
+                merged = dict(data.get(sectionName, {}))
+                merged.update(section)
+                data[sectionName] = merged
+
         # each section is a category - flatten all into one list
         for section in data.values():
-            if not isinstance(section, dict):
-                continue
             for cmd, desc in section.items():
                 if isinstance(desc, str):
                     self._commands.append((cmd, desc))
@@ -53,4 +59,3 @@ class LatexCompleter:
             elif prefixLower[1:] in cmdLower[1:]:  # skip backslash for contains
                 contains.append((cmd, desc))
         return exact + startsWith + contains
-
