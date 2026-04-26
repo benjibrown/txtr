@@ -10,9 +10,9 @@ description: Full default keybind reference for all modes.
 | Key | Action |
 |---|---|
 | `h` `j` `k` `l` | Left / down / up / right |
-| `w` | Word forward |
-| `b` | Word backward |
-| `e` | Word end |
+| `w` | Word forward (Vim-style lowercase word chunks) |
+| `b` | Word backward (Vim-style lowercase word chunks) |
+| `e` | Word end (Vim-style lowercase word chunks) |
 | `0` | Line start |
 | `$` | Line end |
 | `gg` | First line |
@@ -65,6 +65,7 @@ description: Full default keybind reference for all modes.
 | `Escape` / `Ctrl+[` | Return to Normal |
 | `Tab` | Expand snippet or insert tab / jump to next tab stop |
 | `Shift+Tab` | Clear remaining tab stops |
+| `Enter` | New line, or accept autocomplete when the popup is open |
 | `Ctrl+Space` | Accept autocomplete suggestion |
 | `Up` / `Down` | Navigate autocomplete when open, otherwise move cursor |
 | `Ctrl+w` | Delete word before cursor |
@@ -101,3 +102,8 @@ Note that many terminals swallow `Ctrl+Shift+c` / `Ctrl+Shift+v`, so txtr also s
 ## Customising keybinds
 
 Custom keybinds are now documented on the dedicated [Custom Keybinds](/usage/custom-keybinds) page.
+
+## Notes
+
+- txtr's `w` / `b` / `e` motions now treat punctuation-heavy LaTeX like `\frac{p}{q}` more like Vim does: `\`, `frac`, `{`, `p`, `}`, `/`, `{`, `q`, `}` are separate motion chunks rather than one giant non-space blob.`
+- autocomplete only appears for LaTeX command prefixes like `\fra` or citation content inside braces such as `\cite{ein}`.
