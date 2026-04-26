@@ -46,12 +46,12 @@ txtr keeps the file commands intentionally small.
 
 Config keys use dot notation: `section.key`. The section prefix is optional for unambiguous keys.
 
-``````
+```
 :config get editor.tab_width
 :config set editor.tab_width 2
 :config set theme.name gruvbox
 :config set editor.system_clipboard true
-``````
+```
 
 Changes take effect immediately for most editor settings. Theme changes require a restart.
 
