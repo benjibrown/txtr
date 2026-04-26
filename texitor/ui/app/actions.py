@@ -362,24 +362,16 @@ class ActionsMixin:
             self.buffer.move_to(*target)
 
     def _action_word_backward(self):
-        buf = self.buffer
-        line, col = buf.current_line, buf.cursor_col
-        col -= 1
-        while col > 0 and line[col].isspace():
-            col -= 1
-        while col > 0 and not line[col - 1].isspace():
-            col -= 1
-        buf.cursor_col = max(0, col)
+        row, col = self._currentCharPos()
+        target = self._prevWordStart(row, col)
+        if target:
+            self.buffer.move_to(*target)
 
     def _action_word_end(self):
-        buf = self.buffer
-        line, col = buf.current_line, buf.cursor_col
-        col += 1
-        while col < len(line) and line[col].isspace():
-            col += 1
-        while col < len(line) - 1 and not line[col + 1].isspace():
-            col += 1
-        buf.cursor_col = min(col, max(0, len(line) - 1))
+        row, col = self._currentCharPos()
+        target = self._nextWordEnd(row, col)
+        if target:
+            self.buffer.move_to(*target)
 
     def _action_scroll_half_down(self):
         from texitor.ui.editor import EditorWidget
