@@ -47,11 +47,13 @@ Never used a Vim-style editor before? The bare minimum to get going is:
 
 Inside txtr:
 
-- `?` opens the help menu
 - `:` opens command mode
 - `:snippets` jumps straight to snippet help
 - `:config show` opens the config panel
 - `:plugin list` shows installed plugins
+- `Up` / `Down` moves through autocomplete and `Enter` or `Ctrl+Space` accepts it
+- typing a snippet trigger like `//` or `doc` expands it fast (`doc` still needs `Tab`)
+
 
 ## What even is LaTeX?
 
@@ -105,4 +107,3 @@ Useful starting points:
 
 txtr is early-stage. If you find a bug or want to add something, open an issue or PR on [GitHub](https://github.com/benjibrown/txtr). 
 > tl;dr - just make a pr ...
-
