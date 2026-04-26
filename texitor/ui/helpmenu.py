@@ -83,6 +83,11 @@ def _snippetRows(snippets):
     rows = []
     auto = dict(snippets._autoTriggers)
     tab  = dict(snippets._tabTriggers)
+    rows.append(("header", "How it works"))
+    rows.append(("row", "\\fra", "autocomplete popup opens while you type a latex command"))
+    rows.append(("row", "\\cite{ein", "citation autocomplete opens inside the braces"))}"))
+    rows.append(("row", "trigger + Tab", "tab snippets expand and Tab keeps walking tab stops"))
+    rows.append(("gap",))
     if auto:
         rows.append(("header", "Auto triggers  (fire as you type)"))
         for trigger, snip in sorted(auto.items()):
@@ -95,6 +100,9 @@ def _snippetRows(snippets):
         for trigger, snip in sorted(tab.items()):
             body = snip.get("body", "").replace("\n", " ↵ ")
             rows.append(("row", trigger, f"{snip.get('name', trigger)}  →  {body}"))
+    if not auto and not tab:
+        rows.append(("header", "No snippets loaded"))
+        rows.append(("row", "~/.config/txtr/snippets.toml", "delete it and restart txtr to regenerate defaults"))
     return rows
 
 from texitor.core.cmdregistry import registry as _cmdRegistry
