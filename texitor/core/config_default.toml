@@ -131,3 +131,10 @@ auto_update = false
 
 # internal list used to avoid re-notifying already-known disabled plugins
 known = []
+
+[session]
+# reopen files where you left them - cursor position + scroll area
+remember_cursor = true
+
+# forget old file positions after this many days so the state file stays tiny
+remember_days = 30
