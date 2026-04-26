@@ -183,6 +183,103 @@ class ActionsMixin:
     def _action_line_end(self):
         self.buffer.cursor_col = max(0, len(self.buffer.current_line) - 1)
 
+    def _wordKind(self, ch):
+        # vim-ish word classes - words, spaces, and the punctuation jungle
+        if ch.isspace():
+            return "space"
+        if ch.isalnum() or ch == "_":
+            return "word"
+        return "punct"
+
+    def _currentCharPos(self):
+        # this just gives us a sane scan position even if the cursor is at line end
+        row = self.buffer.cursor_row
+        line = self.buffer.lines[row]
+        if not line:
+            return row, 0
+        col = min(self.buffer.cursor_col, len(line) - 1)
+        return row, col
+
+    def _nextCharPos(self, row, col):
+        lines = self.buffer.lines
+        if row >= len(lines):
+            return None
+        line = lines[row]
+        if col + 1 < len(line):
+            return row, col + 1
+        row += 1
+        while row < len(lines):
+            if lines[row]:
+                return row, 0
+            row += 1
+        return None
+
+    def _prevCharPos(self, row, col):
+        lines = self.buffer.lines
+        if row < 0:
+            return None
+        if row < len(lines) and lines[row] and col > 0:
+            return row, col - 1
+        row -= 1
+        while row >= 0:
+            if lines[row]:
+                return row, len(lines[row]) - 1
+            row -= 1
+        return None
+
+    def _nextWordStart(self, row, col):
+        # lowercase vim words basically treat punctuation as its own lil chunk
+        lines = self.buffer.lines
+        line = lines[row]
+        if not line:
+            pos = self._nextCharPos(row, -1)
+            while pos:
+                prow, pcol = pos
+                if not lines[prow][pcol].isspace():
+                    return pos
+                pos = self._nextCharPos(prow, pcol)
+            return None
+
+        ch = line[col]
+        pos = (row, col)
+        if ch.isspace():
+            while pos:
+                prow, pcol = pos
+                if not lines[prow][pcol].isspace():
+                    return pos
+                pos = self._nextCharPos(prow, pcol)
+            return None
+
+        kind = self._wordKind(ch)
+        pos = self._nextCharPos(row, col)
+        while pos:
+            prow, pcol = pos
+            nxt = lines[prow][pcol]
+            if nxt.isspace():
+                while pos:
+                    prow, pcol = pos
+                    if not lines[prow][pcol].isspace():
+                        return pos
+                    pos = self._nextCharPos(prow, pcol)
+                return None
+            if self._wordKind(nxt) != kind:
+                return pos
+            pos = self._nextCharPos(prow, pcol)
+        return None
+
+    def _wordStartFrom(self, row, col):
+        lines = self.buffer.lines
+        kind = self._wordKind(lines[row][col])
+        pos = (row, col)
+        prev = self._prevCharPos(row, col)
+        while prev:
+            prow, pcol = prev
+            ch = lines[prow][pcol]
+            if ch.isspace() or self._wordKind(ch) != kind:
+                break
+            pos = prev
+            prev = self._prevCharPos(prow, pcol)
+
     def _action_word_forward(self):
         buf = self.buffer
         line, col = buf.current_line, buf.cursor_col
