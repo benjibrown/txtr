@@ -280,7 +280,7 @@ class ActionsMixin:
             pos = prev
             prev = self._prevCharPos(prow, pcol)
         return pos
-	# get us to prev word start (or current if in middle)
+    # get us to prev word start (or current if in middle)
     def _prevWordStart(self, row, col):
         lines = self.buffer.lines
         line = lines[row]
@@ -314,11 +314,11 @@ class ActionsMixin:
         if not pos:
             return None
         return self._wordStartFrom(pos[0], pos[1]) 
-		# the algos are all pretty similiar but edge cases i hate so much
+        # the algos are all pretty similiar but edge cases i hate so much
 
 
-	# this is basically the same as _wordStartFrom but in the other direction   
-	def _wordEndFrom(self, row, col):
+    # this is basically the same as _wordStartFrom but in the other direction   
+    def _wordEndFrom(self, row, col):
 
         lines = self.buffer.lines
         kind = self._wordKind(lines[row][col])
@@ -332,7 +332,7 @@ class ActionsMixin:
             pos = nxt
             nxt = self._nextCharPos(nrow, ncol)
         return pos
-	# get us to end of current word (i hope)
+    # get us to end of current word (i hope)
     def _nextWordEnd(self, row, col):
         lines = self.buffer.lines
         line = lines[row]
