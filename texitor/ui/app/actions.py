@@ -279,18 +279,87 @@ class ActionsMixin:
                 break
             pos = prev
             prev = self._prevCharPos(prow, pcol)
+        return pos
+	# get us to prev word start (or current if in middle)
+    def _prevWordStart(self, row, col):
+        lines = self.buffer.lines
+        line = lines[row]
+        if not line:
+            pos = self._prevCharPos(row, col)
+            while pos:
+                prow, pcol = pos
+                if not lines[prow][pcol].isspace():
+                    return self._wordStartFrom(prow, pcol)
+                pos = self._prevCharPos(prow, pcol)
+            return None
+
+        ch = line[col]
+        if ch.isspace():
+            pos = (row, col)
+            while pos and lines[pos[0]][pos[1]].isspace():
+                pos = self._prevCharPos(pos[0], pos[1])
+            if not pos:
+                return None
+            return self._wordStartFrom(pos[0], pos[1])
+
+        prev = self._prevCharPos(row, col)
+        if prev:
+            pch = lines[prev[0]][prev[1]]
+            if not pch.isspace() and self._wordKind(pch) == self._wordKind(ch):
+                return self._wordStartFrom(row, col)
+
+        pos = prev
+        while pos and lines[pos[0]][pos[1]].isspace():
+            pos = self._prevCharPos(pos[0], pos[1])
+        if not pos:
+            return None
+        return self._wordStartFrom(pos[0], pos[1]) 
+		# the algos are all pretty similiar but edge cases i hate so much
+
+
+	# this is basically the same as _wordStartFrom but in the other direction   
+	def _wordEndFrom(self, row, col):
+
+        lines = self.buffer.lines
+        kind = self._wordKind(lines[row][col])
+        pos = (row, col)
+        nxt = self._nextCharPos(row, col)
+        while nxt:
+            nrow, ncol = nxt
+            ch = lines[nrow][ncol]
+            if ch.isspace() or self._wordKind(ch) != kind:
+                break
+            pos = nxt
+            nxt = self._nextCharPos(nrow, ncol)
+        return pos
+	# get us to end of current word (i hope)
+    def _nextWordEnd(self, row, col):
+        lines = self.buffer.lines
+        line = lines[row]
+        if not line:
+            pos = self._nextCharPos(row, -1)
+            while pos:
+                prow, pcol = pos
+                if not lines[prow][pcol].isspace():
+                    return self._wordEndFrom(prow, pcol)
+                pos = self._nextCharPos(prow, pcol)
+            return None
+
+        ch = line[col]
+        if ch.isspace():
+            pos = (row, col)
+            while pos and lines[pos[0]][pos[1]].isspace():
+                pos = self._nextCharPos(pos[0], pos[1])
+            if not pos:
+                return None
+            return self._wordEndFrom(pos[0], pos[1])
+        return self._wordEndFrom(row, col)
 
     def _action_word_forward(self):
-        buf = self.buffer
-        line, col = buf.current_line, buf.cursor_col
-        while col < len(line) and not line[col].isspace():
-            col += 1
-        while col < len(line) and line[col].isspace():
-            col += 1
-        if col >= len(line) and buf.cursor_row < buf.line_count - 1:
-            buf.cursor_row += 1
-            col = 0
-        buf.cursor_col = col
+        row, col = self._currentCharPos()
+        target = self._nextWordStart(row, col)
+        if target:
+            self.buffer.move_to(*target)
 
     def _action_word_backward(self):
         buf = self.buffer
