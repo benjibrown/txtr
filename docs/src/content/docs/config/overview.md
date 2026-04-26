@@ -89,6 +89,17 @@ auto_update = false
 
 Go check out the [Plugins](/plugins/overview) section for more details on the plugin authoring system and its API!
 
+## Session
+```toml
+[session]
+remember_cursor = true
+remember_days = 30
+```
+- `remember_cursor` restores your cursor position and scroll area when you reopen a file later
+- `remember_days` controls how long txtr keeps those remembered positions before pruning old entries from its XDG data store
+
+txtr stores this state under `$XDG_DATA_HOME/txtr/` or `~/.local/share/txtr/` if `XDG_DATA_HOME` is not set.
+
 ## Using :config set 
 
 You can set values without leaving the editor (txtr will even reload them for you!) using `:config set` :
