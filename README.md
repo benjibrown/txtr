@@ -47,7 +47,7 @@ uv tool install texitor
 python -m venv txtr-env
 source txtr-env/bin/activate
 pip install texitor
-``````
+```
 
 Requires Python 3.11 or later. More install details live in the docs: [txtr.benji.mom/installation](https://txtr.benji.mom/installation)
 
