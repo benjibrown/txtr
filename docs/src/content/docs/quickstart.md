@@ -26,7 +26,7 @@ Type a backslash command in `INSERT` mode, like `\fra`.
 As soon as txtr sees the backslash prefix, it opens the autocomplete popup. Keep typing to narrow it down, use `Up` / `Down` to move through the list, then press `Enter` or `Ctrl+Space` to accept the current item.
 
 Citation autocomplete is separate, and it shows up once your cursor is inside braces for commands like `\cite{...}`.
-![png](http://localhost:4321/autocomplete.png)
+![Autocomplete popup example](https://txtr.benji.mom/autocomplete.png)
 
 > If the popup does not appear, double check that you are in `INSERT` mode and that you started with a literal backslash. Plain words on their own do not open autocomplete.
 
@@ -44,6 +44,12 @@ Type `doc` and hit `Tab` - it expands to a full document template. Getting you s
 Some snippets are only auto-expanders inside math mode. For example, with the default config, typing `sum` inside `$...$` expands right away, while typing `sum` in normal prose stays as plain text unless you press `Tab`.
 
 Check out the next section on how to see all the available snippets!
+
+## Reopen where you left off
+
+By default, txtr remembers your cursor position and scroll area for files you reopen later.
+
+So if you quit halfway through a long `notes.tex`, reopening it will usually drop you right back where you were instead of throwing you back to line 1 every time.
 
 ## Save and quit 
 
