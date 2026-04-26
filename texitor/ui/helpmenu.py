@@ -117,6 +117,8 @@ def registerPluginCommands(pluginName, cmds):
 def _commandRows():
     rows = []
     for section, cmds in _cmdRegistry.sections():
+        if section.startswith("Plugin: "):
+            continue
         rows.append(("header", section))
         for cmd, desc in cmds:
             rows.append(("row", cmd, desc))
