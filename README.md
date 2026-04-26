@@ -5,28 +5,57 @@
 **A Vim-style LaTeX editor for the terminal.**
 
 
-<!-- screenshot -->
 <img src="https://txtr.benji.mom/ss.png" alt="txtr screenshot" width="800"/>
 
-<a href="https://txtr.benji.mom">Documentation</a> | <a href="https://pypi.org/project/texitor/">PyPI</a>
+<a href="https://txtr.benji.mom"><strong>Read the docs</strong></a> | <a href="https://pypi.org/project/texitor/">PyPI</a>
 </div>
 
 ---
 
-txtr (aka texitor) is a terminal-based LaTeX editor built for speed. It combines Vim-style modal editing with snippets, completions, citations, compiler tooling, and a growing plugin system.
+txtr (aka texitor) is a terminal LaTeX editor built for speed. It mixes Vim-style modal editing with snippets, autocomplete, citations, compiler tooling, and plugins in one clean TUI.
 
 > Under active development. Expect bugs :)
 
+## Docs
+
+**The full docs are here: [txtr.benji.mom](https://txtr.benji.mom)**
+
+If you only read one extra thing after this README, make it one of these:
+
+- [installation](https://txtr.benji.mom/installation)
+- [quick start](https://txtr.benji.mom/quickstart)
+- [snippets overview](https://txtr.benji.mom/snippets/overview)
+- [config overview](https://txtr.benji.mom/config/overview)
+
 ## Installation
 
-```
+```bash
 pip install texitor
 ```
-> In-depth installation instructions are in the docs - see [txtr.benji.mom/installation](https://txtr.benji.mom/installation) for more details.
 
-If you encouter an error regarding installing system wide packages, you may need to install with `pipx` or in a virtual environment. 
+If your system complains about installing packages globally, use `pipx`, `uv`, or a virtual environment instead.
 
-Requires Python 3.11 or later.
+```bash
+pipx install texitor
+```
+
+```bash
+uv tool install texitor
+```
+
+```bash
+python -m venv txtr-env
+source txtr-env/bin/activate
+pip install texitor
+``````
+
+Requires Python 3.11 or later. More install details live in the docs: [txtr.benji.mom/installation](https://txtr.benji.mom/installation)
+
+## What even is LaTeX?
+
+LaTeX is a typesetting system used a lot for maths, science, essays, notes, and papers. It is great once you know it, but it can be pretty slow and bracket-heavy to write by hand.
+
+That is the whole point of txtr: make writing LaTeX in the terminal feel fast instead of annoying.
 
 ## Quick start
 
@@ -36,7 +65,7 @@ txtr file.tex
 
 If the file does not exist, txtr creates it. On first run txtr seeds config, snippets, commands, and keybind overrides into `~/.config/txtr/`.
 
-Never used a Vim-style editor before? The bare minimum to get going is:
+Never used a Vim-style editor before? This is the tiny version:
 
 - `i` enters Insert mode so you can type (this is how you can actually get text into the editor)
 - `Esc` takes you back to Normal mode
@@ -45,21 +74,19 @@ Never used a Vim-style editor before? The bare minimum to get going is:
 - `:wq` saves and quits
 - `?` opens the help menu
 
-Inside txtr:
+Once you are inside txtr:
 
 - `:` opens command mode
 - `:snippets` jumps straight to snippet help
 - `:config show` opens the config panel
 - `:plugin list` shows installed plugins
+- typing `\fra` opens LaTeX autocomplete
 - `Up` / `Down` moves through autocomplete and `Enter` or `Ctrl+Space` accepts it
 - typing a snippet trigger like `//` or `doc` expands it fast (`doc` still needs `Tab`)
 
+txtr also remembers where you were in a file when you reopen it by default, so hopping back into longer docs feels way nicer.
 
-## What even is LaTeX?
-
-LaTeX is a typesetting system commonly used for academic writing, especially in fields like mathematics and physics. It allows you to write documents with complex formatting and is particularly good at handling equations, citations and references. 
-
-LaTeX is generaly quite long-winded to write by hand, which is exactly why txtr exists - to make LaTeX editing faster, more efficient and collate together all the utilities you may want into one single editor.
+If you want the fuller walkthrough, go straight to **[the quick start docs](https://txtr.benji.mom/quickstart)**.
 
 ## What ships with txtr
 
@@ -67,6 +94,8 @@ LaTeX is generaly quite long-winded to write by hand, which is exactly why txtr 
 - LaTeX snippets and completions
 - citation autocomplete from `.bib` files
 - compiler commands, buildwatch, and PDF build workflows
+- file explorer, recents, and multi-buffer workflow
+- restore cursor position when reopening files
 - built-in plugins:
   - `wordcount` - latex-aware word count
   - `freeze` - screenshot/export via the freeze CLI
@@ -74,21 +103,13 @@ LaTeX is generaly quite long-winded to write by hand, which is exactly why txtr 
 - installable user plugins on top of the built-ins
 - a full docs site with config, snippets, themes, and plugin guides
 
-Built-in plugins ship with txtr, but they are still configured and enabled like normal plugins. The README is just the quick overview - the docs are the proper source of truth for setup and config.
+Built-in plugins ship with txtr, but they are still configured and enabled like normal plugins.
 
-**[IF YOU GET STUCK, READ THE DOCS! (click me)](https://txtr.benji.mom)**
+## Docs, again because they matter
 
-## Documentation
+The README is only the short version. The proper setup/config/snippet/plugin guides live at:
 
-The full docs live at **[txtr.benji.mom](https://txtr.benji.mom)**.
-
-Useful starting points:
-
-- snippets: [txtr.benji.mom/snippets/overview](https://txtr.benji.mom/snippets/overview)
-- configuration: [txtr.benji.mom/config/overview](https://txtr.benji.mom/config/overview)
-- plugins: [txtr.benji.mom/plugins/overview](https://txtr.benji.mom/plugins/overview)
-- zathura pdf sync: [txtr.benji.mom/plugins/zathura](https://txtr.benji.mom/plugins/zathura)
-- plugin development: [txtr.benji.mom/plugins/development](https://txtr.benji.mom/plugins/development)
+**[https://txtr.benji.mom](https://txtr.benji.mom)**
 
 ## Notes
 
