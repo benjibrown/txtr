@@ -5,6 +5,13 @@ description: How the txtr snippet engine works
 
 txtr ships with a bundled LaTeX snippet library and a simple snippet engine for expanding them quickly while you type. Your editable snippet file lives at `~/.config/txtr/snippets.toml`.
 
+There are really three related things here:
+
+1. **symbol auto-expand** for triggers like `//` or `@a`
+2. **tab snippets** for word-like triggers like `int`, `cite`, or `doc`
+3. **autocomplete** for backslash LaTeX commands like `\fra` and citation keys inside `\cite{...}`
+
+
 ## Trigger types
 
 There are two ways that a snippet in txtr can fire.
@@ -22,11 +29,24 @@ Auto-expand is used for symbol sequences that are unambiguous in a LaTeX documen
 
 If an auto-expand fires unexpectedly, press `Backspace` to undo the expansion.
 
+
 ### Tab-triggered
 
 Type the trigger word, then press `Tab`.
 
 Tab-triggered snippets are used for alphabetic triggers like `int`, `sum`, `cite`, `ref`, `lab`, or environment shorthands like `ali`, `eq`, and `itm`. These would be too noisy if they expanded automatically.
+
+
+## Autocomplete
+
+Autocomplete appears while you type a LaTeX command that starts with `\`, like `\fra`, `\alph`, or `\begin`.`
+
+- use `Up` / `Down` to move through the list
+- press `Enter` or `Ctrl+Space` to accept
+- press `Escape` or just keep typing something unmatched to dismiss it
+
+Citation autocomplete appears once you are already inside braces for citation-style commands, for example after expanding `cite` and typing `ein` inside `\cite{ein}`.
+
 
 ## Math mode awareness
 
@@ -98,10 +118,10 @@ The file is seeded from bundled defaults on the first run. Edit it directly to a
 
 ### Snippet config
 
-```toml```
+```toml
 [snippets]
 math_mode_snippets = true
-``````
+```
 
 Set it to `false` if you want all of those word-like math snippets to stay tab-triggered everywhere.
 

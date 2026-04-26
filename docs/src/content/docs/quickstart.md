@@ -19,7 +19,16 @@ To start writing, press `i` to enter `INSERT` mode. The statusbar will now show 
 
 From here, you can type anything you would like. Want to leave `INSERT` mode? Press `ESC` to return to `NORMAL` mode.
 
-Type a backslash `\` when in insert mode - an autocomplete popup will appear. Keep typing to narrow down the option, hit enter when you see the one you want or hit tab to cycle through the options.
+## Autocomplete basics
+
+Type a backslash command in `INSERT` mode, like `\fra`.
+
+As soon as txtr sees the backslash prefix, it opens the autocomplete popup. Keep typing to narrow it down, use `Up` / `Down` to move through the list, then press `Enter` or `Ctrl+Space` to accept the current item.
+
+Citation autocomplete is separate, and it shows up once your cursor is inside braces for commands like `\cite{...}`.
+![png](http://localhost:4321/autocomplete.png)
+
+> If the popup does not appear, double check that you are in `INSERT` mode and that you started with a literal backslash. Plain words on their own do not open autocomplete.
 
 ## Use your first snippet 
 
@@ -30,6 +39,9 @@ Type `@a` - it auto-expands to `\alpha`.
 For tab-triggered snippets, type `int` (for integral) and press `Tab` - it expands to `\int_{}^{} ` and places your cursor in the first set of `{}`. Hit tab to jump to the next set.
 
 Type `doc` and hit `Tab` - it expands to a full document template. Getting you started with a new document has never been easier!
+
+
+Some snippets are only auto-expanders inside math mode. For example, with the default config, typing `sum` inside `$...$` expands right away, while typing `sum` in normal prose stays as plain text unless you press `Tab`.
 
 Check out the next section on how to see all the available snippets!
 
@@ -54,5 +66,5 @@ Press `?` in Normal mode to open the help menu or run `:help` in command mode. T
 
 Press `Tab` to cycle through the tabs and `ESC` or `q` to close. 
 
-There are plenty of snippets to explore and you can even create your own. Give the snippets menu a look and see what you can find!
+There are plenty of snippets to explore and you can even create your own. The Snippets tab also includes a tiny "how this works" section now, so it is a good first stop if autocomplete or snippet expansion feels unclear.
 > Pro tip: typing `:snips` or `:snippets` will open the help menu directly on the snippets tab.

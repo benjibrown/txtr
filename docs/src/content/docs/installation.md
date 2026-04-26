@@ -44,7 +44,7 @@ pip install -e .
 
 ## First run 
 
-On first launch. txtr seeds your config directory with the necessary files:
+On first launch, txtr seeds your config directory with the necessary files:
 ```
 ~/.config/txtr/ 
     config.toml     # editor preferences 
@@ -52,6 +52,14 @@ On first launch. txtr seeds your config directory with the necessary files:
     commands.toml   # command definitions (for autocomplete popup)
 ```
 These files are only created once. Deleting them will regenerate the defaults on the next launch. You can edit these files to customize the editor's behavior, add snippets, and define commands.
+
+Two very useful first-run notes:
+
+- `snippets.toml` powers snippet expansion
+- `commands.toml` powers the LaTeX autocomplete popup
+
+txtr now merges your local files on top of the bundled defaults, so keeping an older customised file no longer means you miss newer built-in snippet/completion additions.
+
 
 
 ## System clipboard (optional)
