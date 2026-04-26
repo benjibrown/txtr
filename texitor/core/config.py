@@ -54,6 +54,10 @@ _DEFAULTS = {
         "auto_update": False,
         "known": [],
     },
+    "session": {
+        "remember_cursor": True,
+        "remember_days": 30,
+    },
 }
 
 
