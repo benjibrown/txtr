@@ -92,7 +92,7 @@ class BufferManagerMixin:
             return
         if buf is self.buffer:
             self._captureBufferView(buf)
-        _cursorState.update()
+        _cursorState.update(
             self._canonicalPath(buf.path),
             buf.cursor_row,
             buf.cursor_col,
