@@ -85,7 +85,7 @@ def _snippetRows(snippets):
     tab  = dict(snippets._tabTriggers)
     rows.append(("header", "How it works"))
     rows.append(("row", "\\fra", "autocomplete popup opens while you type a latex command"))
-    rows.append(("row", "\\cite{ein", "citation autocomplete opens inside the braces"))}"))
+    rows.append(("row", "\\cite{ein", "citation autocomplete opens inside the braces"))
     rows.append(("row", "trigger + Tab", "tab snippets expand and Tab keeps walking tab stops"))
     rows.append(("gap",))
     if auto:
