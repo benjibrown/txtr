@@ -1,12 +1,19 @@
 from pathlib import Path
 # rahhhh i love buffers
 from texitor.core.buffer import Buffer
+from texitor.core.config import config as cfg
+from texitor.core.cursorstate import store as _cursorState
 from texitor.ui.buffertabs import BufferTabs
 from texitor.ui.editor import EditorWidget
 from texitor.ui.statusbar import StatusBar
 
 
 class BufferManagerMixin:
+
+    def _firstWidget(self, widgetType):
+        # textual gets grumpy here during shutdown if the widget is already gone
+        matches = list(self.query(widgetType))
+        return matches[0] if matches else None
 
     def _canonicalPath(self, path):
         return str(Path(path).expanduser().resolve())
@@ -47,14 +54,14 @@ class BufferManagerMixin:
         return None
 
     def _syncBufferWidgets(self):
-        editor = self.query(EditorWidget).first(None)
+        editor = self._firstWidget(EditorWidget)
         if editor:
             editor._buf = self.buffer
             editor._scroll_top = getattr(self.buffer, "view_scroll_top", 0)
-        status = self.query(StatusBar).first(None)
+        status = self._firstWidget(StatusBar)
         if status:
             status._buf = self.buffer
-        tabs = self.query(BufferTabs).first(None)
+        tabs = self._firstWidget(BufferTabs)
         if tabs:
             tabs.display = len(self.buffers) > 1
             tabs.refresh()
@@ -64,6 +71,16 @@ class BufferManagerMixin:
         self._pending_key = ""
         self._commandSourceMode = None
         self._dismissAutocomplete()
+
+    def _rememberCursorEnabled(self):
+        return cfg.get("session", "remember_cursor", True)
+
+    def _rememberCursorDays(self):
+        return max(1, int(cfg.get("session", "remember_days", 30) or 30))
+
+    def _captureBufferView(self, buf=None):
+        buf = buf or self.buffer
+ 
     #
     # activate the buffer at a given index-  very nice
     def _activateBuffer(self, idx, notify=False):
